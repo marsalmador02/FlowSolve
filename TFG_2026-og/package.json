@@ -1,0 +1,32 @@
+{
+  "name": "prodef-meta-model",
+  "version": "0.1.0",
+  "description": "Minimal implementation of the Prodef meta-model for combinatorial optimization.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "validate": "node dist/index.js",
+    "start": "npm run build && node dist/index.js",
+    "start:all": "cd prodef-runtime-rust && cargo build --release && cd .. && concurrently \"npm --prefix ui run serve\" \"npm --prefix ui run dev\"",
+    "install:all": "npm install && npm --prefix ui install",
+    "test:examples": "npm run build && node scripts/test-examples.mjs",
+    "test:solver": "node scripts/test-rust-solver.mjs",
+    "test": "npm run test:examples && npm run test:solver"
+  },
+  "keywords": [
+    "prodef",
+    "meta-model",
+    "optimization",
+    "combinatorial"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "concurrently": "^9.2.0",
+    "typescript": "^5.3.0"
+  }
+}

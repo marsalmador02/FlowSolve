@@ -1,0 +1,84 @@
+{
+  "name": "Assignment example",
+  "description": "4x4 worker-task assignment problem",
+  "parameters": [
+    {
+      "name": "Number of workers/tasks",
+      "symbol": "N",
+      "value": 4
+    }
+  ],
+  "variables": [
+    {
+      "name": "Task assigned to each worker",
+      "symbol": "assignment",
+      "within": "integers",
+      "shape": {
+        "type": "vector",
+        "isPermutation": true,
+        "size": {
+          "fixed": false,
+          "value": "N"
+        }
+      }
+    }
+  ],
+  "goals": [
+    {
+      "name": "Minimize total assignment cost",
+      "sense": "minimize",
+      "expression": "sum cost[i, assignment[i]] over i=(1:N)",
+      "weight": 1
+    }
+  ],
+  "classes": [
+    {
+      "name": "Cost matrix worker->task",
+      "symbol": "cost",
+      "attributes": [
+        { "name": "Task 1 cost", "symbol": "task_1" },
+        { "name": "Task 2 cost", "symbol": "task_2" },
+        { "name": "Task 3 cost", "symbol": "task_3" },
+        { "name": "Task 4 cost", "symbol": "task_4" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "class": "cost",
+      "attributes": [
+        { "attribute": "task_1", "value": 14 },
+        { "attribute": "task_2", "value": 5 },
+        { "attribute": "task_3", "value": 8 },
+        { "attribute": "task_4", "value": 7 }
+      ]
+    },
+    {
+      "class": "cost",
+      "attributes": [
+        { "attribute": "task_1", "value": 2 },
+        { "attribute": "task_2", "value": 12 },
+        { "attribute": "task_3", "value": 6 },
+        { "attribute": "task_4", "value": 5 }
+      ]
+    },
+    {
+      "class": "cost",
+      "attributes": [
+        { "attribute": "task_1", "value": 7 },
+        { "attribute": "task_2", "value": 8 },
+        { "attribute": "task_3", "value": 3 },
+        { "attribute": "task_4", "value": 9 }
+      ]
+    },
+    {
+      "class": "cost",
+      "attributes": [
+        { "attribute": "task_1", "value": 2 },
+        { "attribute": "task_2", "value": 4 },
+        { "attribute": "task_3", "value": 6 },
+        { "attribute": "task_4", "value": 10 }
+      ]
+    }
+  ]
+}
