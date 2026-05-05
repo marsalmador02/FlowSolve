@@ -1,3 +1,5 @@
+//! Domain types and logic for the runtime and search operators.
+
 pub(crate) mod feasible;
 pub(crate) mod model;
 pub(crate) mod result;

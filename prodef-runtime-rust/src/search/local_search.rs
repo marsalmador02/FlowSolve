@@ -1,7 +1,17 @@
+//! Local search trajectory for a single starting solution.
+//!
+//! The search operates on the runtime solution shape and returns the best
+//! feasible neighbor found in one pass over the neighborhood. The trace is for
+//! diagnostics, while the search result remains a plain `Solution`.
+
 use anyhow::{bail, Result};
 
 use crate::domain::{RuntimeProblem, Solution};
 
+/// Run one local-search pass from a feasible starting solution.
+///
+/// The returned trace records each candidate neighborhood move, the resulting
+/// score, and the stopping reason.
 pub(crate) fn run(
     problem: &RuntimeProblem,
     solution: Solution,
@@ -32,7 +42,6 @@ pub(crate) fn run(
         best_move, best_score, delta
     ));
 
-    // If there was no improvement, keep the original solution.
     if delta.abs() < 1e-12 {
         trace.push(format!("Stop: no improvement (best score={:.3})", current_score));
         trace.push(format!("Final solution: {}", format_solution(&solution)));
@@ -102,7 +111,6 @@ fn local_search_step(
                 || ((lower_bound - 0.0).abs() < 1e-9 && (upper_bound - 1.0).abs() < 1e-9);
 
             if is_binary {
-                // For binary variables, try flipping each value.
                 for i in 0..v.len() {
                     let current = v[i].round();
 
@@ -115,7 +123,7 @@ fn local_search_step(
                     let move_name = format!("flip x[{}] {}->{}", i + 1, current as i64, flipped as i64);
 
                     if !problem.is_feasible(&candidate)? {
-                        trace.push(format !("try {} -> infeasible", move_name));
+                        trace.push(format!("try {} -> infeasible", move_name));
                         continue;
                     }
 
@@ -138,7 +146,6 @@ fn local_search_step(
             }
 
             if is_integer_like {
-                // For integer-like variables, also try flipping to 0 or 1.
                 for i in 0..v.len() {
                     let current = v[i].round();
                     let flipped = if (current - 0.0).abs() < 1e-9 { 1.0 } else { 0.0 };
@@ -169,7 +176,6 @@ fn local_search_step(
                     }
                 }
             } else {
-                // For continuous variables, try moving each value down or up by 1.
                 for i in 0..v.len() {
                     let current_value = v[i];
 
@@ -268,14 +274,12 @@ fn vector_bounds(problem: &RuntimeProblem) -> Result<(f64, f64)> {
 
     let default_upper = if var.within == "binary" { 1.0 } else { 10.0 };
 
-    // Determine the lower bound for the variable
-    // If the variable has a specified range with a finite lower bound, use it; otherwise, default to 0.0
     let lower_bound = var
         .range
         .as_ref()
         .and_then(|r| r.lower_bound.as_ref())
         .map(bound_to_f64)
-        .transpose()? 
+        .transpose()?
         .unwrap_or(0.0);
 
     let upper_bound = var

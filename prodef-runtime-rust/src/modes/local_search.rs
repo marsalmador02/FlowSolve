@@ -1,6 +1,7 @@
 //! Mode: `local-search`.
 //!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+//! Input: a feasible starting solution in `solution`.
+//! Output: the improved solution serialized as a single result.
 
 use anyhow::{Context, Result};
 
@@ -8,9 +9,8 @@ use crate::api::parse::{parse_solution_from_value, payload_object};
 use crate::api::response::build_solver_result;
 use crate::modes::context::{ModeContext, ModeOutcome};
 use crate::search;
-/// Run a local search starting from `solution` provided in the payload.
-///
-/// Returns the improved solution as `result`.
+
+/// Run local search from the provided starting point and return the improved result.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
     let solution_value = obj

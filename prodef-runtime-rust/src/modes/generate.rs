@@ -1,6 +1,7 @@
 //! Mode: `generate` and `generate-population`.
 //!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+//! Input: no solution payload, only an optional `count` for population mode.
+//! Output: a single feasible result or a feasible population in JSON form.
 
 use anyhow::Result;
 use serde_json::Value;

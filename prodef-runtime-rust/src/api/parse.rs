@@ -1,16 +1,25 @@
-// This module contains functions for parsing the execution payload and candidate solutions.
+//! Parsing and normalization helpers for execution payloads.
+//!
+//! This module accepts the UI-facing JSON shapes and converts them into the
+//! internal `Solution` representation. It also performs compatibility
+//! normalization for permutation encodings so legacy 1-based payloads and the
+//! current 0-based runtime can coexist.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::{Map, Value};
 
 use crate::domain::{RuntimeProblem, Solution};
 
-// Helper: parse payload as object
+/// View the payload as an object payload for the current mode.
 pub(crate) fn payload_object(payload: &Value) -> Result<&Map<String, Value>> {
     payload.as_object().context("execution.payload must be an object for this mode")
 }
 
-// Parse candidate solution: permutation (indices) or vector (values).
+/// Parse a solution array from JSON using the runtime shape as the contract.
+///
+/// Permutations accept either 0-based or 1-based indices; the returned value
+/// is always normalized to 0-based runtime coordinates. Duplicate values,
+/// non-integer entries, and wrong lengths are rejected.
 pub(crate) fn parse_solution_from_value(runtime: &RuntimeProblem, value: &Value) -> Result<Solution> {
     let arr = value
         .as_array()
@@ -25,7 +34,6 @@ pub(crate) fn parse_solution_from_value(runtime: &RuntimeProblem, value: &Value)
     }
 
     if runtime.solution_is_permutation() {
-        // Permutation: for TSP, Assignment (ordering/mapping of indices).
         let mut values = Vec::with_capacity(arr.len());
         for item in arr {
             let n: usize = item
@@ -36,7 +44,6 @@ pub(crate) fn parse_solution_from_value(runtime: &RuntimeProblem, value: &Value)
             values.push(n);
         }
 
-        // Convert 1-based to 0-based if needed: if any value is 0, assume 0-based; else 1-based.
         let is_1_based = !values.iter().any(|&x| x == 0);
         let perm = if is_1_based {
             values.into_iter().map(|x| x - 1).collect()
@@ -46,7 +53,6 @@ pub(crate) fn parse_solution_from_value(runtime: &RuntimeProblem, value: &Value)
 
         Ok(Solution::Permutation(perm))
     } else {
-        // Vector: for Knapsack (binary 0/1).
         let mut values = Vec::with_capacity(arr.len());
         for item in arr {
             let n: i64 = item
@@ -59,13 +65,17 @@ pub(crate) fn parse_solution_from_value(runtime: &RuntimeProblem, value: &Value)
     }
 }
 
-// Parses a candidate solution from a JSON value. Returns None if parsing fails.
+/// Extract `variableValue` from a candidate object and parse it as a solution.
+///
+/// Returns `None` when the payload is structurally missing or cannot be
+/// normalized into a valid solution. That silent failure is intentional here
+/// because several modes filter candidates opportunistically.
 pub(crate) fn parse_candidate(runtime: &RuntimeProblem, candidate: &Value) -> Option<Solution> {
     let value = candidate.get("variableValue")?;
     parse_solution_from_value(runtime, value).ok()
 }
 
-// Converts a Solution to a JSON value for returning in the execution response.
+/// Convert a runtime solution back to the JSON shape exposed by responses.
 pub(crate) fn solution_to_f64_vec(solution: &Solution) -> Vec<f64> {
     match solution {
         Solution::Vector(v) => v.clone(),
@@ -73,8 +83,11 @@ pub(crate) fn solution_to_f64_vec(solution: &Solution) -> Vec<f64> {
     }
 }
 
-// Converts a vector of f64 values to a Solution. For permutations, the values must be integers in the range [0, n-1]
-// or [1, n], where n is the solution size. For vectors, any numeric values are accepted.
+/// Convert raw numeric values into a runtime solution.
+///
+/// For permutation problems the values must form a complete permutation in
+/// either 0-based or 1-based form; duplicates and out-of-range values are
+/// rejected. For non-permutation problems the values are accepted as-is.
 pub(crate) fn vec_to_solution(runtime: &RuntimeProblem, values: &[f64]) -> Option<Solution> {
     if !runtime.solution_is_permutation() {
         return Some(Solution::Vector(values.to_vec()));
@@ -87,7 +100,7 @@ pub(crate) fn vec_to_solution(runtime: &RuntimeProblem, values: &[f64]) -> Optio
     }
 
     let mut perm = Vec::with_capacity(n);
-    let mut seen = vec![false; n]; // To check for duplicates in the permutation.
+    let mut seen = vec![false; n];
 
     for value in values {
         let idx = *value as i64;

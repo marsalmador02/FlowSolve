@@ -1,7 +1,7 @@
 //! Library facade for `prodef-runtime-rust`.
 //!
-//! This crate exposes selected internal modules for documentation and
-//! testing purposes (doctests). The binary target remains `main.rs`.
+//! This crate exposes selected internal modules for documentation
+//! purposes.
 
 pub(crate) mod api;
 pub(crate) mod domain;

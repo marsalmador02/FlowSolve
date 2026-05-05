@@ -1,4 +1,4 @@
-//! Local search and related trajectory logic (domain-aware, not JSON).
+//! Local search and related trajectory logic.
 
 mod local_search;
 

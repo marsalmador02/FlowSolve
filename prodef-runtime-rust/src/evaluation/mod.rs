@@ -1,4 +1,4 @@
-// This module contains the logic for evaluating expressions in the context of a problem and a solution.
+//! Evaluation of numeric expressions and constraints in the runtime.
 
 mod expr;
 

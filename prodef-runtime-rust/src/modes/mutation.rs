@@ -1,6 +1,7 @@
 //! Mode: `mutation`.
 //!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+//! Input: `incomingSet` plus an optional mutation rate.
+//! Output: the mutated solutions and the operator that was chosen.
 
 use anyhow::{bail, Context, Result};
 use rand::prelude::*;
@@ -15,10 +16,7 @@ use crate::operators::{
     variable_flags, ProblemFamily,
 };
 
-/// Mutate each solution in `incomingSet` with probability `mutationRate`.
-///
-/// Mutation operator selection defaults based on variable type; returns
-/// `mutated` array with resulting solutions.
+/// Mutate each incoming solution with the selected operator.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
     let incoming = obj
@@ -63,8 +61,8 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
             continue;
         }
         let mut vars = solution_to_f64_vec(base);
-        if vars.is_empty() { 
-            mutated.push(base.clone()); 
+        if vars.is_empty() {
+            mutated.push(base.clone());
             continue;
         }
         if is_permutation {
@@ -78,7 +76,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
             vars[idx] = if vars[idx] >= 0.5 { 0.0 } else { 1.0 };
         } else {
             let idx = ctx.rng.gen_range(0..vars.len());
-            vars[idx] += if ctx.rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 }; 
+            vars[idx] += if ctx.rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
         }
         let chosen = match vec_to_solution(ctx.runtime, &vars) {
             Some(next) if ctx.runtime.is_feasible(&next).unwrap_or(false) => next,
@@ -108,7 +106,6 @@ mod tests {
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
 
-        // Use a known feasible solution for knapsack (N=5)
         let incoming = json!({ "incomingSet": [{ "variableValue": [1,1,1,1,0] }], "mutationRate": 1.0, "mutationOperator": "bit-flip+repair" });
         let ctx = ModeContext { runtime: &runtime, payload: &incoming, rng: &mut rng };
 
@@ -116,7 +113,6 @@ mod tests {
         let payload = outcome.payload.expect("payload present");
         let mutated = payload.get("mutated").and_then(|v| v.as_array()).expect("mutated array");
         assert_eq!(mutated.len(), 1);
-        // Each mutated candidate should parse and be feasible
         for cand in mutated {
             let is_feasible = cand.get("isFeasible").and_then(|v| v.as_bool()).unwrap_or(false);
             assert!(is_feasible, "mutated solver result should be marked feasible");

@@ -1,6 +1,7 @@
 //! Mode: `neighborhood`.
 //!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+//! Input: a base solution in `base.variableValue`.
+//! Output: all generated neighbors plus the subset that remains feasible.
 
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
@@ -10,22 +11,15 @@ use crate::api::parse::{
 };
 use crate::api::response::solver_result_json;
 use crate::modes::context::{ModeContext, ModeOutcome};
-
-/// Generate neighbor solutions from `base.variableValue`.
-///
-/// Produces two arrays: `generated` (all generated candidates) and
-/// `feasible` (those that pass problem feasibility checks).
 use crate::operators::{generate_neighbor_vectors, variable_flags};
 
+/// Generate neighbor solutions from the base candidate and split them by feasibility.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
-    // base_candidate is the JSON object inside `base` in the payload, which should contain a variableValue array
     let base_candidate = obj.get("base").context("neighborhood payload requires `base`")?;
-    // base_value is the variableValue array inside base_candidate
     let base_value = base_candidate
         .get("variableValue")
         .context("neighborhood payload requires `base.variableValue`")?;
-    // base_solution is the parsed Solution object from base_value
     let base_solution = parse_solution_from_value(ctx.runtime, base_value)?;
 
     let (is_permutation, is_binary) = variable_flags(ctx.runtime);
@@ -36,8 +30,6 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let mut generated: Vec<Value> = Vec::new();
     let mut feasible: Vec<Value> = Vec::new();
     for vars in &generated_vecs {
-        // if the generated neighbor vector can be converted back to a Solution,
-        // convert it to JSON and check feasibility
         if let Some(solution) = vec_to_solution(ctx.runtime, vars) {
             let candidate_json = solver_result_json(ctx.runtime, &solution)?;
             let is_feasible = candidate_json

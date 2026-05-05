@@ -1,10 +1,15 @@
+//! Expression evaluation for goals and constraints.
+//!
+//! The evaluator accepts the compact expression language used by the problem
+//! schema: arithmetic, chained comparisons, `sum` expressions, 1-based
+//! indexing, variable access, class attributes, and matrix reads.
+
 use anyhow::{anyhow, bail, Result};
 
 use crate::domain::{RuntimeProblem, Solution};
 
-// Evaluates a constraint expression and returns whether it is satisfied.
+/// Evaluate a boolean constraint using the supported comparison grammar.
 pub(crate) fn eval_constraint(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<bool> {
-    // Support chained comparisons like: a <= b <= c
     if expr.contains("<=") {
         let parts: Vec<&str> = expr.split("<=").map(str::trim).collect();
         if parts.len() == 3 {
@@ -21,7 +26,6 @@ pub(crate) fn eval_constraint(expr: &str, p: &RuntimeProblem, s: &Solution) -> R
         return Ok(left_value <= right_value);
     }
 
-    // Support chained comparisons like: a >= b >= c
     if expr.contains(">=") {
         let parts: Vec<&str> = expr.split(">=").map(str::trim).collect();
         if parts.len() == 3 {
@@ -38,7 +42,6 @@ pub(crate) fn eval_constraint(expr: &str, p: &RuntimeProblem, s: &Solution) -> R
         return Ok(left_value >= right_value);
     }
 
-    // a = b (exact equality)
     if let Some((lhs, rhs)) = expr.split_once('=') {
         let left_value = eval_numeric_expr(lhs.trim(), p, s)?;
         let right_value = eval_numeric_expr(rhs.trim(), p, s)?;
@@ -48,31 +51,27 @@ pub(crate) fn eval_constraint(expr: &str, p: &RuntimeProblem, s: &Solution) -> R
     bail!("Unsupported constraint operator in '{}'", expr)
 }
 
-// Evaluates a numeric expression that appears in goals/constraints.
+/// Evaluate a numeric expression used by goals and constraints.
 pub(crate) fn eval_numeric_expr(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<f64> {
     let e = expr.trim();
     eval_scalar(e, p, s, None)
 }
 
-// Recursive evaluator for scalar expressions.
+/// Recursive evaluator for the supported scalar expression language.
 fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&str, usize)>) -> Result<f64> {
     let orig = expr.trim();
 
-    // 1) Try to evaluate sum expressions. For example, `sum i=1:N x[i]` or `sum i=1:N x[i]*item[i].weight`.
+    // Parse `sum` first so loop-bound variables remain scoped to the body.
     if let Some(result) = try_eval_sum(orig, p, s)? {
         return Ok(result);
     }
 
-    // 2) Remove all spaces for easier parsing of the remaining expression.
-    // For example, `x [ i ] * item [ i ] . weight` -> `x[i]*item[i].weight`.
     let mut e = orig.replace(' ', "");
 
-    // 3) Handle parentheses: if the entire expression is wrapped in parentheses, remove them and evaluate the inside. For example, `(x[i] + 1)` -> `x[i] + 1`.
     if e.starts_with('(') && e.ends_with(')') && e.len() >= 2 {
         e = e[1..e.len() - 1].to_string();
     }
 
-    // 4) Addition.
     if let Some(parts) = split_top_level(&e, '+') {
         let mut total = 0.0;
         for part in parts {
@@ -81,7 +80,6 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
         return Ok(total);
     }
 
-    // 5) Subtraction.
     if let Some(parts) = split_top_level_minus(&e) {
         let mut iter = parts.into_iter();
         let first = iter.next().ok_or_else(|| anyhow!("Empty parts in subtraction"))?;
@@ -92,7 +90,6 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
         return Ok(acc);
     }
 
-    // 6) Multiplication.
     if let Some(parts) = split_top_level(&e, '*') {
         let mut total = 1.0;
         for part in parts {
@@ -101,17 +98,14 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
         return Ok(total);
     }
 
-    // 7) Numeric literal.
     if let Ok(v) = e.parse::<f64>() {
         return Ok(v);
     }
 
-    // 8) Parameter.
     if let Some(v) = p.params.get(&e) {
         return Ok(*v);
     }
 
-    // 9) Variable access: x[i]
     let var_prefix = format!("{}[", p.var_name);
     if e.starts_with(&var_prefix) && e.ends_with(']') {
         let inside = &e[var_prefix.len()..e.len() - 1];
@@ -119,7 +113,6 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
         return p.var_at(s, idx);
     }
 
-    // 10) Class attribute access: item[i].weight
     if let Some((left, attr)) = e.split_once("].") {
         if let Some((class, idx_expr)) = left.split_once('[') {
             let idx = eval_index_expr(idx_expr, p, s, idx_ctx)?;
@@ -127,7 +120,6 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
         }
     }
 
-    // 11) Matrix access: `d[i,j]`
     if let Some((class, rest)) = e.split_once('[') {
         if rest.ends_with(']') {
             let inside = &rest[..rest.len() - 1];
@@ -144,9 +136,10 @@ fn eval_scalar(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&s
     bail!("Unsupported expression fragment: '{}'", expr)
 }
 
-// Tries to evaluate a sum expression and returns:
-// - Ok(Some(value)) if this is a sum expression
-// - Ok(None) if expr does not start with `sum`
+/// Evaluate a `sum` expression if the input uses that form.
+///
+/// Returns `Ok(None)` when the expression is not a sum expression, so the
+/// caller can continue with the rest of the grammar.
 fn try_eval_sum(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<Option<f64>> {
     let Some(rest) = expr.strip_prefix("sum") else {
         return Ok(None);
@@ -183,7 +176,7 @@ fn try_eval_sum(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<Option<f
     let b = eval_scalar(b_raw.trim(), p, s, None)? as i64;
 
     let mut total = 0.0;
-    for i in a.min(b)..=a.max(b) { 
+    for i in a.min(b)..=a.max(b) {
         total += eval_scalar(term.trim(), p, s, Some((idx_name, i as usize)))?;
     }
 
@@ -191,9 +184,6 @@ fn try_eval_sum(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<Option<f
         return Ok(Some(total));
     }
 
-    // Supports expressions like:
-    // sum ... over ... + rest
-    // sum ... over ... - rest
     if let Some(rest_tail) = tail.strip_prefix('+') {
         return Ok(Some(total + eval_scalar(rest_tail.trim(), p, s, None)?));
     }
@@ -204,11 +194,10 @@ fn try_eval_sum(expr: &str, p: &RuntimeProblem, s: &Solution) -> Result<Option<f
     bail!("Malformed sum tail in '{}': expected '+' or '-' continuation", expr)
 }
 
-// Evaluates an index expression used in x[i], item[i].attr, d[i,j], etc.
+/// Evaluate the 1-based index grammar used inside access expressions.
 fn eval_index_expr(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option<(&str, usize)>) -> Result<usize> {
     let e = expr.trim().replace(' ', "");
 
-    // Direct integer index.
     if let Ok(v) = e.parse::<i64>() {
         if v < 1 {
             bail!("Indices are 1-based and must be >= 1");
@@ -216,7 +205,6 @@ fn eval_index_expr(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option
         return Ok(v as usize);
     }
 
-    // Loop variable: i, i+1, i-1
     if let Some((sym, i)) = idx_ctx {
         if e == sym {
             return Ok(i);
@@ -243,7 +231,6 @@ fn eval_index_expr(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option
         }
     }
 
-    // Parameter index (for example N).
     if let Some(v) = p.params.get(&e) {
         let value = *v as i64;
         if value < 1 {
@@ -252,7 +239,6 @@ fn eval_index_expr(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option
         return Ok(value as usize);
     }
 
-    // Variable-based index (needed for assignment and TSP: cost[i, assignment[i]], distance[city[i], city[i+1]])
     let var_prefix = format!("{}[", p.var_name);
     if e.starts_with(&var_prefix) && e.ends_with(']') {
         let inside = e
@@ -265,7 +251,7 @@ fn eval_index_expr(expr: &str, p: &RuntimeProblem, s: &Solution, idx_ctx: Option
     bail!("Unsupported index expression: '{}'", expr)
 }
 
-// Splits by an operator only at top-level depth (outside () and []).
+/// Split an expression by an operator only at top level.
 fn split_top_level<'a>(expr: &'a str, op: char) -> Option<Vec<&'a str>> {
     let mut depth = 0_i32;
     let mut out = Vec::new();
@@ -293,8 +279,7 @@ fn split_top_level<'a>(expr: &'a str, op: char) -> Option<Vec<&'a str>> {
     }
 }
 
-// Similar to split_top_level, but it avoids treating the first '-' as a subtraction operator, which allows us to
-// correctly parse expressions like `-3+2` without splitting at the first '-'.
+/// Split on subtraction while preserving a leading unary minus.
 fn split_top_level_minus(expr: &str) -> Option<Vec<&str>> {
     let mut depth = 0_i32;
     let mut out = Vec::new();

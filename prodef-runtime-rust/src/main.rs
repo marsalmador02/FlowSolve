@@ -19,6 +19,7 @@ struct Cli {
     exec_request: PathBuf,
 }
 
+// CLI wrapper: read a request from disk, execute the runtime, and print JSON.
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let request_raw = fs::read_to_string(&cli.exec_request)?;
