@@ -37,9 +37,7 @@ import { FlowSidebar } from './components/FlowSidebar';
 import { NodePropertiesPanel } from './components/NodePropertiesPanel';
 import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
-import type { RuntimeComponentDescriptor } from './types/runtimeContract';
 import { useFlowRunner } from './hooks/useFlowRunner';
-import { callRuntimeComponentCatalog } from './services/prodefApi';
 
 interface StoredTemplateNode {
   id: string;
@@ -167,9 +165,6 @@ export default function App() {
   const [generationPaletteItems, setGenerationPaletteItems] = useState<SidebarPaletteItem[]>([]);
   const [modificationPaletteItems, setModificationPaletteItems] = useState<SidebarPaletteItem[]>([]);
   const [otherPaletteItems, setOtherPaletteItems] = useState<SidebarPaletteItem[]>([]);
-  const [runtimeLabelBySidebarKind, setRuntimeLabelBySidebarKind] = useState<Record<string, string>>({});
-  const [catalogLoading, setCatalogLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [isCustomTemplatesHydrated, setIsCustomTemplatesHydrated] = useState(false);
   const nodeId = useRef(0);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
@@ -241,77 +236,20 @@ export default function App() {
     }
   }, [customTemplates, isCustomTemplatesHydrated]);
 
-  // Load runtime component catalog from Rust and map to sidebar groups.
   useEffect(() => {
-    let isCancelled = false;
+    const generationKinds = ['SingleSolutionGenerationComponent', 'PopulationGenerationComponent'];
+    const modificationKinds = [
+      'SelectionComponent', 'CrossoverComponent', 'MutationComponent', 'LocalSearchComponent',
+      'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
+      'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubstractionComponent', 'SelectionOfBestComponent',
+    ];
+    const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent', 'Problem'];
 
-    const hydrateCatalog = async () => {
-      try {
-        setCatalogLoading(true);
-        setCatalogError(null);
-        const catalog = await callRuntimeComponentCatalog();
-        if (isCancelled) {
-          return;
-        }
-        if (!Array.isArray(catalog) || catalog.length === 0) {
-          throw new Error('Runtime catalog is empty.');
-        }
+    const make = (kinds: string[]) => kinds.map((k) => ({ kind: k, label: withLeadingEmoji(COMPONENT_LABELS[k as keyof typeof COMPONENT_LABELS] ?? k, k) }));
 
-        const generation: SidebarPaletteItem[] = [];
-        const modification: SidebarPaletteItem[] = [];
-        const other: SidebarPaletteItem[] = [];
-        const nextLabelBySidebarKind: Record<string, string> = {};
-
-        for (const item of catalog as RuntimeComponentDescriptor[]) {
-          const sidebarKind = mapRuntimeKindToSidebarKind(item.kind);
-          if (sidebarKind === 'Problem') {
-            continue;
-          }
-
-          const componentLabelKey = sidebarKind as keyof typeof COMPONENT_LABELS;
-          const baseLabel = COMPONENT_LABELS[componentLabelKey] ?? item.label;
-          const visualLabel = withLeadingEmoji(baseLabel, sidebarKind);
-
-          nextLabelBySidebarKind[sidebarKind] = visualLabel;
-
-          const normalized: SidebarPaletteItem = {
-            kind: sidebarKind,
-            label: visualLabel,
-          };
-
-          const group = mapCatalogCategory(item.category);
-          if (group === 'generation') {
-            generation.push(normalized);
-          } else if (group === 'modification') {
-            modification.push(normalized);
-          } else {
-            other.push(normalized);
-          }
-        }
-
-        setGenerationPaletteItems(generation);
-        setModificationPaletteItems(modification);
-        setOtherPaletteItems(other);
-        setRuntimeLabelBySidebarKind(nextLabelBySidebarKind);
-      } catch (error) {
-        if (!isCancelled) {
-          setGenerationPaletteItems([]);
-          setModificationPaletteItems([]);
-          setOtherPaletteItems([]);
-          setCatalogError((error as Error)?.message || 'Failed to load runtime component catalog.');
-        }
-      } finally {
-        if (!isCancelled) {
-          setCatalogLoading(false);
-        }
-      }
-    };
-
-    void hydrateCatalog();
-
-    return () => {
-      isCancelled = true;
-    };
+    setGenerationPaletteItems(make(generationKinds));
+    setModificationPaletteItems(make(modificationKinds));
+    setOtherPaletteItems(make(otherKinds));
   }, []);
 
   const {
@@ -436,7 +374,7 @@ export default function App() {
     const id = kind === 'Problem' ? 'problem' : `${type}-${nodeId.current++}`;
 
     const data: FlowNodeData = {
-      label: runtimeLabelBySidebarKind[kind] ?? kind,
+      label: withLeadingEmoji(COMPONENT_LABELS[kind as keyof typeof COMPONENT_LABELS] ?? kind, kind),
       start: false,
       end: false,
       trace: '',
@@ -504,7 +442,7 @@ export default function App() {
       data,
       connectable: true,
     };
-  }, [updateNodeData, neighborhoodSizeRef, runtimeLabelBySidebarKind]);
+  }, [updateNodeData, neighborhoodSizeRef]);
 
   // Handle dropping a component kind onto the canvas and append a new node.
   const onDrop = useCallback(
@@ -913,8 +851,6 @@ export default function App() {
         generationPaletteItems={generationPaletteItems}
         modificationPaletteItems={modificationPaletteItems}
         otherPaletteItems={otherPaletteItems}
-        isCatalogLoading={catalogLoading}
-        catalogError={catalogError}
       />
 
       <div className="canvas">

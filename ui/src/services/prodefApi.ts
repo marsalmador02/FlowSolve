@@ -31,9 +31,6 @@ function routeMissingOnThisServer(path: string, responseBody: string) {
   if (path === '/execute') {
     return responseBody.includes('Cannot POST /execute');
   }
-  if (path === '/components-catalog') {
-    return responseBody.includes('Cannot GET /components-catalog');
-  }
   return false;
 }
 
@@ -103,18 +100,4 @@ export async function callRuntimeExecute(request: RuntimeExecutionRequest): Prom
   }
 
   return resp.json();
-}
-
-// Retrieve the runtime component catalog published by Rust.
-export async function callRuntimeComponentCatalog(): Promise<RuntimeComponentDescriptor[]> {
-  const resp = await fetchFromApi('/components-catalog', {
-    method: 'GET',
-  });
-
-  if (!resp.ok) {
-    throw new Error(await readErrorMessage(resp));
-  }
-
-  const payload = await resp.json();
-  return Array.isArray(payload) ? payload : [];
 }

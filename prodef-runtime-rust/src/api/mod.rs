@@ -9,7 +9,6 @@ use serde_json::Value;
 use crate::domain::{Problem, RuntimeProblem, SolverResult};
 use crate::modes::{dispatch, ModeContext};
 
-pub(crate) mod catalog;
 pub(crate) mod parse;
 pub(crate) mod response;
 pub(crate) mod validation;
@@ -28,31 +27,23 @@ pub(crate) struct ExecutionSpec {
     pub(crate) payload: Value,
 }
 
-// The API response structure. Modes can fill in `result` (single solution), `population` (multiple solutions), 
-// and/or `payload` (arbitrary JSON). The `catalog` field is reserved for the "catalog" mode, which returns a 
-// list of available components.
-#[derive(Debug, Serialize, Default)]
-pub(crate) struct ExecutionResponse {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) result: Option<SolverResult>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) population: Option<Vec<SolverResult>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) payload: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) catalog: Option<Vec<catalog::ComponentDescriptor>>,
-}
+    // The API response structure. Modes can fill in `result` (single solution), `population` (multiple solutions), 
+    // and/or `payload` (arbitrary JSON).
+    #[derive(Debug, Serialize, Default)]
+    pub(crate) struct ExecutionResponse {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub(crate) result: Option<SolverResult>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub(crate) population: Option<Vec<SolverResult>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub(crate) payload: Option<Value>,
+    }
 
 // The outcome of running a mode, which can include a single solution, a population, and/or arbitrary payload.
 pub(crate) fn run(req: ExecutionRequest) -> Result<ExecutionResponse> {
     let mode = req.execution.mode;
 
-    if mode == "catalog" {
-        return Ok(ExecutionResponse {
-            catalog: Some(catalog::builtin_component_catalog()),
-            ..Default::default()
-        });
-    }
+    // 'catalog' mode removed; dispatch modes directly.
 
     let runtime = build_runtime(req.problem.clone())?;
     let mut rng = StdRng::from_entropy();
@@ -71,7 +62,6 @@ pub(crate) fn run(req: ExecutionRequest) -> Result<ExecutionResponse> {
         result: outcome.result,
         population: outcome.population,
         payload: outcome.payload,
-        catalog: None,
     })
 }
 

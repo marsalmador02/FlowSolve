@@ -232,6 +232,12 @@ export async function runPacketExecutor(
         loopVisits += 1;
         deps.activeIterationRef.current = Number(node.data?.iteration ?? currentIteration);
 
+        // When running the full flow, add a visual blank line between iterations
+        // so the global trace separates iteration outputs (mirrors iteration mode).
+        if (options.mode === 'full' && loopVisits >= 2) {
+          deps.appendGlobalTrace('');
+        }
+
         if (options.mode === 'iteration' && loopVisits >= 2) {
           const patch: Partial<FlowNodeData> = {};
           if (current.packet.solution) {

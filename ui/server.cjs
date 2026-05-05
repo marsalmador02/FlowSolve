@@ -90,17 +90,7 @@ app.post('/execute', async (req, res) => {
   }, res);
 });
 
-app.get('/components-catalog', async (_req, res) => {
-  const payload = {
-    execution: {
-      mode: 'catalog',
-    },
-  };
-
-  runRustRequest(payload, 'Rust catalog execution', (parsed) => {
-    res.json(parsed?.catalog ?? []);
-  }, res);
-});
+// `GET /components-catalog` removed: the UI relies on local component labels.
 
 const basePort = parseInt(process.env.PRODEF_UI_API_PORT || '5180', 10);
 let port = basePort;

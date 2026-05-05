@@ -41,8 +41,6 @@ interface FlowSidebarProps {
   generationPaletteItems: SidebarPaletteItem[];
   modificationPaletteItems: SidebarPaletteItem[];
   otherPaletteItems: SidebarPaletteItem[];
-  isCatalogLoading: boolean;
-  catalogError: string | null;
 }
 
 function draggableItem(item: SidebarPaletteItem) {
@@ -162,24 +160,24 @@ export function FlowSidebar({
           <summary className="sidebar-title">Metaheuristic Component</summary>
 
           {isCatalogLoading ? <div className="sidebar-item sidebar-item--nested">Loading runtime catalog...</div> : null}
-          {catalogError ? <div className="sidebar-item sidebar-item--nested">Catalog error: {catalogError}</div> : null}
+
 
           <div className="sidebar-section-title">Generation Component</div>
           {generationPaletteItems.map((item) => draggableItem(item))}
           {!isCatalogLoading && !catalogError && generationPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No generation components from runtime catalog.</div>
+            <div className="sidebar-item sidebar-item--nested">No generation components available.</div>
           ) : null}
 
           <div className="sidebar-section-title">Modification Component</div>
           {modificationPaletteItems.map((item) => draggableItem(item))}
           {!isCatalogLoading && !catalogError && modificationPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No modification components from runtime catalog.</div>
+            <div className="sidebar-item sidebar-item--nested">No modification components available.</div>
           ) : null}
 
           <div className="sidebar-section-title">Other Metaheuristic Components</div>
           {otherPaletteItems.map((item) => draggableItem(item))}
           {!isCatalogLoading && !catalogError && otherPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No additional components from runtime catalog.</div>
+            <div className="sidebar-item sidebar-item--nested">No additional components available.</div>
           ) : null}
         </details>
       </div>
