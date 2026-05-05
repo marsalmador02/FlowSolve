@@ -24,6 +24,13 @@ function renderStartBadge(data: FlowNodeData) {
   return <span className="node-badge-start">START</span>;
 }
 
+function renderEndBadge(data: FlowNodeData) {
+  if (!data.end) {
+    return null;
+  }
+  return <span className="node-badge-end">END</span>;
+}
+
 function nodeClassName(data: FlowNodeData) {
   return data.isRunning ? 'custom-node custom-node-running' : 'custom-node';
 }
@@ -407,7 +414,10 @@ function StorageNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
+      <div className="custom-node-header">
+        <div className="custom-node-title">{data.label}</div>
+        {renderEndBadge(data)}
+      </div>
       <div className="custom-node-subtitle">Stored solutions</div>
       {renderStoredSolutions(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
@@ -424,6 +434,7 @@ function TerminationNode({ data }: { data: FlowNodeData }) {
       <div className="custom-node-header">
         <div className="custom-node-title">{data.label}</div>
         {renderStartBadge(data)}
+        {renderEndBadge(data)}
       </div>
       <div className="custom-node-subtitle">Controls the loop lifecycle</div>
       <div className="solution-summary">

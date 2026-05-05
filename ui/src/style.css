@@ -498,3 +498,14 @@ body,
   padding: 2px 7px;
   border-radius: 999px;
 }
+
+.node-badge-end {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffe8d6;
+  border: 1px solid rgba(255, 196, 143, 0.8);
+  background: rgba(168, 92, 28, 0.4);
+  padding: 2px 7px;
+  border-radius: 999px;
+}

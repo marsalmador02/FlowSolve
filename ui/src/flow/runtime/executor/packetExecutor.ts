@@ -42,6 +42,7 @@ interface QueuedPacket {
 }
 
 const MAX_PACKETS_PER_RUN = 10000;
+const COMPONENT_EXECUTION_DELAY_MS = 250;
 
 // Find the source nodes that feed packets into a given target node.
 function resolveIncomingSources(deps: PacketExecutorDeps, nodeId: string): IncomingSource[] {
@@ -163,13 +164,13 @@ export async function runPacketExecutor(
   const edges = deps.getEdges();
   const validation = validateGraph(nodes, edges);
   if (!validation.ok) {
-    for (const err of validation.errors) {
+    for (const err of validation.errors ?? []) {
       deps.appendGlobalTrace(`ERROR: ${err}`);
     }
     return;
   }
 
-  const { startNode, endNode, loopNode } = validation.graph;
+  const { startNode, endNode, loopNode } = validation.graph!;
   const problem = deps.getProblemParsed();
   if (!problem) {
     deps.appendGlobalTrace('ERROR: problem JSON is missing or invalid.');
@@ -266,6 +267,8 @@ export async function runPacketExecutor(
       deps.setExecutionContext(node.id, kind);
       deps.clearNodeError(node.id);
       deps.updateNodeData(node.id, { isRunning: true });
+
+      await new Promise((resolve) => setTimeout(resolve, COMPONENT_EXECUTION_DELAY_MS));
 
       let result: ExecuteResult;
       try {

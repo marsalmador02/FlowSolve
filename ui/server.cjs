@@ -9,14 +9,19 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Carpeta del runtime Rust dentro del monorepo.
 const RUST_BIN_DIR = path.resolve(__dirname, '..', 'prodef-runtime-rust');
+
+// Ruta por defecto del binario compilado en modo release.
 const DEFAULT_RUST_BIN = process.platform === 'win32'
   ? path.join(RUST_BIN_DIR, 'target', 'release', 'prodef-runtime-rust.exe')
   : path.join(RUST_BIN_DIR, 'target', 'release', 'prodef-runtime-rust');
-const RUST_BIN = process.env.PRODEF_RUST_BIN || DEFAULT_RUST_BIN;
+
+const RUST_BIN = DEFAULT_RUST_BIN;
 
 function runRustRequest(payload, onSuccess, res) {
   const stamp = Date.now();
+  // Se crea un request temporal por cada llamada /execute.
   const tmpRequest = path.join(os.tmpdir(), `prodef_exec_request_${stamp}.json`);
 
   try {
@@ -27,17 +32,20 @@ function runRustRequest(payload, onSuccess, res) {
 
   if (!fs.existsSync(RUST_BIN)) {
     try {
+      // Limpieza del request temporal si no hay binario.
       fs.unlinkSync(tmpRequest);
     } catch {
     }
     return res.status(500).json({
-      error: `Rust binary not found at '${RUST_BIN}'. Build it first with 'cargo build --release' in prodef-runtime-rust or set PRODEF_RUST_BIN.`,
+      error: `Rust binary not found at '${RUST_BIN}'. Build it first with 'cargo build --release' in prodef-runtime-rust.`,
     });
   }
 
   const args = ['--exec-request', tmpRequest];
+  // Ejecuta el binario Rust como proceso hijo y captura stdout/stderr.
   execFile(RUST_BIN, args, { cwd: RUST_BIN_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
     try {
+      // Siempre intentamos borrar el request temporal al finalizar.
       fs.unlinkSync(tmpRequest);
     } catch {
     }
@@ -56,16 +64,13 @@ function runRustRequest(payload, onSuccess, res) {
   });
 }
 
-app.get('/health', (_req, res) => {
-  res.json({ ok: true });
-});
-
 app.post('/execute', (req, res) => {
   const payload = req.body;
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'Missing execution request JSON body' });
   }
 
+  // Forward del request al runtime Rust y respuesta directa al cliente UI.
   runRustRequest(payload, (parsed) => {
     res.json(parsed);
   }, res);
