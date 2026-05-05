@@ -58,9 +58,28 @@ pub(crate) fn variable_flags(runtime: &RuntimeProblem) -> (bool, bool) {
         Some(Shape::Vector { is_permutation: Some(true), .. })
     );
 
-    let is_binary = variable
-        .map(|v| v.within.eq_ignore_ascii_case("binary"))
-        .unwrap_or(false);
+    let is_binary = variable.map_or(false, |v| {
+        if v.within.eq_ignore_ascii_case("binary") {
+            return true;
+        }
+
+        let lower_is_zero = v
+            .range
+            .as_ref()
+            .and_then(|r| r.lower_bound.as_ref())
+            .and_then(|bound| bound.as_f64())
+            .map(|value| (value - 0.0).abs() < f64::EPSILON)
+            .unwrap_or(false);
+        let upper_is_one = v
+            .range
+            .as_ref()
+            .and_then(|r| r.upper_bound.as_ref())
+            .and_then(|bound| bound.as_f64())
+            .map(|value| (value - 1.0).abs() < f64::EPSILON)
+            .unwrap_or(false);
+
+        lower_is_zero && upper_is_one
+    });
 
     (is_permutation, is_binary)
 }

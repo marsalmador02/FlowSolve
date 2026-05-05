@@ -60,9 +60,8 @@ export class SubstractionComponent extends JoinRuntimeComponent {
     });
 
     ctx.updateNodeData({ solutionSet: toPretty(remaining), setSize: remaining.length });
-    ctx.appendTrace(
-      `➖ Substraction: ${source.length} - ${toRemove.size} = ${remaining.length}`,
-    );
+    const filteredOut = Math.max(0, source.length - remaining.length);
+    ctx.appendTrace(`➖ Substraction: ${remaining.length} solutions remaining (${filteredOut} filtered out)`);
 
     return {
       kind: 'emit',

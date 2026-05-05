@@ -7,7 +7,9 @@ use anyhow::{Context, Result};
 use rand::Rng;
 use serde_json::{json, Value};
 
-use crate::api::parse::{payload_object, vec_to_solution};
+use crate::api::parse::{payload_object, parse_candidate, vec_to_solution};
+use crate::domain::Solution;
+use crate::api::response::build_solver_result;
 use crate::modes::context::{ModeContext, ModeOutcome};
 
 /// Simulated Annealing acceptance: decide if `candidate` replaces `stored`.
@@ -17,21 +19,15 @@ use crate::modes::context::{ModeContext, ModeOutcome};
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
 
-    let candidate_vec: Vec<f64> = obj
+    let candidate_value = obj
         .get("candidate")
-        .and_then(Value::as_array)
-        .context("temperature-acceptance requires `candidate` array")?
-        .iter()
-        .map(|v| v.as_f64().unwrap_or(0.0))
-        .collect();
-
-    let stored_vec: Vec<f64> = obj
+        .context("temperature-acceptance requires `candidate` value")?;
+    let stored_value = obj
         .get("stored")
-        .and_then(Value::as_array)
-        .context("temperature-acceptance requires `stored` array")?
-        .iter()
-        .map(|v| v.as_f64().unwrap_or(0.0))
-        .collect();
+        .context("temperature-acceptance requires `stored` value")?;
+
+    let candidate_solution = parse_solution_like(ctx.runtime, candidate_value, "candidate")?;
+    let stored_solution = parse_solution_like(ctx.runtime, stored_value, "stored")?;
 
     // Accept temperature from payload (sent by UI as temperatureCurrent)
     let temperature = obj
@@ -41,25 +37,30 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         .unwrap_or(1.0)
         .max(0.0);
 
-    let candidate_sol = vec_to_solution(ctx.runtime, &candidate_vec)
-        .context("candidate vector is invalid")?;
-    let stored_sol = vec_to_solution(ctx.runtime, &stored_vec)
-        .context("stored vector is invalid")?;
-
-    let candidate_score = ctx.runtime.objective_score(&candidate_sol)?;
-    let stored_score = ctx.runtime.objective_score(&stored_sol)?;
+    let candidate_score = ctx.runtime.objective_score(&candidate_solution)?;
+    let stored_score = ctx.runtime.objective_score(&stored_solution)?;
 
     let is_better = ctx.runtime.is_better_score(candidate_score, stored_score);
     let delta = (stored_score - candidate_score).abs();
     let accept_prob = if is_better { 1.0 } else if temperature > 0.0 { (-delta / temperature).exp() } else { 0.0 };
 
     let accepted = is_better || (ctx.rng.gen::<f64>() < accept_prob);
-    let winner_vec = if accepted { candidate_vec } else { stored_vec };
+    let winner_solution = if accepted { candidate_solution } else { stored_solution };
+    let winner_json = build_solver_result(ctx.runtime, &winner_solution)?;
 
     Ok(ModeOutcome::with_payload(json!({
         "accepted": accepted,
-        "winner": winner_vec,
+        "winner": winner_json,
     })))
+}
+
+fn parse_solution_like(runtime: &crate::domain::RuntimeProblem, value: &Value, label: &str) -> Result<Solution> {
+    if let Some(array) = value.as_array() {
+        let vec = array.iter().map(|v| v.as_f64().unwrap_or(0.0)).collect::<Vec<f64>>();
+        return vec_to_solution(runtime, &vec).context(format!("{label} vector is invalid"));
+    }
+
+    parse_candidate(runtime, value).context(format!("{label} object is invalid or missing `variableValue`"))
 }
 
 #[cfg(test)]

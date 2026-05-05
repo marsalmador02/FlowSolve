@@ -43,14 +43,14 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         .get("targetSize")
         .and_then(Value::as_u64)
         .map(|v| v as usize)
-        .unwrap();
+        .unwrap_or(parent_solutions.len());
 
     let (is_permutation, is_binary) = variable_flags(ctx.runtime);
     let operator = obj
         .get("crossoverOperator")
         .and_then(Value::as_str)
         .map(|v| v.to_ascii_lowercase())
-        .unwrap();
+        .unwrap_or_else(|| "uniform".to_string());
 
     let mut offspring: Vec<Solution> = Vec::with_capacity(target_size);
     while offspring.len() < target_size {
