@@ -1,15 +1,16 @@
 /*
- * Archivo: NodePropertiesPanel.tsx
+ * Archivo: FlowInspectorPanel.tsx
  *
  * Que contiene:
  * - Panel lateral derecho con:
  *   - Editor del JSON del Problem con botones de ejemplos.
  *   - Marcado Start/End del nodo seleccionado.
  *   - Traza global de la ejecucion.
+ *   - Exportacion simple de la traza a un archivo de texto.
  *
  * Funcion en el flujo (inicio -> ejecucion de grafo):
  * - Permite definir el problema, elegir el nodo de arranque y el de cierre,
- *   y seguir la traza global mientras corre el flujo.
+ *   seguir la traza global mientras corre el flujo y exportarla al final.
  */
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {
@@ -21,8 +22,7 @@ import {
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 
-// Props consumed by the properties panel.
-interface NodePropertiesPanelProps {
+interface FlowInspectorPanelProps {
   selectedNode: FlowNode | null;
   selectedData?: FlowNodeData;
   globalTrace: string[];
@@ -30,9 +30,10 @@ interface NodePropertiesPanelProps {
   setNodeEnd: (id: string, isEnd: boolean) => void;
   onProblemJsonChange: (newJson: string) => void;
   applyProblemExample: (exampleJson: string) => void;
+  onExportTrace: () => void;
 }
 
-export function NodePropertiesPanel({
+export function FlowInspectorPanel({
   selectedNode,
   selectedData,
   globalTrace,
@@ -40,7 +41,8 @@ export function NodePropertiesPanel({
   setNodeEnd,
   onProblemJsonChange,
   applyProblemExample,
-}: NodePropertiesPanelProps) {
+  onExportTrace,
+}: FlowInspectorPanelProps) {
   const canBeStart =
     selectedNode?.type === 'singleSolution'
     || selectedNode?.type === 'populationGeneration'
@@ -55,7 +57,7 @@ export function NodePropertiesPanel({
           <div className="properties-title">Problem JSON</div>
           <div className="properties-actions">
             <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_TEMPLATE_JSON)}>
-              Knapsack 
+              Knapsack
             </button>
             <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_COMPLEX_TEMPLATE_JSON)}>
               Complex knapsack
@@ -104,7 +106,12 @@ export function NodePropertiesPanel({
 
       {globalTrace.length > 0 ? (
         <aside className="properties properties-global-trace">
-          <div className="properties-title">Global Trace</div>
+          <div className="properties-title">Execution Trace</div>
+          <div className="properties-actions">
+            <button className="sidebar-action" onClick={onExportTrace}>
+              Export trace as .txt
+            </button>
+          </div>
           <textarea value={globalTrace.join('\n')} readOnly />
         </aside>
       ) : null}

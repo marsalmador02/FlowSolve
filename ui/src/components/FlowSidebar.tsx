@@ -75,8 +75,6 @@ export function FlowSidebar({
   generationPaletteItems,
   modificationPaletteItems,
   otherPaletteItems,
-  isCatalogLoading,
-  catalogError,
 }: FlowSidebarProps) {
   return (
     <aside className="sidebar">
@@ -158,25 +156,21 @@ export function FlowSidebar({
         </details>
         <details className="sidebar-dropdown">
           <summary className="sidebar-title">Metaheuristic Component</summary>
-
-          {isCatalogLoading ? <div className="sidebar-item sidebar-item--nested">Loading runtime catalog...</div> : null}
-
-
           <div className="sidebar-section-title">Generation Component</div>
           {generationPaletteItems.map((item) => draggableItem(item))}
-          {!isCatalogLoading && !catalogError && generationPaletteItems.length === 0 ? (
+          {generationPaletteItems.length === 0 ? (
             <div className="sidebar-item sidebar-item--nested">No generation components available.</div>
           ) : null}
 
           <div className="sidebar-section-title">Modification Component</div>
           {modificationPaletteItems.map((item) => draggableItem(item))}
-          {!isCatalogLoading && !catalogError && modificationPaletteItems.length === 0 ? (
+          {modificationPaletteItems.length === 0 ? (
             <div className="sidebar-item sidebar-item--nested">No modification components available.</div>
           ) : null}
 
           <div className="sidebar-section-title">Other Metaheuristic Components</div>
           {otherPaletteItems.map((item) => draggableItem(item))}
-          {!isCatalogLoading && !catalogError && otherPaletteItems.length === 0 ? (
+          {otherPaletteItems.length === 0 ? (
             <div className="sidebar-item sidebar-item--nested">No additional components available.</div>
           ) : null}
         </details>

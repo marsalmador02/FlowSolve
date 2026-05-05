@@ -34,7 +34,7 @@ import { KNAPSACK_TEMPLATE_JSON } from './constants/problemTemplates';
 import { COMPONENT_LABELS } from './constants/flowCatalog';
 import { flowNodeTypes } from './components/flowNodes';
 import { FlowSidebar } from './components/FlowSidebar';
-import { NodePropertiesPanel } from './components/NodePropertiesPanel';
+import { FlowInspectorPanel } from './components/FlowInspectorPanel';
 import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
@@ -57,6 +57,18 @@ interface StoredTemplate {
 interface SidebarPaletteItem {
   kind: string;
   label: string;
+}
+
+function downloadTextFile(filename: string, contents: string) {
+  const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.URL.revokeObjectURL(url);
 }
 
 const CUSTOM_TEMPLATES_STORAGE_KEY = 'prodef.ui.customTemplates';
@@ -582,20 +594,25 @@ export default function App() {
         return;
       }
 
-      const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
       const safeName = template.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      anchor.download = `prodef-template-${safeName || template.id}.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      window.URL.revokeObjectURL(url);
+      downloadTextFile(`prodef-template-${safeName || template.id}.json`, JSON.stringify(template, null, 2));
     } catch {
       // Ignore export failures silently.
     }
   }, [customTemplates]);
+
+  const onExportTrace = useCallback(() => {
+    try {
+      if (globalTrace.length === 0) {
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadTextFile(`prodef-trace-${timestamp}.txt`, globalTrace.join('\n'));
+    } catch {
+      // Ignore export failures silently.
+    }
+  }, [globalTrace]);
 
   const onImportCustomTemplate = useCallback((rawJson: string) => {
     try {
@@ -886,7 +903,7 @@ export default function App() {
           <Background color="#aaa" gap={16} />
         </ReactFlow>
 
-        <NodePropertiesPanel
+        <FlowInspectorPanel
           selectedNode={selectedNode}
           selectedData={selectedData}
           globalTrace={globalTrace}
@@ -894,6 +911,7 @@ export default function App() {
           setNodeEnd={setNodeEnd}
           onProblemJsonChange={onProblemJsonChange}
           applyProblemExample={applyProblemExample}
+          onExportTrace={onExportTrace}
         />
       </div>
     </div>

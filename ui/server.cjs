@@ -1,20 +1,3 @@
-/*
- * Archivo: server.cjs
- *
- * Que contiene:
- * - Servidor local Express que actua como puente entre la UI y Rust.
- * - Endpoints usados por la UI:
- *   - GET /health
- *   - POST /execute
- *   - GET /components-catalog
- * - Creacion de archivos temporales de request y ejecucion del binario Rust
- *   ya compilado en modo release.
- *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Atiende la carga de catalogo al abrir la aplicacion.
- * - Recibe cada llamada de ejecucion de nodo y delega la semantica a Rust,
- *   devolviendo a la UI la respuesta del contrato runtime.
- */
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -32,7 +15,7 @@ const DEFAULT_RUST_BIN = process.platform === 'win32'
   : path.join(RUST_BIN_DIR, 'target', 'release', 'prodef-runtime-rust');
 const RUST_BIN = process.env.PRODEF_RUST_BIN || DEFAULT_RUST_BIN;
 
-function runRustRequest(payload, errorLabel, onSuccess, res) {
+function runRustRequest(payload, onSuccess, res) {
   const stamp = Date.now();
   const tmpRequest = path.join(os.tmpdir(), `prodef_exec_request_${stamp}.json`);
 
@@ -53,14 +36,14 @@ function runRustRequest(payload, errorLabel, onSuccess, res) {
   }
 
   const args = ['--exec-request', tmpRequest];
-  const child = execFile(RUST_BIN, args, { cwd: RUST_BIN_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+  execFile(RUST_BIN, args, { cwd: RUST_BIN_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
     try {
       fs.unlinkSync(tmpRequest);
     } catch {
     }
 
     if (err) {
-      const message = (stderr && stderr.trim()) || err.message || `${errorLabel} failed`;
+      const message = (stderr && stderr.trim()) || err.message || 'Rust execution request failed';
       return res.status(500).json({ error: message });
     }
 
@@ -71,26 +54,22 @@ function runRustRequest(payload, errorLabel, onSuccess, res) {
       res.status(500).json({ error: 'Failed to parse execution output', raw: stdout });
     }
   });
-
-  child.stdin.end();
 }
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/execute', async (req, res) => {
+app.post('/execute', (req, res) => {
   const payload = req.body;
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'Missing execution request JSON body' });
   }
 
-  runRustRequest(payload, 'Rust execution request', (parsed) => {
+  runRustRequest(payload, (parsed) => {
     res.json(parsed);
   }, res);
 });
-
-// `GET /components-catalog` removed: the UI relies on local component labels.
 
 const basePort = parseInt(process.env.PRODEF_UI_API_PORT || '5180', 10);
 let port = basePort;

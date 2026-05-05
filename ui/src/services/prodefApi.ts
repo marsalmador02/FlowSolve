@@ -4,7 +4,7 @@
  * Que contiene:
  * - Cliente HTTP de la UI para comunicarse con el backend local de Prodef.
  * - Resolucion de base URL (puerto configurable y fallback por rango de puertos).
- * - Ejecucion del contrato runtime (/execute) y catalogo (/components-catalog).
+ * - Ejecucion del contrato runtime (/execute).
  * - Normalizacion y lectura de errores HTTP para trazas mas claras en UI.
  *
  * Funcion en el flujo (inicio -> ejecucion de grafo):

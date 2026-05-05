@@ -51,7 +51,7 @@
 │  ├────────────────────────────────────┤ │
 │  │ • FlowSidebar - Paleta drag/drop  │ │
 │  │ • flowNodes - Renderizado nodos   │ │
-│  │ • NodePropertiesPanel - Props/Trace │ │
+│  │ • FlowInspectorPanel - Problem/Trace │ │
 │  │ • React Flow - Canvas & Controls  │ │
 │  └────────────────────────────────────┘ │
 └─────────────────────────────────────────┘
@@ -120,7 +120,7 @@ ui/
 │   ├── components/                     # Componentes React
 │   │   ├── flowNodes.tsx              # Renderizadores de nodos (Problem, Solution, Storage, etc.)
 │   │   ├── FlowSidebar.tsx            # Panel lateral izquierdo (paleta, templates, acciones)
-│   │   └── NodePropertiesPanel.tsx    # Panel lateral derecho (props, JSON problem, trace)
+│   │   └── FlowInspectorPanel.tsx     # Panel lateral derecho (problem, flags, trace)
 │   │
 │   ├── types/                          # Definiciones de tipos TypeScript
 │   │   ├── flow.ts                    # NodeKind, FlowNodeData, FlowNode, FlowEdge
@@ -207,7 +207,7 @@ const [customTemplates, setCustomTemplates] = useState<StoredTemplate[]>([]);
 2. `useEffect` → cargar templates personalizados del localStorage
 3. Usuario arrastra componentes desde `FlowSidebar` → `onDragOver` + `onDrop` crean nodos
 4. Usuario conecta nodos con aristas → callbacks de React Flow actualizan estado
-5. Usuario selecciona nodo → `setSelectedNode` actualiza `NodePropertiesPanel`
+5. Usuario selecciona nodo → `setSelectedNode` actualiza `FlowInspectorPanel`
 6. Usuario hace click en "Run Flow" o "Run Next Step" → llama a `useFlowRunner.runFlowUntilEnd()` o `runFlowNextStep()`
 
 ---
@@ -314,7 +314,7 @@ Algunos nodos tienen handles especializados:
 
 ---
 
-### 5. **NodePropertiesPanel.tsx** - Panel Lateral Derecho
+### 5. **FlowInspectorPanel.tsx** - Panel Lateral Derecho
 
 **Secciones:**
 
@@ -412,9 +412,7 @@ const executionContextRef = useRef<{
 
 **Endpoints:**
 
-1. **`GET /components-catalog`**: eliminado — la UI utiliza un catálogo local de etiquetas. Use `POST /execute` para delegar semántica al runtime.
-
-2. **`POST /execute`** → Ejecuta un modo específico con payload
+1. **`POST /execute`** → Ejecuta un modo específico con payload
    ```typescript
    export async function callRuntimeExecute(
      req: RuntimeExecutionRequest
@@ -580,7 +578,7 @@ export function buildGraspTemplate(updateNodeData: UpdateNodeData) {
 │ 11. Salida del loop:                                             │
 │     • Si queue vacía: Grafo procesado completamente            │
 │     • Si packets >= MAX: Overflow, probablemente loop infinito │
-│     • Si error: Capturado y mostrado en NodePropertiesPanel   │
+│     • Si error: Capturado y mostrado en FlowInspectorPanel   │
 └──────────────────────────────────────────────────────────────────┘
                               ↓
 ┌──────────────────────────────────────────────────────────────────┐
@@ -757,14 +755,14 @@ npm run dev         # Vite en http://localhost:5173
 2. **Elegir template** → Click "Load GRASP" / "Load ILS" / etc. en FlowSidebar
 3. **Personalizar problema** → 
    - Click en nodo "Problem"
-   - Editar JSON o cargar ejemplo desde NodePropertiesPanel
+  - Editar JSON o cargar ejemplo desde FlowInspectorPanel
 4. **Ajustar parámetros** → Click en cada componente, editar valores
 5. **Ejecutar**:
    - "Run Flow" → Ejecución completa
    - "Run Next Step" → Una iteración del loop
 6. **Inspeccionar resultados**:
    - Soluciones mostradas en cada nodo
-   - Trace global en NodePropertiesPanel
+  - Trace global en FlowInspectorPanel
    - Seleccionar nodo para ver trazas específicas
 
 ### 3. Guardar y Cargar Templates Personalizados
@@ -885,7 +883,7 @@ export const COMPONENT_LABELS: Record<string, string> = {
 1. **Abrir DevTools** → F12
 2. **Console tab** → Ver logs de JS, errores
 3. **Network tab** → Inspeccionar requests HTTP a `/execute`
-4. **Global Trace** → NodePropertiesPanel muestra todos los append messages
+4. **Global Trace** → FlowInspectorPanel muestra todos los append messages
 5. **Trace por nodo** → Selecciona nodo para ver su `trace` específico
 
 ---
@@ -1127,7 +1125,7 @@ Problem → Termination → PopulationGeneration →
 
 **Solución:**
 - Click en nodo (ej: SingleSolution)
-- En NodePropertiesPanel, marque "Start"
+- En FlowInspectorPanel, marque "Start"
 - Click en nodo final (ej: Storage)
 - Marque "End"
 
