@@ -117,7 +117,8 @@ export function FlowSidebar({
                 type="file"
                 accept="application/json,.json"
                 onChange={async (event) => {
-                  const file = event.target.files?.[0];
+                  const input = event.currentTarget;
+                  const file = input.files?.[0];
                   if (!file) {
                     return;
                   }
@@ -127,7 +128,7 @@ export function FlowSidebar({
                   } catch {
                     // Ignore unreadable file.
                   } finally {
-                    event.currentTarget.value = '';
+                    input.value = '';
                   }
                 }}
               />

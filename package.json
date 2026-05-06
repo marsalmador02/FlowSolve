@@ -8,7 +8,8 @@
     "install:all": "npm install && npm --prefix ui install",
     "docs:rust": "cd prodef-runtime-rust && cargo doc --no-deps --document-private-items --open",
     "test:rust": "cd prodef-runtime-rust && cargo test --lib",
-    "docs:ui": "cd ui && npx typedoc --options typedoc.json"
+    "docs:ui": "cd ui && npx typedoc --options typedoc.json",
+    "test:ui": "cd ui && npm test"
   },
   "keywords": [
     "prodef",
