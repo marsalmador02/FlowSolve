@@ -112,8 +112,6 @@ mod tests {
     use rand::SeedableRng;
     use serde_json::{json, Value};
 
-    use crate::api::parse::parse_solution_from_value;
-
     // Helper to extract scores of selected solutions from payload for testing purposes.
     fn selected_scores(runtime: &crate::domain::RuntimeProblem, payload: &Value) -> Vec<f64> {
         let selected = payload

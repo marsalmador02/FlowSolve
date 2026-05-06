@@ -4,14 +4,11 @@
   "description": "Minimal implementation of the Prodef meta-model for combinatorial optimization.",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "validate": "node dist/index.js",
-    "start": "npm run build && node dist/index.js",
     "start:all": "cd prodef-runtime-rust && cargo build --release && cd .. && concurrently \"npm --prefix ui run serve\" \"npm --prefix ui run dev\"",
     "install:all": "npm install && npm --prefix ui install",
-    "test:examples": "npm run build && node scripts/test-examples.mjs",
-    "test:solver": "node scripts/test-rust-solver.mjs",
-    "test": "npm run test:examples && npm run test:solver"
+    "docs:rust": "cd prodef-runtime-rust && cargo doc --no-deps --document-private-items --open",
+    "test:rust": "cd prodef-runtime-rust && cargo test --lib",
+    "docs:ui": "cd ui && npx typedoc --options typedoc.json"
   },
   "keywords": [
     "prodef",

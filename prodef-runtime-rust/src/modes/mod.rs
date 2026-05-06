@@ -1,6 +1,6 @@
 //! Execution modes: business logic for each `execution.mode` value.
 //!
-//! - **Uniform entry**: [`dispatch`](fn.dispatch.html) with [`ModeContext`](context::ModeContext) → [`ModeOutcome`](context::ModeOutcome).
+//! - **Uniform entry**: [`dispatch`](fn.dispatch.html) with [`ModeContext`] → [`ModeOutcome`].
 //! - **Payload contracts**: See docstrings in each mode module for JSON field documentation.
 
 use anyhow::{bail, Result};

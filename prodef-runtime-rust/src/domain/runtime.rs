@@ -191,29 +191,6 @@ fn build_params(raw: &Problem) -> HashMap<String, f64> {
         .collect()
 }
 
-fn matches_solution_shape(solution: &Solution, size: usize, is_permutation: bool) -> bool {
-    match solution {
-        Solution::Permutation(values) => {
-            if !is_permutation || values.len() != size {
-                return false;
-            }
-            let mut seen = vec![false; size];
-            for &value in values {
-                if value >= size || seen[value] {
-                    return false;
-                }
-                seen[value] = true;
-            }
-            true
-        }
-        Solution::Vector(values) => !is_permutation && values.len() == size,
-    }
-}
-
-fn is_integral_domain(within: &str) -> bool {
-    within.eq_ignore_ascii_case("integers") || within.eq_ignore_ascii_case("binary")
-}
-
 fn build_data_map(classes: Option<&[Class]>, objects: Option<&[Instance]>) -> Result<HashMap<String, Vec<f64>>> {
     let mut out = HashMap::new();
     let Some(classes) = classes else {

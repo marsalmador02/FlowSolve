@@ -82,6 +82,11 @@ mod tests {
         let outcome = execute(ctx).expect("execute");
         let p = outcome.payload.expect("payload");
         assert!(p.get("accepted").and_then(|v| v.as_bool()).unwrap_or(false));
-        assert_eq!(p.get("winner").and_then(|v| v.as_array()).map(|a| a.len()), Some(5));
+        let winner = p.get("winner").expect("winner field");
+        let winner_values = winner
+            .get("variableValue")
+            .and_then(|v| v.as_array())
+            .expect("winner.variableValue array");
+        assert_eq!(winner_values.len(), 5);
     }
 }
