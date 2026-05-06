@@ -1,13 +1,11 @@
-/*
- * Archivo: registry.ts
+/**
+ * Runtime component registry.
  *
- * Que contiene:
- * - Mapeo entre NodeKind y su clase/factory de RuntimeComponent.
+ * Purpose:
+ * - Map each executable `NodeKind` to a concrete `RuntimeComponent` factory.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - El motor del grafo resuelve por tipo de nodo la clase concreta que ejecuta la
- *   operacion. Mantener este mapa como unico punto de registro simplifica la
- *   extension de nuevos componentes.
+ * Limit:
+ * - Unknown kinds are intentionally treated as non-executable.
  */
 import type { NodeKind } from '../../../types/flow';
 import type { RuntimeComponent } from './base';
@@ -49,7 +47,9 @@ const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
   changeNeighborhood: () => new ChangeNeighborhoodComponent(),
 };
 
-// Resolve a component instance for a specific node kind, or null if unsupported.
+/**
+ * Resolve a component instance for one node kind.
+ */
 export function createComponent(kind: NodeKind): RuntimeComponent | null {
   const factory = FACTORIES[kind];
   return factory ? factory() : null;

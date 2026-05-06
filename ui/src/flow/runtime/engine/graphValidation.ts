@@ -1,13 +1,13 @@
-/*
- * Archivo: graphValidation.ts
+/**
+ * Structural validations for packet-runtime graphs.
  *
- * Que contiene:
- * - Validaciones de estructura previas a la ejecucion del grafo packet-based.
+ * Purpose:
+ * - Enforce preconditions before enqueuing the first packet.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Se ejecuta antes de encolar el primer paquete. Garantiza que el grafo cumple
- *   las precondiciones del motor: start unico valido, loop presente, joins con
- *   dos entradas y storage como una de las entradas de substraction.
+ * Guarantees when valid:
+ * - Exactly one valid start node.
+ * - Exactly one loop (`termination`) node.
+ * - Required arity constraints for join-like nodes.
  */
 import type { FlowEdge, FlowNode, NodeKind } from '../../../types/flow';
 
@@ -15,6 +15,9 @@ function collectIncoming(edges: FlowEdge[], nodeId: string): FlowEdge[] {
   return edges.filter((edge) => edge.target === nodeId);
 }
 
+/**
+ * Validate graph constraints required by the packet executor.
+ */
 export function validateGraph(nodes: FlowNode[], edges: FlowEdge[]) {
   const errors: string[] = [];
 

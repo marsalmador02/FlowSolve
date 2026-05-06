@@ -1,17 +1,16 @@
-/*
- * Archivo: useFlowRunner.ts
+/**
+ * React hook that bridges UI state with the packet executor.
  *
- * Que contiene:
- * - Hook de orquestacion entre estado React (nodes/edges/trace) y runtime de flujo.
- * - Helpers de acceso/actualizacion de nodos y trazas.
- * - Dependencias tipadas (decisionDeps) que consume packetExecutor.
- * - Acciones publicas de ejecucion: runFlowUntilEnd y runFlowNextStep.
+ * Purpose:
+ * - Expose stable orchestration callbacks for flow execution.
+ * - Keep refs and React state synchronized for node updates and traces.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Recibe los eventos de ejecucion disparados desde App/FlowSidebar.
- * - Traduce estado UI en operaciones runtime y delega en packetExecutor.
- * - Mantiene contexto de ejecucion por instancia de nodo para soportar grafos
- *   con multiples nodos del mismo tipo sin ambiguedades.
+ * Returns:
+ * - `runFlowUntilEnd`, `runFlowNextStep`, and selected node helpers.
+ *
+ * Invariants:
+ * - Execution context always points to a single active node while executing.
+ * - Trace writes are mirrored into node-local and global panels.
  */
 import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
@@ -20,7 +19,7 @@ import { parseJson } from '../utils/flowHelpers';
 import { runPacketExecutor } from '../flow/runtime/executor/packetExecutor';
 
 // Arguments required to bridge React state setters with imperative runner refs.
-interface UseFlowRunnerArgs {
+export interface UseFlowRunnerArgs {
   nodesRef: MutableRefObject<FlowNode[]>;
   edgesRef: MutableRefObject<FlowEdge[]>;
   activeIterationRef: MutableRefObject<number | null>;
@@ -31,7 +30,9 @@ interface UseFlowRunnerArgs {
   setNeighborhoodSize: Dispatch<SetStateAction<number>>;
 }
 
-// Build memoized helpers and orchestration actions used by the main App component.
+/**
+ * Build flow-runner actions connected to current React state and refs.
+ */
 export function useFlowRunner({
   nodesRef,
   edgesRef,

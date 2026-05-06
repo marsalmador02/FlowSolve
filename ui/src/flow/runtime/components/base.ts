@@ -1,13 +1,9 @@
-/*
- * Archivo: base.ts
+/**
+ * Base abstractions for runtime components.
  *
- * Que contiene:
- * - Clase base RuntimeComponent para todos los componentes del motor packet-based.
- * - Helpers compartidos de score/format y acceso a payload del paquete.
- *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Cada nodo del grafo se instancia como subclase de RuntimeComponent.
- * - El motor invoca component.execute(ctx, packet) y rutea segun ExecuteResult.
+ * Purpose:
+ * - Provide common execute contracts for single-input and join components.
+ * - Centralize formatting and score helpers used in traces.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../engine/packet';
 

@@ -1,15 +1,12 @@
-/*
- * Archivo: packet.ts
+/**
+ * Core packet-runtime type contracts.
  *
- * Que contiene:
- * - Tipos canonicos del motor packet-based de ejecucion de grafo.
- * - Estructura del paquete que viaja por las aristas (solution/solutionSet/idIteration).
- * - Tipos de resultado de execute (emit | wait | stop | error).
- * - ComponentContext con dependencias minimas que cada componente necesita.
+ * Purpose:
+ * - Define packet shape, component context, and execution outcomes shared by
+ *   executor and components.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Todo componente consume un Packet y devuelve un ExecuteResult.
- * - El motor enruta los emits por las aristas salientes y sincroniza joins.
+ * Guarantee:
+ * - Every component consumes `Packet` and returns one `ExecuteResult` variant.
  */
 import type { FlowNodeData, NodeKind } from '../../../types/flow';
 

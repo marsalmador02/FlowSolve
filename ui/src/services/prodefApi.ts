@@ -1,16 +1,16 @@
-/*
- * Archivo: prodefApi.ts
+/**
+ * HTTP client for the UI <-> backend bridge contract.
  *
- * Que contiene:
- * - Cliente HTTP de la UI para comunicarse con el backend local de Prodef.
- * - Resolucion de base URL (puerto configurable y fallback por rango de puertos).
- * - Ejecucion del contrato runtime (/execute).
- * - Normalizacion y lectura de errores HTTP para trazas mas claras en UI.
+ * Purpose:
+ * - Resolve the active backend base URL.
+ * - Execute runtime requests via `/execute`.
+ * - Normalize backend errors into readable UI messages.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Durante la carga inicial, App llama aqui para obtener el catalogo remoto.
- * - Durante la ejecucion del grafo, los nodos runtime llaman aqui para delegar
- *   semantica algoritmica al runtime Rust mediante el contrato unificado.
+ * Inputs:
+ * - `RuntimeExecutionRequest` objects from runtime components.
+ *
+ * Outputs:
+ * - `RuntimeExecutionResponse` objects aligned with UI contract types.
  */
 import type { RuntimeComponentDescriptor, RuntimeExecutionRequest, RuntimeExecutionResponse } from '../types/runtimeContract';
 
@@ -87,7 +87,17 @@ async function readErrorMessage(resp: Response): Promise<string> {
   }
 }
 
-// Execute a runtime request in Rust using a single endpoint.
+/**
+ * Call backend `/execute` with the runtime contract payload.
+ *
+ * Network contract:
+ * - Method: `POST`
+ * - Request body: `RuntimeExecutionRequest`
+ * - Response body: `RuntimeExecutionResponse`
+ *
+ * Error handling:
+ * - Throws normalized backend message for non-2xx responses.
+ */
 export async function callRuntimeExecute(request: RuntimeExecutionRequest): Promise<RuntimeExecutionResponse> {
   const resp = await fetchFromApi('/execute', {
     method: 'POST',

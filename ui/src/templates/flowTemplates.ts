@@ -1,10 +1,15 @@
-// Pre-built flow graphs (nodes + edges) for each demo algorithm template.
+/**
+ * Pre-built flow graphs (nodes + edges) for algorithm templates.
+ *
+ * Each builder defines the node set, execution order, and default parameters
+ * expected by the corresponding algorithmic pattern.
+ */
 import { MarkerType } from 'reactflow';
 import { COMPONENT_LABELS } from '../constants/flowCatalog';
 import { KNAPSACK_TEMPLATE_JSON, TSP_TEMPLATE_JSON } from '../constants/problemTemplates';
 import type { FlowEdge, FlowNode, FlowNodeData } from '../types/flow';
 
-type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
+export type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
 function mkEdge(id: string, source: string, target: string): FlowEdge {
   return {

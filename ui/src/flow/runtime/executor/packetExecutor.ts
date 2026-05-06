@@ -1,16 +1,18 @@
-/*
- * Archivo: packetExecutor.ts
+/**
+ * Packet-based executor for the UI flow runtime.
  *
- * Que contiene:
- * - Motor packet-based del flujo en UI. Cola FIFO de paquetes enrutados por aristas
- *   dirigidas, buffer de joins por idIteration, y manejo del loop como reloj.
+ * Purpose:
+ * - Convert a graph into deterministic packet execution.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Punto de entrada unico para Run Flow y Run Next Step.
- * - Valida grafo, resuelve nodo start, encola paquete inicial y procesa paquetes
- *   uno a uno llamando a cada componente registrado.
- * - En modo iteration se detiene al cerrar un ciclo completo del loop.
- * - En modo full se detiene cuando el loop alcanza maxIterations.
+ * Inputs:
+ * - Current graph state (`nodes`, `edges`) and shared UI dependencies.
+ *
+ * Outputs:
+ * - Node updates, execution traces, and final summary pushed to UI state.
+ *
+ * Limits:
+ * - Uses a max packet budget to avoid infinite loops.
+ * - Supports `full` and `iteration` modes with loop-aware stop behavior.
  */
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../../../types/flow';
 import { parseJson } from '../../../utils/flowHelpers';
@@ -151,8 +153,15 @@ function storeFinalResult(
   deps.appendGlobalTrace(`🏁 FINAL: ${payloadText}`);
 }
 
-// Main packet-based executor for the flow graph. Processes one packet at a time,
-// routes outputs to connected nodes, handles join logic, and stops on loop/termination.
+/**
+ * Execute the flow graph using a FIFO packet queue.
+ *
+ * Side effects:
+ * - Validates graph topology.
+ * - Dispatches packets to runtime components.
+ * - Synchronizes join nodes by `idIteration` and source id.
+ * - Appends node/global trace entries and updates node data.
+ */
 export async function runPacketExecutor(
   deps: PacketExecutorDeps,
   options: { mode: 'full' | 'iteration' },
