@@ -1,5 +1,5 @@
 {
-  "name": "Complex binary knapsack problem",
+  "name": "BinaryKnapsack2",
   "description": "10-item knapsack with tighter capacity and mixed value/weight ratios",
   "parameters": [
     { "name": "Number of items", "symbol": "N", "value": 10 },

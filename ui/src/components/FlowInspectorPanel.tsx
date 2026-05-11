@@ -31,6 +31,7 @@ interface FlowInspectorPanelProps {
   onProblemJsonChange: (newJson: string) => void;
   applyProblemExample: (exampleJson: string) => void;
   onExportTrace: () => void;
+  onExportCsv: () => void;
 }
 
 export function FlowInspectorPanel({
@@ -42,6 +43,7 @@ export function FlowInspectorPanel({
   onProblemJsonChange,
   applyProblemExample,
   onExportTrace,
+  onExportCsv,
 }: FlowInspectorPanelProps) {
   const canBeStart =
     selectedNode?.type === 'singleSolution'
@@ -110,6 +112,9 @@ export function FlowInspectorPanel({
           <div className="properties-actions">
             <button className="sidebar-action" onClick={onExportTrace}>
               Export trace as .txt
+            </button>
+            <button className="sidebar-action" onClick={onExportCsv}>
+              Export CSV
             </button>
           </div>
           <textarea value={globalTrace.join('\n')} readOnly />

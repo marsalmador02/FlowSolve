@@ -38,6 +38,7 @@ import { FlowInspectorPanel } from './components/FlowInspectorPanel';
 import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
+import { buildExecutionCsvFromGlobalTrace, downloadCsv, getProblemInstanceName } from './utils/executionCsv';
 
 interface StoredTemplateNode {
   id: string;
@@ -178,6 +179,7 @@ export default function App() {
   const [modificationPaletteItems, setModificationPaletteItems] = useState<SidebarPaletteItem[]>([]);
   const [otherPaletteItems, setOtherPaletteItems] = useState<SidebarPaletteItem[]>([]);
   const [isCustomTemplatesHydrated, setIsCustomTemplatesHydrated] = useState(false);
+  const [executionAlgorithm, setExecutionAlgorithm] = useState('Custom');
   const nodeId = useRef(0);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
   const nodesRef = useRef<FlowNode[]>([]);
@@ -299,6 +301,29 @@ export default function App() {
       },
     };
   }, [updateNodeData]);
+
+  const onExportCsv = useCallback(() => {
+    try {
+      if (globalTrace.length === 0) {
+        return;
+      }
+
+      const problemNode = getNodeByType('problem');
+      const instance = getProblemInstanceName(problemNode?.data.json);
+
+      const csv = buildExecutionCsvFromGlobalTrace({
+        globalTrace,
+        algorithm: executionAlgorithm,
+        instance,
+        metricName: 'ObjectiveValue',
+      });
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadCsv(`prodef-metrics-${timestamp}.csv`, csv);
+    } catch {
+      // Ignore export failures silently.
+    }
+  }, [executionAlgorithm, getNodeByType, globalTrace]);
 
   // Ensure the editor always starts with one Problem node.
   useEffect(() => {
@@ -480,54 +505,52 @@ export default function App() {
     [createNode]
   );
 
-  const loadTemplateGraph = useCallback((template: { nodes: FlowNode[]; edges: FlowEdge[] }) => {
-    const hasProblem = template.nodes.some((node) => node.type === 'problem');
-    const nextNodes = hasProblem ? template.nodes : [createDefaultProblemNode(), ...template.nodes];
+  const loadTemplateGraph = useCallback(
+    (template: { nodes: FlowNode[]; edges: FlowEdge[] }, algorithmName = 'Custom') => {
+      const hasProblem = template.nodes.some((node) => node.type === 'problem');
+      const nextNodes = hasProblem ? template.nodes : [createDefaultProblemNode(), ...template.nodes];
 
-    nodeId.current = estimateNextNodeId(nextNodes);
-    activeIterationRef.current = null;
-    setNodes(nextNodes);
-    setEdges(template.edges);
-    setSelectedNode(null);
-    setGlobalTrace([]);
-    setNeighborhoodLevel(1);
-    setTimeout(() => rfInstance.current?.fitView({ duration: 300, padding: 0.2 }), 60);
-  }, [createDefaultProblemNode, setNeighborhoodLevel]);
+      nodeId.current = estimateNextNodeId(nextNodes);
+      activeIterationRef.current = null;
+      setNodes(nextNodes);
+      setEdges(template.edges);
+      setSelectedNode(null);
+      setGlobalTrace([]);
+      setExecutionAlgorithm(algorithmName);
+      setNeighborhoodLevel(1);
+      setTimeout(() => rfInstance.current?.fitView({ duration: 300, padding: 0.2 }), 60);
+    },
+    [createDefaultProblemNode, setNeighborhoodLevel],
+  );
 
-  // Load the GRASP demo topology and center it in the canvas.
   const loadGraspTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('grasp', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'GRASP');
   }, [loadTemplateGraph, updateNodeData]);
 
-  // Load the ILS demo topology and center it in the canvas.
   const loadIlsTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('ils', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'ILS');
   }, [loadTemplateGraph, updateNodeData]);
 
-  // Load the VNS demo topology, reset neighborhood level, and center view.
   const loadVnsTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('vns', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'VNS');
   }, [loadTemplateGraph, updateNodeData]);
 
-  // Load the Tabu Search demo topology and center view.
   const loadTabuTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('tabu', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'Tabu Search');
   }, [loadTemplateGraph, updateNodeData]);
 
-  // Load the Simulated Annealing demo topology and center view.
   const loadSaTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('simulatedAnnealing', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'Simulated Annealing');
   }, [loadTemplateGraph, updateNodeData]);
 
-  // Load the evolutionary demo topology and center view.
   const loadEvolutionaryTemplate = useCallback(() => {
     const template = buildAlgorithmTemplate('evolutionary', updateNodeData);
-    loadTemplateGraph(template);
+    loadTemplateGraph(template, 'Evolutionary');
   }, [loadTemplateGraph, updateNodeData]);
 
   const onSaveCustomTemplate = useCallback(() => {
@@ -580,7 +603,7 @@ export default function App() {
     }));
 
     const reboundEdges: FlowEdge[] = template.edges.map((edge) => ({ ...edge }));
-    loadTemplateGraph({ nodes: reboundNodes, edges: reboundEdges });
+    loadTemplateGraph({ nodes: reboundNodes, edges: reboundEdges }, 'Custom');
   }, [customTemplates, loadTemplateGraph, updateNodeData]);
 
   const onDeleteCustomTemplate = useCallback((templateId: string) => {
@@ -652,6 +675,7 @@ export default function App() {
     setEdges([]);
     setSelectedNode(null);
     setGlobalTrace([]);
+    setExecutionAlgorithm('Custom');
     setNeighborhoodLevel(1);
   }, [createDefaultProblemNode, setNeighborhoodLevel]);
 
@@ -735,6 +759,7 @@ export default function App() {
 
   const resetFlow = useCallback(() => {
     setGlobalTrace([]);
+    setExecutionAlgorithm('Custom');
     activeIterationRef.current = null;
     setNeighborhoodLevel(1);
     setNodes((prev) => prev.map((node) => {
@@ -912,6 +937,7 @@ export default function App() {
           onProblemJsonChange={onProblemJsonChange}
           applyProblemExample={applyProblemExample}
           onExportTrace={onExportTrace}
+          onExportCsv={onExportCsv}
         />
       </div>
     </div>

@@ -35,6 +35,7 @@ describe('FlowInspectorPanel', () => {
         onProblemJsonChange={onProblemJsonChange}
         applyProblemExample={applyProblemExample}
         onExportTrace={vi.fn()}
+        onExportCsv={vi.fn()}
       />,
     );
 
@@ -77,6 +78,7 @@ describe('FlowInspectorPanel', () => {
         onProblemJsonChange={vi.fn()}
         applyProblemExample={vi.fn()}
         onExportTrace={vi.fn()}
+        onExportCsv={vi.fn()}
       />,
     );
 
@@ -106,6 +108,7 @@ describe('FlowInspectorPanel', () => {
         onProblemJsonChange={vi.fn()}
         applyProblemExample={vi.fn()}
         onExportTrace={onExportTrace}
+        onExportCsv={vi.fn()}
       />,
     );
 

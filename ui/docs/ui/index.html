@@ -1,42 +1,198 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="."><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>prodef-ui</title><meta name="description" content="Documentation for prodef-ui"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search"><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">prodef-ui</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>prodef-ui</h1></div><div class="tsd-panel tsd-typography"><a id="ui-de-flowsolve" class="tsd-anchor"></a><h1 class="tsd-anchor-link">UI de FlowSolve<a href="#ui-de-flowsolve" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>Interfaz React para construir, ejecutar e inspeccionar flujos metaheuristicos basados en nodos.</p>
-<a id="rol-en-la-arquitectura" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Rol en la arquitectura<a href="#rol-en-la-arquitectura" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li>UI: modela el grafo y orquesta estado/visualizacion.</li>
-<li>Backend bridge: recibe <code>POST /execute</code> y lanza runtime Rust.</li>
-<li>Runtime Rust: ejecuta modos (<code>generate</code>, <code>mutation</code>, <code>selection</code>, etc.) y devuelve JSON.</li>
-</ul>
-<a id="mapa-de-carpetas-nivel-arquitectura" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Mapa de carpetas (nivel arquitectura)<a href="#mapa-de-carpetas-nivel-arquitectura" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li><code>src/flow/</code>: ejecucion por nodos y runtime packet-based.</li>
-<li><code>src/flow/runtime/engine/</code>: contratos internos (<code>Packet</code>, validaciones, reglas de aridad).</li>
-<li><code>src/flow/runtime/executor/</code>: cola FIFO, joins, iteraciones, routing y cierre.</li>
-<li><code>src/flow/runtime/components/</code>: componentes ejecutables por <code>NodeKind</code>.</li>
-<li><code>src/services/</code>: contrato de red UI &lt;-&gt; backend.</li>
-<li><code>src/hooks/</code>: puente entre estado React y runtime.</li>
-<li><code>src/templates/</code>: plantillas de algoritmos prearmados.</li>
-<li><code>src/types/</code>: contratos compartidos de UI y runtime.</li>
-</ul>
-<a id="regla-de-documentacion-aplicada" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Regla de documentacion aplicada<a href="#regla-de-documentacion-aplicada" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li>Cada carpeta responde una pregunta de arquitectura.</li>
-<li>Cada archivo clave inicia con contrato: proposito, entradas, salidas y limites.</li>
-<li>Cada export publico importante tiene JSDoc/TSDoc con efectos laterales cuando aplica.</li>
-<li>Se evita comentar JSX o logica obvia linea a linea.</li>
-</ul>
-<a id="generar-html-navegable" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Generar HTML navegable<a href="#generar-html-navegable" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ol>
-<li>Instalar dependencias de UI:</li>
+<!DOCTYPE html><html class="default" lang="en" data-base="."><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>prodef-ui</title><meta name="description" content="Documentation for prodef-ui"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><div class="table-cell" id="tsd-search"><div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div><div class="field"><div id="tsd-toolbar-links"></div></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">prodef-ui</a></div><div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>prodef-ui</h1></div><div class="tsd-panel tsd-typography"><a id="flowsolve-ui---guia-completa-de-la-carpeta-ui" class="tsd-anchor"></a><h1 class="tsd-anchor-link">FlowSolve UI - Guia Completa de la carpeta <code>ui/</code><a href="#flowsolve-ui---guia-completa-de-la-carpeta-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>Este README documenta en detalle la carpeta <code>ui/</code>: arquitectura, funcionamiento del grafo, runtime packet-based, componentes, y descripcion archivo por archivo.</p>
+<a id="1-que-es-esta-ui" class="tsd-anchor"></a><h2 class="tsd-anchor-link">1. Que es esta UI<a href="#1-que-es-esta-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p><code>ui/</code> es una aplicacion React + React Flow para:</p>
+<ol>
+<li>Construir grafos de metaheuristicas (nodos + aristas).</li>
+<li>Configurar parametros por nodo.</li>
+<li>Ejecutar el flujo completo o por iteracion.</li>
+<li>Ver trazas globales y trazas por nodo.</li>
+<li>Cargar plantillas (GRASP, ILS, VNS, Tabu, SA, EA).</li>
 </ol>
-<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-3">--prefix</span><span class="hl-1"> </span><span class="hl-2">ui</span>
-</code><button type="button">Copy</button></pre>
-
-<ol start="2">
-<li>Generar sitio de documentacion:</li>
-</ol>
-<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">docs:ui</span><span class="hl-1"> </span><span class="hl-3">--prefix</span><span class="hl-1"> </span><span class="hl-2">ui</span>
-</code><button type="button">Copy</button></pre>
-
-<ol start="3">
-<li>Abrir resultado:</li>
-</ol>
+<p>La ejecucion del grafo en UI se hace con un runtime interno packet-based. Para operaciones de solver/modos concretos, la UI puede llamar a backend mediante <code>prodefApi</code> (<code>/execute</code>).</p>
+<a id="2-como-funcionan-los-grafos-en-esta-ui" class="tsd-anchor"></a><h2 class="tsd-anchor-link">2. Como funcionan los grafos en esta UI<a href="#2-como-funcionan-los-grafos-en-esta-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="21-modelo-de-grafo" class="tsd-anchor"></a><h3 class="tsd-anchor-link">2.1 Modelo de grafo<a href="#21-modelo-de-grafo" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>Un grafo esta formado por <code>FlowNode[]</code> y <code>FlowEdge[]</code>.</li>
+<li>Los nodos tienen tipo canonico <code>NodeKind</code> (ej: <code>singleSolution</code>, <code>localSearch</code>, <code>acceptance</code>, <code>termination</code>, etc.).</li>
+<li>Las aristas definen flujo direccional de paquetes (<code>Packet</code>) entre nodos.</li>
+<li>Un nodo puede marcarse como <code>start</code> (inicio) y opcionalmente <code>end</code> (fin logico).</li>
+</ul>
+<a id="22-validaciones-estructurales-previas" class="tsd-anchor"></a><h3 class="tsd-anchor-link">2.2 Validaciones estructurales previas<a href="#22-validaciones-estructurales-previas" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Antes de ejecutar, <code>graphValidation.ts</code> exige reglas como:</p>
+<ol>
+<li>Exactamente un <code>start</code> (no <code>problem</code>).</li>
+<li>Exactamente un nodo <code>termination</code> (Loop).</li>
+<li>Restricciones de aridad en joins:
 <ul>
-<li><code>ui/docs/ui/index.html</code></li>
+<li><code>acceptance</code> / <code>temperatureAcceptance</code> con 2 entradas.</li>
+<li><code>substraction</code> con 2 entradas y una desde <code>storage</code>.</li>
+<li><code>changeNeighborhood</code> con 2 entradas.</li>
 </ul>
-<p>TypeDoc usa <code>ui/typedoc.json</code> y toma como entradas los exports publicos de runtime, servicios, hooks, templates y tipos.</p>
-</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#ui-de-flowsolve"><span>UI de <wbr/>Flow<wbr/>Solve</span></a><ul><li><a href="#rol-en-la-arquitectura"><span>Rol en la arquitectura</span></a></li><li><a href="#mapa-de-carpetas-nivel-arquitectura"><span>Mapa de carpetas (nivel arquitectura)</span></a></li><li><a href="#regla-de-documentacion-aplicada"><span>Regla de documentacion aplicada</span></a></li><li><a href="#generar-html-navegable"><span>Generar HTML navegable</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">prodef-ui</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
+</li>
+<li>Si el start no es loop, debe conectar con loop.</li>
+</ol>
+<p>Si falla, la ejecucion se corta y se escribe error en traza.</p>
+<a id="23-runtime-packet-based" class="tsd-anchor"></a><h3 class="tsd-anchor-link">2.3 Runtime packet-based<a href="#23-runtime-packet-based" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>El runtime usa paquetes (<code>Packet</code>) con:</p>
+<ul>
+<li><code>idIteration</code>: iteracion actual.</li>
+<li><code>fromId</code>: nodo emisor.</li>
+<li><code>solution</code> o <code>solutionSet</code>.</li>
+</ul>
+<p><code>packetExecutor.ts</code> hace:</p>
+<ol>
+<li>Valida grafo.</li>
+<li>Crea paquete seed.</li>
+<li>Recorre cola FIFO de paquetes.</li>
+<li>Resuelve componente por <code>NodeKind</code> en <code>registry.ts</code>.</li>
+<li>Ejecuta componente y enruta resultados por aristas salientes.</li>
+<li>Maneja joins por iteracion + origen.</li>
+<li>Registra traza global y por nodo.</li>
+<li>Cierra en stop o por presupuesto maximo de paquetes.</li>
+</ol>
+<a id="24-que-componen-los-componentes" class="tsd-anchor"></a><h3 class="tsd-anchor-link">2.4 Que componen los componentes<a href="#24-que-componen-los-componentes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Cada componente runtime implementa contrato comun (<code>RuntimeComponent</code> / <code>JoinRuntimeComponent</code>) definido en <code>components/base.ts</code>:</p>
+<ul>
+<li>Entrada: <code>ComponentContext</code> + <code>Packet</code> (o array de <code>Packet</code> en joins).</li>
+<li>Salida: <code>ExecuteResult</code> (<code>emit</code>, <code>wait</code>, <code>stop</code>, <code>error</code>).</li>
+<li>Efectos: actualizar <code>FlowNodeData</code>, escribir traza, propagar payload.</li>
+</ul>
+<a id="3-taxonomia-de-componentes-nodekind" class="tsd-anchor"></a><h2 class="tsd-anchor-link">3. Taxonomia de componentes (NodeKind)<a href="#3-taxonomia-de-componentes-nodekind" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Tipos soportados por la UI:</p>
+<ul>
+<li><code>problem</code>: definicion JSON del problema.</li>
+<li><code>singleSolution</code>: generacion de solucion unica.</li>
+<li><code>populationGeneration</code>: generacion de poblacion.</li>
+<li><code>selection</code>: seleccion de padres.</li>
+<li><code>crossover</code>: recombinacion.</li>
+<li><code>mutation</code>: mutacion.</li>
+<li><code>localSearch</code>: mejora local.</li>
+<li><code>perturbation</code>: perturbacion de solucion.</li>
+<li><code>acceptance</code>: regla de aceptacion.</li>
+<li><code>temperatureAcceptance</code>: aceptacion por temperatura.</li>
+<li><code>reduceTemperature</code>: enfriamiento.</li>
+<li><code>storage</code>: memoria de soluciones/historial.</li>
+<li><code>termination</code>: control de iteraciones y parada.</li>
+<li><code>changeNeighborhood</code>: cambio de vecindario.</li>
+<li><code>neighborhood</code>: generacion de vecinos.</li>
+<li><code>substraction</code>: diferencia de conjuntos/candidatos.</li>
+<li><code>selectionBest</code>: seleccion del mejor.</li>
+</ul>
+<p>Render UI de estos nodos: <code>src/components/flowNodes.tsx</code>.
+Implementacion runtime: <code>src/flow/runtime/components/nodes/*.ts</code>.</p>
+<a id="4-estructura-de-carpetas" class="tsd-anchor"></a><h2 class="tsd-anchor-link">4. Estructura de carpetas<a href="#4-estructura-de-carpetas" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><a id="42-carpetas-generadas-o-de-entorno" class="tsd-anchor"></a><h3 class="tsd-anchor-link">4.2 Carpetas generadas o de entorno<a href="#42-carpetas-generadas-o-de-entorno" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>node_modules/</code>: dependencias instaladas.</li>
+<li><code>dist/</code>: build de produccion generado por Vite.</li>
+<li><code>docs/</code>: documentacion HTML generada por TypeDoc.</li>
+</ul>
+<p>Estas carpetas pueden variar entre ejecuciones y no son fuente canonica.</p>
+<a id="5-catalogo-completo-archivo-por-archivo-ui" class="tsd-anchor"></a><h2 class="tsd-anchor-link">5. Catalogo completo archivo por archivo (UI)<a href="#5-catalogo-completo-archivo-por-archivo-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Listado de archivos de desarrollo/configuracion actuales (excluye <code>node_modules</code>, <code>dist</code>, <code>docs</code> y artefactos temporales).</p>
+<a id="51-raiz-de-ui" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.1 Raiz de <code>ui/</code><a href="#51-raiz-de-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>index.html</code>: shell HTML principal donde monta React.</li>
+<li><code>package.json</code>: scripts (<code>dev</code>, <code>build</code>, <code>test</code>, <code>serve</code>, <code>docs:ui</code>) y dependencias.</li>
+<li><code>package-lock.json</code>: lockfile de npm para reproducibilidad.</li>
+<li><code>README.md</code>: este documento.</li>
+<li><code>server.cjs</code>: servidor Node/Express puente hacia runtime Rust y endpoints auxiliares.</li>
+<li><code>tsconfig.json</code>: configuracion TypeScript del proyecto UI.</li>
+<li><code>typedoc.json</code>: configuracion de generacion de docs TypeDoc.</li>
+<li><code>vite.config.ts</code>: configuracion de Vite y Vitest (entorno tests, plugins).</li>
+</ul>
+<a id="53-src-entrada-y-layout-global" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.3 <code>src/</code> (entrada y layout global)<a href="#53-src-entrada-y-layout-global" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/main.tsx</code>: punto de entrada React; monta <code>App</code> en <code>#root</code>.</li>
+<li><code>src/App.tsx</code>: contenedor principal; estado del canvas, plantillas, ejecucion y wiring general.</li>
+<li><code>src/style.css</code>: estilos globales (sidebar, canvas, nodos, paneles, controles).</li>
+</ul>
+<a id="54-srccomponents" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.4 <code>src/components/</code><a href="#54-srccomponents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/components/FlowSidebar.tsx</code>: barra lateral de paleta, acciones de plantillas y utilidades.</li>
+<li><code>src/components/FlowInspectorPanel.tsx</code>: panel derecho de inspeccion/edicion de nodo + traza global.</li>
+<li><code>src/components/flowNodes.tsx</code>: renderizadores React Flow por tipo de nodo y handles de conexion.</li>
+<li><code>src/components/FlowSidebar.test.tsx</code>: tests de comportamiento de sidebar.</li>
+<li><code>src/components/FlowInspectorPanel.test.tsx</code>: tests del panel inspector/traza.</li>
+</ul>
+<a id="55-srcconstants" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.5 <code>src/constants/</code><a href="#55-srcconstants" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/constants/flowCatalog.ts</code>: catalogo de etiquetas/nombres de componentes para UI.</li>
+<li><code>src/constants/problemTemplates.ts</code>: JSON templates de problemas (knapsack, tsp, assignment, variantes).</li>
+</ul>
+<a id="56-srcflow" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.6 <code>src/flow/</code><a href="#56-srcflow" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/flow/README.md</code>: guia conceptual de la capa <code>flow</code>.</li>
+<li><code>src/flow/algorithms/algorithmBuilder.ts</code>: selector de plantilla por algoritmo (<code>grasp</code>, <code>ils</code>, etc.).</li>
+</ul>
+<a id="srcflowruntime" class="tsd-anchor"></a><h4 class="tsd-anchor-link"><code>src/flow/runtime/</code><a href="#srcflowruntime" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h4><ul>
+<li><code>src/flow/runtime/README.md</code>: vista general del runtime packet-based.</li>
+</ul>
+<a id="srcflowruntimecomponents" class="tsd-anchor"></a><h5 class="tsd-anchor-link"><code>src/flow/runtime/components/</code><a href="#srcflowruntimecomponents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h5><ul>
+<li><code>src/flow/runtime/components/README.md</code>: contratos y mapa de componentes runtime.</li>
+<li><code>src/flow/runtime/components/base.ts</code>: clases base/utilidades para componentes y joins.</li>
+<li><code>src/flow/runtime/components/registry.ts</code>: mapa <code>NodeKind -&gt; ComponentFactory</code>.</li>
+</ul>
+<a id="srcflowruntimecomponentsnodes" class="tsd-anchor"></a><h6 class="tsd-anchor-link"><code>src/flow/runtime/components/nodes/</code><a href="#srcflowruntimecomponentsnodes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h6><ul>
+<li><code>src/flow/runtime/components/nodes/README.md</code>: documentacion de nodos ejecutables.</li>
+<li><code>src/flow/runtime/components/nodes/singleGenerator.ts</code>: generador de solucion unica.</li>
+<li><code>src/flow/runtime/components/nodes/populationGenerator.ts</code>: generador de poblacion.</li>
+<li><code>src/flow/runtime/components/nodes/selection.ts</code>: seleccion de individuos/padres.</li>
+<li><code>src/flow/runtime/components/nodes/crossover.ts</code>: cruce/recombinacion.</li>
+<li><code>src/flow/runtime/components/nodes/mutation.ts</code>: mutacion de individuos.</li>
+<li><code>src/flow/runtime/components/nodes/localSearch.ts</code>: mejora local iterativa.</li>
+<li><code>src/flow/runtime/components/nodes/perturbation.ts</code>: perturbacion para escapar de optimos locales.</li>
+<li><code>src/flow/runtime/components/nodes/acceptance.ts</code>: regla de aceptacion basada en politica.</li>
+<li><code>src/flow/runtime/components/nodes/temperatureAcceptance.ts</code>: aceptacion probabilistica por temperatura.</li>
+<li><code>src/flow/runtime/components/nodes/reduceTemperature.ts</code>: actualizacion de temperatura/cooling.</li>
+<li><code>src/flow/runtime/components/nodes/storage.ts</code>: almacenamiento de mejor/actual/historial.</li>
+<li><code>src/flow/runtime/components/nodes/loop.ts</code>: control de iteracion, stop/continue y metadatos loop.</li>
+<li><code>src/flow/runtime/components/nodes/neighborhood.ts</code>: generacion/evaluacion de vecindario.</li>
+<li><code>src/flow/runtime/components/nodes/changeNeighborhood.ts</code>: ajuste de parametro de vecindario.</li>
+<li><code>src/flow/runtime/components/nodes/substraction.ts</code>: join/resta entre dos flujos (ej. tabu-like).</li>
+<li><code>src/flow/runtime/components/nodes/selectionBest.ts</code>: seleccion determinista del mejor candidato.</li>
+</ul>
+<a id="srcflowruntimeengine" class="tsd-anchor"></a><h5 class="tsd-anchor-link"><code>src/flow/runtime/engine/</code><a href="#srcflowruntimeengine" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h5><ul>
+<li><code>src/flow/runtime/engine/README.md</code>: contratos internos del engine.</li>
+<li><code>src/flow/runtime/engine/packet.ts</code>: tipos base (<code>Packet</code>, <code>ComponentContext</code>, <code>ExecuteResult</code>).</li>
+<li><code>src/flow/runtime/engine/graphValidation.ts</code>: reglas estructurales del grafo antes de ejecutar.</li>
+</ul>
+<a id="srcflowruntimeexecutor" class="tsd-anchor"></a><h5 class="tsd-anchor-link"><code>src/flow/runtime/executor/</code><a href="#srcflowruntimeexecutor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h5><ul>
+<li><code>src/flow/runtime/executor/README.md</code>: descripcion del ejecutor.</li>
+<li><code>src/flow/runtime/executor/packetExecutor.ts</code>: orquestador principal FIFO packet-based.</li>
+</ul>
+<a id="57-srchooks" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.7 <code>src/hooks/</code><a href="#57-srchooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/hooks/README.md</code>: guia de hooks de ejecucion.</li>
+<li><code>src/hooks/useFlowRunner.ts</code>: puente React state &lt;-&gt; runtime executor.</li>
+</ul>
+<a id="58-srcservices" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.8 <code>src/services/</code><a href="#58-srcservices" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/services/README.md</code>: documentacion de integraciones HTTP/servicios.</li>
+<li><code>src/services/prodefApi.ts</code>: cliente HTTP robusto para <code>/execute</code> con autodeteccion de base URL.</li>
+<li><code>src/services/flowExporter.ts</code>: utilidades de validacion semantica/export shape (segun estado del proyecto).</li>
+</ul>
+<a id="59-srctemplates" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.9 <code>src/templates/</code><a href="#59-srctemplates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/templates/README.md</code>: guia de plantillas prearmadas.</li>
+<li><code>src/templates/flowTemplates.ts</code>: definicion de nodos/aristas para GRASP, ILS, VNS, Tabu, SA, EA.</li>
+</ul>
+<a id="510-srctest" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.10 <code>src/test/</code><a href="#510-srctest" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/test/setup.ts</code>: setup global de Vitest/RTL (ej. cleanup entre tests).</li>
+</ul>
+<a id="511-srctypes" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.11 <code>src/types/</code><a href="#511-srctypes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/types/README.md</code>: documentacion de tipos compartidos.</li>
+<li><code>src/types/flow.ts</code>: tipos de grafo UI (<code>NodeKind</code>, <code>FlowNodeData</code>, <code>FlowNode</code>, <code>FlowEdge</code>).</li>
+<li><code>src/types/runtimeContract.ts</code>: contrato tipado request/response para backend runtime.</li>
+</ul>
+<a id="512-srcutils" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.12 <code>src/utils/</code><a href="#512-srcutils" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/utils/flowHelpers.ts</code>: helpers puros (<code>parseJson</code>, score helpers, utilidades de datos).</li>
+</ul>
+<a id="6-flujo-de-ejecucion-de-extremo-a-extremo" class="tsd-anchor"></a><h2 class="tsd-anchor-link">6. Flujo de ejecucion de extremo a extremo<a href="#6-flujo-de-ejecucion-de-extremo-a-extremo" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ol>
+<li>Usuario arrastra nodos desde <code>FlowSidebar</code> al canvas (<code>App.tsx</code>).</li>
+<li><code>flowNodes.tsx</code> renderiza cada nodo y sus handles.</li>
+<li>Usuario marca start/end y configura parametros en <code>FlowInspectorPanel</code>.</li>
+<li><code>useFlowRunner</code> prepara dependencias para runtime.</li>
+<li><code>packetExecutor</code> valida grafo (<code>graphValidation.ts</code>).</li>
+<li>Se crean/encolan paquetes y se ejecutan componentes via <code>registry.ts</code>.</li>
+<li>Cada componente procesa payload y emite <code>ExecuteResult</code>.</li>
+<li>La traza se escribe en nodo y panel global.</li>
+<li>En fin de flujo, se publica resumen final de solucion.</li>
+</ol>
+<a id="7-scripts-utiles" class="tsd-anchor"></a><h2 class="tsd-anchor-link">7. Scripts utiles<a href="#7-scripts-utiles" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Desde <code>ui/</code>:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">dev</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">build</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">serve</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">docs:ui</span>
+</code><button type="button">Copy</button></pre>
+
+<a id="8-nota-practica-sobre-mantenimiento" class="tsd-anchor"></a><h2 class="tsd-anchor-link">8. Nota practica sobre mantenimiento<a href="#8-nota-practica-sobre-mantenimiento" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Si agregas un nuevo tipo de nodo, debes tocar como minimo:</p>
+<ol>
+<li><code>src/types/flow.ts</code> (nuevo <code>NodeKind</code> y campos de data si aplica).</li>
+<li><code>src/components/flowNodes.tsx</code> (render visual + handles).</li>
+<li><code>src/flow/runtime/components/nodes/*.ts</code> (logica runtime).</li>
+<li><code>src/flow/runtime/components/registry.ts</code> (registro de factory).</li>
+<li><code>src/templates/flowTemplates.ts</code> si quieres incluirlo en plantillas.</li>
+<li><code>src/constants/flowCatalog.ts</code> para nombre legible en UI.</li>
+</ol>
+<p>Con esto mantienes alineadas capa visual, capa de tipos y capa de ejecucion.</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#flowsolve-ui---guia-completa-de-la-carpeta-ui"><span>Flow<wbr/>Solve UI -<wbr/> <wbr/>Guia <wbr/>Completa de la carpeta ui/</span></a><ul><li><a href="#1-que-es-esta-ui"><span>1. <wbr/>Que es esta UI</span></a></li><li><a href="#2-como-funcionan-los-grafos-en-esta-ui"><span>2. <wbr/>Como funcionan los grafos en esta UI</span></a></li><li><ul><li><a href="#21-modelo-de-grafo"><span>2.1 <wbr/>Modelo de grafo</span></a></li><li><a href="#22-validaciones-estructurales-previas"><span>2.2 <wbr/>Validaciones estructurales previas</span></a></li><li><a href="#23-runtime-packet-based"><span>2.3 <wbr/>Runtime packet-<wbr/>based</span></a></li><li><a href="#24-que-componen-los-componentes"><span>2.4 <wbr/>Que componen los componentes</span></a></li></ul></li><li><a href="#3-taxonomia-de-componentes-nodekind"><span>3. <wbr/>Taxonomia de componentes (<wbr/>Node<wbr/>Kind)</span></a></li><li><a href="#4-estructura-de-carpetas"><span>4. <wbr/>Estructura de carpetas</span></a></li><li><ul><li><a href="#42-carpetas-generadas-o-de-entorno"><span>4.2 <wbr/>Carpetas generadas o de entorno</span></a></li></ul></li><li><a href="#5-catalogo-completo-archivo-por-archivo-ui"><span>5. <wbr/>Catalogo completo archivo por archivo (UI)</span></a></li><li><ul><li><a href="#51-raiz-de-ui"><span>5.1 <wbr/>Raiz de ui/</span></a></li><li><a href="#53-src-entrada-y-layout-global"><span>5.3 src/ (entrada y layout global)</span></a></li><li><a href="#54-srccomponents"><span>5.4 src/components/</span></a></li><li><a href="#55-srcconstants"><span>5.5 src/constants/</span></a></li><li><a href="#56-srcflow"><span>5.6 src/flow/</span></a></li><li><ul><li><a href="#srcflowruntime"><span>src/flow/runtime/</span></a></li><li><ul><li><a href="#srcflowruntimecomponents"><span>src/flow/runtime/components/</span></a></li><li><ul><li><a href="#srcflowruntimecomponentsnodes"><span>src/flow/runtime/components/nodes/</span></a></li></ul></li><li><a href="#srcflowruntimeengine"><span>src/flow/runtime/engine/</span></a></li><li><a href="#srcflowruntimeexecutor"><span>src/flow/runtime/executor/</span></a></li></ul></li></ul></li><li><a href="#57-srchooks"><span>5.7 src/hooks/</span></a></li><li><a href="#58-srcservices"><span>5.8 src/services/</span></a></li><li><a href="#59-srctemplates"><span>5.9 src/templates/</span></a></li><li><a href="#510-srctest"><span>5.10 src/test/</span></a></li><li><a href="#511-srctypes"><span>5.11 src/types/</span></a></li><li><a href="#512-srcutils"><span>5.12 src/utils/</span></a></li></ul></li><li><a href="#6-flujo-de-ejecucion-de-extremo-a-extremo"><span>6. <wbr/>Flujo de ejecucion de extremo a extremo</span></a></li><li><a href="#7-scripts-utiles"><span>7. <wbr/>Scripts utiles</span></a></li><li><a href="#8-nota-practica-sobre-mantenimiento"><span>8. <wbr/>Nota practica sobre mantenimiento</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">prodef-ui</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>

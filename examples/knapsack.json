@@ -1,5 +1,5 @@
 {
-  "name": "Basic binary knapsack problem",
+  "name": "BinaryKnapsack1",
   "description": "Optional description (optimal: 130)",
   "parameters": [
     { "name": "Number of items", "symbol": "N", "value": 5 },

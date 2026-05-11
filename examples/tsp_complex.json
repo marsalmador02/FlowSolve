@@ -1,5 +1,5 @@
 {
-  "name": "TSP complex example",
+  "name": "TSP2",
   "description": "7-city symmetric TSP instance with varied distances",
   "parameters": [
     { "name": "Number of cities", "symbol": "N", "value": 7 }

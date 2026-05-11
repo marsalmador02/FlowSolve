@@ -3,7 +3,7 @@
 // TODO: estilizar la vista del problem en el sidebar?
 
 export const KNAPSACK_TEMPLATE_JSON = `{
-  "name": "Basic binary knapsack problem",
+  "name": "BinaryKnapsack1",
   "description": "Optional description (optimal: 130)",
   "parameters": [
     {"name": "Number of items", "symbol": "N", "value": 5},
@@ -57,7 +57,7 @@ export const KNAPSACK_TEMPLATE_JSON = `{
 }`;
 
 export const TSP_TEMPLATE_JSON = `{
-  "name": "TSP example",
+  "name": "TSP1",
   "description": "TSP instance from the document",
   "parameters": [
     {"name": "Number of cities", "symbol": "N", "value": 4}
@@ -103,7 +103,7 @@ export const TSP_TEMPLATE_JSON = `{
 }`;
 
 export const KNAPSACK_COMPLEX_TEMPLATE_JSON = `{
-  "name": "Complex binary knapsack problem (3x size)",
+  "name": "BinaryKnapsack2",
   "description": "Larger instance with 15 items and broader value/weight ranges.",
   "parameters": [
     {"name": "Number of items", "symbol": "N", "value": 15},
@@ -167,7 +167,7 @@ export const KNAPSACK_COMPLEX_TEMPLATE_JSON = `{
 }`;
 
 export const TSP_COMPLEX_TEMPLATE_JSON = `{
-  "name": "TSP complex example (3x size)",
+  "name": "TSP2",
   "description": "12-city TSP with larger edge costs.",
   "parameters": [
     {"name": "Number of cities", "symbol": "N", "value": 12}
@@ -229,7 +229,7 @@ export const TSP_COMPLEX_TEMPLATE_JSON = `{
 }`;
 
 export const ASSIGNMENT_TEMPLATE_JSON = `{
-  "name": "Assignment example",
+  "name": "Assignment1",
   "description": "4x4 worker-task assignment problem",
   "parameters": [
     {"name": "Number of workers/tasks", "symbol": "N", "value": 4}
@@ -275,7 +275,7 @@ export const ASSIGNMENT_TEMPLATE_JSON = `{
 }`;
 
 export const ASSIGNMENT_COMPLEX_TEMPLATE_JSON = `{
-  "name": "Assignment complex example (3x size)",
+  "name": "Assignment2",
   "description": "9x9 worker-task assignment with wider costs",
   "parameters": [
     {"name": "Number of workers/tasks", "symbol": "N", "value": 9}
