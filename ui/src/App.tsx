@@ -780,6 +780,7 @@ export default function App() {
             shouldStop: false,
             status: `continue: 0/${maxIterations}`,
             solutionSet: undefined,
+            solution: undefined,
           },
         };
       }
@@ -900,7 +901,7 @@ export default function App() {
           <button className="canvas-icon-button" title="Run step" aria-label="Run step" onClick={() => { void runFlowNextStep(); }}>
             1x
           </button>
-          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow" onClick={() => { void runFlowUntilEnd(); }}>
+          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow" onClick={() => { resetFlow(); void runFlowUntilEnd(); }}>
             ▶
           </button>
           <button className="canvas-icon-button" title="Reset flow" aria-label="Reset flow" onClick={resetFlow}>

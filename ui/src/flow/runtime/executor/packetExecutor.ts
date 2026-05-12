@@ -101,12 +101,27 @@ function buildContext(deps: PacketExecutorDeps, node: FlowNode, problem: unknown
 }
 
 // Choose the best solution from a set by comparing scores.
-function bestFromSet(set: SolutionLike[] | null | undefined): SolutionLike | null {
+function bestFromSet(set: SolutionLike[] | null | undefined, problem: unknown): SolutionLike | null {
   if (!Array.isArray(set) || set.length === 0) {
     return null;
   }
+
+  let isMaximize = false;
+  try {
+    const rawProblem = (problem as any)?.raw || problem;
+    if (rawProblem && Array.isArray(rawProblem.goals) && rawProblem.goals.length > 0) {
+      const sense = rawProblem.goals[0].sense || '';
+      isMaximize = sense.toLowerCase().includes('maximiz');
+    }
+  } catch {
+  }
+  
+  const isBetter = isMaximize
+    ? (candidate: number, best: number) => candidate > best
+    : (candidate: number, best: number) => candidate < best;
+
   return set.reduce(
-    (best, candidate) => (solutionScore(candidate) > solutionScore(best) ? candidate : best),
+    (best, candidate) => (isBetter(solutionScore(candidate), solutionScore(best)) ? candidate : best),
     set[0],
   );
 }
@@ -126,26 +141,38 @@ function readStoredSet(nodeData: FlowNodeData | undefined): SolutionLike[] {
   return [];
 }
 
-// After execution ends, summarize the final result and append it to the global trace.
+// After execution ends, summarize the final result.
 function storeFinalResult(
   deps: PacketExecutorDeps,
   finalNode: FlowNode | null,
   lastPacket: Packet | null,
 ) {
-  const storedSolution = finalNode ? parseJson<SolutionLike>(finalNode.data?.solution) : null;
-  const storedSet = finalNode ? readStoredSet(finalNode.data) : [];
-  const bestOfSet = bestFromSet(storedSet);
-  const bestOfLastSet = bestFromSet(lastPacket?.solutionSet ?? null);
+  const endStorageNode = deps.getNodes().find((node) => node.type === 'storage' && node.data?.end === true) ?? null;
+  const preferredNode = endStorageNode ?? finalNode;
 
+  const storedSolution = preferredNode ? parseJson<SolutionLike>(preferredNode.data?.solution) : null;
+  const storedSet = preferredNode ? readStoredSet(preferredNode.data) : [];
+  
+  // If final node is Storage in accumulate mode with solutions, take the first (best).
+  // Otherwise, determine best from all available options.
   let payloadText: string;
-  if (storedSolution) {
+  
+  if (preferredNode?.type === 'storage' && storedSet.length > 0) {
+    // Storage with accumulate: first solution is the best (ordered by Rust)
+    payloadText = formatCompact(storedSet[0]);
+  } else if (storedSolution) {
     payloadText = formatCompact(storedSolution);
-  } else if (bestOfSet) {
-    payloadText = formatCompact(bestOfSet);
+  } else if (storedSet.length > 0) {
+    // Fallback: use first from set or determine best
+    const best = storedSet.length > 1 
+      ? bestFromSet(storedSet, deps.getProblemParsed?.() || {})
+      : storedSet[0];
+    payloadText = best ? formatCompact(best) : 'no result';
   } else if (lastPacket?.solution) {
     payloadText = formatCompact(lastPacket.solution);
-  } else if (bestOfLastSet) {
-    payloadText = formatCompact(bestOfLastSet);
+  } else if (lastPacket?.solutionSet && lastPacket.solutionSet.length > 0) {
+    const best = bestFromSet(lastPacket.solutionSet, deps.getProblemParsed?.() || {});
+    payloadText = best ? formatCompact(best) : 'no result';
   } else {
     payloadText = 'no result';
   }

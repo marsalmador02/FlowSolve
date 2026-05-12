@@ -6,11 +6,14 @@
  *   - Overwrite: cuando ningun sucesor es substraction, reemplaza la solucion/set.
  *   - Accumulate: cuando algun sucesor es substraction, va acumulando todas las
  *     soluciones que recibe en una lista que crece con el tiempo.
+ *     Al accumular, se llama a Rust para determinar la mejor solucion y se coloca
+ *     al inicio de la lista para acceso rápido.
  *
  * Funcion en el flujo (inicio -> ejecucion de grafo):
  * - Memoria ligera del flujo. En modo accumulate acumula el historico de candidatos
- *   que despues restara substraction. Si es nodo final, su ultimo guardado es el resultado.
+ *   que despues restara substraction. Si es nodo final, la primera solucion (mejor) es el resultado.
  */
+import { callRuntimeExecute } from '../../../../services/prodefApi';
 import { parseJson } from '../../../../utils/flowHelpers';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, solutionsEqualByVars, toPretty } from '../base';
@@ -53,6 +56,28 @@ export class StorageComponent extends RuntimeComponent {
         if (!alreadyStored) {
           existing.push(candidate);
           added += 1;
+        }
+      }
+
+      // Call Rust to determine the best solution and move it to index 0
+      if (existing.length > 0) {
+        try {
+          const response = await callRuntimeExecute({
+            problem: ctx.problem,
+            execution: {
+              mode: 'select-best',
+              payload: { candidates: existing },
+            },
+          });
+
+          const best = (response.payload as { winner?: SolutionLike })?.winner;
+          if (best) {
+            // Remove best from current position and place at index 0
+            const filtered = existing.filter((sol) => !solutionsEqualByVars(sol, best));
+            existing.splice(0, existing.length, best, ...filtered);
+          }
+        } catch (error) {
+          ctx.appendTrace(`⚠️ Storage: could not determine best via Rust, keeping current order`);
         }
       }
 

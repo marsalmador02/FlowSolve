@@ -30,10 +30,20 @@ function selectAcceptedAndBaseline(
     return { accepted: other, baseline: fromLoop };
   }
 
+  let isMaximize = false;
+  try {
+    const rawProblem = (ctx.problem as any)?.raw || ctx.problem;
+    if (rawProblem && Array.isArray(rawProblem.goals) && rawProblem.goals.length > 0) {
+      const sense = rawProblem.goals[0].sense || '';
+      isMaximize = sense.toLowerCase().includes('maximiz');
+    }
+  } catch {
+  }
+
   const sorted = [...packets].sort((a, b) => {
     const sa = solutionScore(a.solution as SolutionLike);
     const sb = solutionScore(b.solution as SolutionLike);
-    return sb - sa;
+    return isMaximize ? sb - sa : sa - sb;
   });
   return { accepted: sorted[0], baseline: sorted[1] };
 }
