@@ -212,6 +212,7 @@ function PopulationGenerationNode({ data }: { data: FlowNodeData }) {
           </div>
         </div>
       </div>
+      {renderSolutionSetList(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
   );

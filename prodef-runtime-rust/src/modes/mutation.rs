@@ -12,9 +12,16 @@ use crate::domain::Solution;
 use crate::modes::common;
 use crate::modes::context::{ModeContext, ModeOutcome};
 use crate::operators::{
-    detect_problem_family, mutate_permutation_inversion_f64, mutate_permutation_swap_f64,
-    variable_flags, ProblemFamily,
+    apply_random_bitflip, apply_random_swap, detect_problem_family,
+    mutate_permutation_inversion_f64, variable_flags, ProblemFamily,
 };
+
+fn repair_solution(runtime: &crate::domain::RuntimeProblem, base: &Solution, vars: &[f64]) -> Solution {
+    match vec_to_solution(runtime, vars) {
+        Some(next) if runtime.is_feasible(&next).unwrap_or(false) => next,
+        _ => base.clone(),
+    }
+}
 
 /// Mutate each incoming solution with the selected operator.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
@@ -27,9 +34,22 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         bail!("mutation requires a non-empty incomingSet");
     }
 
-    let incoming_solutions: Vec<Solution> = incoming
+    let incoming_entries: Vec<(Solution, bool)> = incoming
         .iter()
-        .filter_map(|c| parse_candidate(ctx.runtime, c))
+        .filter_map(|c| {
+            parse_candidate(ctx.runtime, c)
+                .map(|solution| {
+                    let is_elite = c
+                        .get("isElite")
+                        .and_then(Value::as_bool)
+                        .unwrap_or(false);
+                    (solution, is_elite)
+                })
+        })
+        .collect();
+    let incoming_solutions: Vec<Solution> = incoming_entries
+        .iter()
+        .map(|(solution, _)| solution.clone())
         .collect();
     if incoming_solutions.is_empty() {
         bail!("mutation could not parse incomingSet variableValue[]");
@@ -54,42 +74,73 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         "delta".to_string()
     };
 
-    let mut mutated: Vec<Solution> = Vec::with_capacity(incoming_solutions.len());
-    for base in &incoming_solutions {
+    let mut mutated: Vec<(Solution, bool)> = Vec::with_capacity(incoming_entries.len());
+    for (base, is_elite) in &incoming_entries {
+        if *is_elite {
+            mutated.push((base.clone(), true));
+            continue;
+        }
+
         if ctx.rng.gen::<f64>() > rate {
-            mutated.push(base.clone());
+            mutated.push((base.clone(), false));
             continue;
         }
-        let mut vars = solution_to_f64_vec(base);
+        let mut current = base.clone();
+        let mut vars = solution_to_f64_vec(&current);
         if vars.is_empty() {
-            mutated.push(base.clone());
+            mutated.push((base.clone(), false));
             continue;
         }
-        if is_permutation {
-            if operator.contains("swap") {
-                mutate_permutation_swap_f64(&mut vars, ctx.rng);
-            } else {
-                mutate_permutation_inversion_f64(&mut vars, ctx.rng);
-            }
-        } else if is_binary {
-            let idx = ctx.rng.gen_range(0..vars.len());
-            vars[idx] = if vars[idx] >= 0.5 { 0.0 } else { 1.0 };
+        let steps = if is_binary {
+            if ctx.rng.gen::<f64>() < 0.5 { 2 } else { 3 }
         } else {
-            let idx = ctx.rng.gen_range(0..vars.len());
-            vars[idx] += if ctx.rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
-        }
-        let chosen = match vec_to_solution(ctx.runtime, &vars) {
-            Some(next) if ctx.runtime.is_feasible(&next).unwrap_or(false) => next,
-            _ => base.clone(),
+            1
         };
-        mutated.push(chosen);
+
+        for _ in 0..steps {
+            let next_vars = if is_permutation {
+                if operator.contains("swap") {
+                    apply_random_swap(&vars, ctx.rng)
+                } else {
+                    let mut candidate = vars.clone();
+                    mutate_permutation_inversion_f64(&mut candidate, ctx.rng);
+                    candidate
+                }
+            } else if is_binary {
+                apply_random_bitflip(&vars, ctx.rng)
+            } else {
+                let mut candidate = vars.clone();
+                let idx = ctx.rng.gen_range(0..candidate.len());
+                candidate[idx] += if ctx.rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
+                candidate
+            };
+
+            current = repair_solution(ctx.runtime, &current, &next_vars);
+            vars = solution_to_f64_vec(&current);
+            if vars.is_empty() {
+                current = base.clone();
+                break;
+            }
+        }
+        mutated.push((current, false));
     }
 
-    let mutated_json = common::solutions_as_json_values(ctx.runtime, &mutated)?;
+    let mut mutated_json = common::solutions_as_json_values(
+        ctx.runtime,
+        &mutated.iter().map(|(solution, _)| solution.clone()).collect::<Vec<Solution>>(),
+    )?;
+    for (idx, value) in mutated_json.iter_mut().enumerate() {
+        if let Some(map) = value.as_object_mut() {
+            map.insert("isElite".to_string(), Value::Bool(mutated[idx].1));
+        }
+    }
+
+    let elite_preserved = mutated.iter().filter(|(_, is_elite)| *is_elite).count();
     Ok(ModeOutcome::with_payload(json!({
         "mutated": mutated_json,
         "mutationRate": rate,
         "mutationOperator": operator,
+        "elitePreserved": elite_preserved,
     })))
 }
 

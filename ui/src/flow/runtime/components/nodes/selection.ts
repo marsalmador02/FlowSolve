@@ -35,13 +35,14 @@ export class SelectionComponent extends RuntimeComponent {
       },
     });
 
-    const payload = response.payload as { selected?: SolutionLike[] };
+    const payload = response.payload as { selected?: SolutionLike[]; eliteCount?: number };
     const selected = Array.isArray(payload.selected) && payload.selected.length > 0
       ? payload.selected
       : input;
 
     ctx.updateNodeData({ solutionSet: toPretty(selected), setSize: selected.length });
-    const lines = [`🎯 Selection: elite=${eliteSize}, strategy=tournament(${tournamentSize})`];
+    const realElite = payload.eliteCount ?? eliteSize;
+    const lines = [`🎯 Selection: elite=${realElite}, strategy=tournament(${tournamentSize})`];
     selected.forEach((individual, idx) => {
       lines.push(`      s${idx + 1}: ${formatCompact(individual)}`);
     });

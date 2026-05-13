@@ -33,14 +33,15 @@ export class MutationComponent extends RuntimeComponent {
       },
     });
 
-    const payload = response.payload as { mutated?: SolutionLike[]; mutationOperator?: string };
+    const payload = response.payload as { mutated?: SolutionLike[]; mutationOperator?: string; elitePreserved?: number };
     const mutated = Array.isArray(payload.mutated) && payload.mutated.length > 0
       ? payload.mutated
       : input;
 
     ctx.updateNodeData({ solutionSet: toPretty(mutated), setSize: mutated.length });
     const op = payload.mutationOperator ?? 'bit-flip+repair';
-    const lines = [`🧫 Mutation: rate=${mutationRate}, operator=${op}`];
+    const elitePreserved = payload.elitePreserved ?? 0;
+    const lines = [`🧫 Mutation: rate=${mutationRate}, operator=${op}, elitePreserved=${elitePreserved}`];
     mutated.forEach((individual, idx) => {
       lines.push(`      s${idx + 1}: ${formatCompact(individual)}`);
     });

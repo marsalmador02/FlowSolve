@@ -5,8 +5,9 @@
 use anyhow::{bail, Result};
 use rand::prelude::*;
 use serde_json::{json, Value};
+use std::collections::HashSet;
 
-use crate::api::parse::{parse_candidate, payload_object};
+use crate::api::parse::{parse_candidate, payload_object, solution_to_f64_vec};
 use crate::api::validation;
 use crate::domain::Solution;
 use crate::modes::context::{ModeContext, ModeOutcome};
@@ -49,18 +50,65 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
 
     pool.sort_by(|a, b| compare_by_score(ctx.runtime, a, b));
 
+    // Keep one representative per vector to reduce duplicate collapse.
+    let mut unique_keys = HashSet::new();
+    pool.retain(|s| unique_keys.insert(vector_key(s)));
+
     let mut selected: Vec<Solution> = Vec::with_capacity(target_size);
+    let mut selected_keys: HashSet<String> = HashSet::new();
 
     let elites = elite_size.min(target_size).min(pool.len());
-    selected.extend(pool.iter().take(elites).cloned());
-
-    while selected.len() < target_size {
-        let winner = tournament_pick(ctx.runtime, &pool, tournament_size, ctx.rng)?;
-        selected.push(winner);
+    for elite in pool.iter().take(elites) {
+        selected_keys.insert(vector_key(elite));
+        selected.push(elite.clone());
     }
 
-    let selected_json = common::solutions_as_json_values(ctx.runtime, &selected)?;
-    Ok(ModeOutcome::with_payload(json!({ "selected": selected_json })))
+    while selected.len() < target_size {
+        let mut appended = false;
+        for _ in 0..12 {
+            let winner = tournament_pick(ctx.runtime, &pool, tournament_size, ctx.rng)?;
+            let key = vector_key(&winner);
+            if !selected_keys.contains(&key) {
+                selected_keys.insert(key);
+                selected.push(winner);
+                appended = true;
+                break;
+            }
+        }
+
+        if appended {
+            continue;
+        }
+
+        if let Some(next_unique) = pool
+            .iter()
+            .find(|candidate| !selected_keys.contains(&vector_key(candidate)))
+            .cloned()
+        {
+            selected_keys.insert(vector_key(&next_unique));
+            selected.push(next_unique);
+        } else {
+            // All unique vectors already selected; duplicates are now unavoidable.
+            let winner = tournament_pick(ctx.runtime, &pool, tournament_size, ctx.rng)?;
+            selected.push(winner);
+        }
+    }
+
+    let mut selected_json = common::solutions_as_json_values(ctx.runtime, &selected)?;
+    for (idx, value) in selected_json.iter_mut().enumerate() {
+        if let Some(map) = value.as_object_mut() {
+            map.insert("isElite".to_string(), Value::Bool(idx < elites));
+        }
+    }
+
+    Ok(ModeOutcome::with_payload(json!({
+        "selected": selected_json,
+        "eliteCount": elites,
+    })))
+}
+
+fn vector_key(solution: &Solution) -> String {
+    format!("{:?}", solution_to_f64_vec(solution))
 }
 
 fn compare_by_score(
