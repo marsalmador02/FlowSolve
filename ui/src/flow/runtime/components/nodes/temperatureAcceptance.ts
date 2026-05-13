@@ -18,15 +18,30 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
       return { kind: 'wait' };
     }
 
-    const candidate = packets[0].solution as SolutionLike;
-    const stored = packets[1].solution as SolutionLike;
+    const sources = ctx.getIncomingSources();
+    const candidateIds = new Set(
+      sources.filter((source) => source.type === 'perturbation').map((source) => source.id),
+    );
+    const storedIds = new Set(
+      sources.filter((source) => source.type === 'storage').map((source) => source.id),
+    );
+
+    const candidatePacket = packets.find((packet) => candidateIds.has(packet.fromId));
+    const storedPacket = packets.find((packet) => storedIds.has(packet.fromId));
+    if (!candidatePacket || !storedPacket) {
+      return {
+        kind: 'error',
+        message: 'temperatureAcceptance requires one packet from perturbation and one from storage.',
+      };
+    }
+
+    const candidate = candidatePacket.solution as SolutionLike;
+    const stored = storedPacket.solution as SolutionLike;
     if (!candidate || !stored) {
       return { kind: 'error', message: 'temperatureAcceptance requires two solutions.' };
     }
 
-    const temperatureCurrent = 
-      ctx.nodeData.temperatureCurrent ?? ctx.nodeData.temperatureInitial ?? 100;
-    const coolingAlpha = ctx.nodeData.coolingAlpha ?? 0.95;
+    const temperatureCurrent = ctx.nodeData.temperatureCurrent ?? 100;
 
     const response = await callRuntimeExecute({
       problem: ctx.problem,
@@ -36,33 +51,30 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
           candidate,
           stored,
           temperatureCurrent,
-          coolingAlpha,
         },
       },
     });
 
     const payload = response.payload as {
       winner?: SolutionLike;
-      temperatureCurrent?: number;
       accepted?: boolean;
     };
     const winner = payload.winner as SolutionLike;
-    const nextTemp = payload.temperatureCurrent ?? temperatureCurrent;
 
     ctx.updateNodeData({
       solution: toPretty(winner),
-      temperatureCurrent: nextTemp,
       decisionSummary: formatCompact(winner),
     });
     const candScore = formatScore(solutionScore(candidate));
     const storedScore = formatScore(solutionScore(stored));
+    const accepted = payload.accepted ? '✓ Accepted' : '✗ Rejected';
     ctx.appendTrace(
-      `🌡️ Temperature Acceptance (T=${nextTemp.toFixed(3)}): ${candScore} vs ${storedScore}. Accepted: ${formatCompact(winner)}`,
+      `🌡️ Temperature Acceptance (T=${temperatureCurrent.toFixed(0)}): candidate=${candScore} | stored=${storedScore} | ${accepted}`,
     );
 
     return {
       kind: 'emit',
-      idIteration: packets[0].idIteration,
+      idIteration: candidatePacket.idIteration,
       solution: winner,
     };
   }

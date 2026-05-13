@@ -447,9 +447,7 @@ export default function App() {
       data.setSize = 0;
     }
     if (type === 'temperatureAcceptance') {
-      data.temperatureInitial = 100;
       data.temperatureCurrent = 100;
-      data.coolingAlpha = 0.95;
     }
     if (type === 'storage') {
       data.history = [];
@@ -825,6 +823,7 @@ export default function App() {
             ...baseData,
             solution: undefined,
             decisionSummary: undefined,
+            temperatureCurrent: undefined,
           },
         };
       }
@@ -848,6 +847,10 @@ export default function App() {
             ...node.data,
             ...baseData,
             solution: undefined,
+            temperatureCurrent: undefined,
+            temperatureInitial: undefined,
+            temperaturePrevious: undefined,
+            alpha: undefined,
           },
         };
       }

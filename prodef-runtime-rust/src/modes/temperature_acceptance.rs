@@ -12,10 +12,14 @@ use crate::domain::Solution;
 use crate::api::response::build_solver_result;
 use crate::modes::context::{ModeContext, ModeOutcome};
 
-/// Simulated Annealing acceptance: decide if `candidate` replaces `stored`.
+/// Simulated Annealing acceptance (simplified): decide if `candidate` replaces `stored`.
 ///
 /// Payload: `{ "candidate": [v1, v2, ...], "stored": [v1, v2, ...], "temperatureCurrent": float }`
 /// Returns: `{ "accepted": bool, "winner": [best_vector] }`
+///
+/// Rule:
+/// - If candidate is better (score improves), always accept.
+/// - If candidate is worse, accept only if random(0,100) < temperatureCurrent.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
 
@@ -29,22 +33,29 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let candidate_solution = parse_solution_like(ctx.runtime, candidate_value, "candidate")?;
     let stored_solution = parse_solution_like(ctx.runtime, stored_value, "stored")?;
 
-    // Accept temperature from payload (sent by UI as temperatureCurrent)
     let temperature = obj
         .get("temperatureCurrent")
-        .or_else(|| obj.get("temperature"))  // Fallback for backwards compat
         .and_then(Value::as_f64)
-        .unwrap_or(1.0)
+        .unwrap_or(100.0)
         .max(0.0);
 
     let candidate_score = ctx.runtime.objective_score(&candidate_solution)?;
     let stored_score = ctx.runtime.objective_score(&stored_solution)?;
 
-    let is_better = ctx.runtime.is_better_score(candidate_score, stored_score);
-    let delta = (stored_score - candidate_score).abs();
-    let accept_prob = if is_better { 1.0 } else if temperature > 0.0 { (-delta / temperature).exp() } else { 0.0 };
+    let is_maximize = ctx.runtime.is_maximize();
+    let is_better = if is_maximize {
+        candidate_score > stored_score
+    } else {
+        candidate_score < stored_score
+    };
 
-    let accepted = is_better || (ctx.rng.gen::<f64>() < accept_prob);
+    let accepted = if is_better {
+        true
+    } else {
+        // Worse solution: accept if random(0,100) < temperature
+        ctx.rng.gen::<f64>() * 100.0 < temperature
+    };
+
     let winner_solution = if accepted { candidate_solution } else { stored_solution };
     let winner_json = build_solver_result(ctx.runtime, &winner_solution)?;
 
@@ -76,7 +87,7 @@ mod tests {
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
 
-        let payload = json!({ "candidate": [1,1,1,1,0], "stored": [0,0,0,0,0], "temperature": 1.0 });
+        let payload = json!({ "candidate": [1,1,1,1,0], "stored": [0,0,0,0,0], "temperatureCurrent": 1.0 });
         let ctx = ModeContext { runtime: &runtime, payload: &payload, rng: &mut rng };
 
         let outcome = execute(ctx).expect("execute");

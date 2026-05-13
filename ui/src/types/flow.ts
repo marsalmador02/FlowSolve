@@ -37,12 +37,7 @@ export interface FlowNodeData {
 
   policy?: AcceptancePolicy;
   threshold?: number;
-  temperatureInitial?: number;
   temperatureCurrent?: number;
-  temperaturePrevious?: number;
-  coolingAlpha?: number;
-  alpha?: number;
-  effectiveAlpha?: number;
   coolingMode?: 'normal' | 'slow' | 'hold';
   stagnationStreak?: number;
 
