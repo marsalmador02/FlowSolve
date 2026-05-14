@@ -38,7 +38,7 @@ import { FlowInspectorPanel } from './components/FlowInspectorPanel';
 import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
-import { buildExecutionCsvFromGlobalTrace, downloadCsv, getProblemInstanceName } from './utils/executionCsv';
+import { buildExecutionCsvFromGraph, downloadCsv, getProblemInstanceName } from './utils/executionCsv';
 
 interface StoredTemplateNode {
   id: string;
@@ -304,26 +304,25 @@ export default function App() {
 
   const onExportCsv = useCallback(() => {
     try {
-      if (globalTrace.length === 0) {
-        return;
-      }
-
       const problemNode = getNodeByType('problem');
       const instance = getProblemInstanceName(problemNode?.data.json);
 
-      const csv = buildExecutionCsvFromGlobalTrace({
-        globalTrace,
-        algorithm: executionAlgorithm,
+      const csv = buildExecutionCsvFromGraph({
+        nodes,
+        edges,
         instance,
-        metricName: 'ObjectiveValue',
       });
+
+      if (!csv || csv.length === 0) {
+        return;
+      }
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       downloadCsv(`prodef-metrics-${timestamp}.csv`, csv);
     } catch {
       // Ignore export failures silently.
     }
-  }, [executionAlgorithm, getNodeByType, globalTrace]);
+  }, [edges, getNodeByType, nodes]);
 
   // Ensure the editor always starts with one Problem node.
   useEffect(() => {

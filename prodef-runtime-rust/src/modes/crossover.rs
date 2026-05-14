@@ -63,13 +63,13 @@ fn force_variation(source: &[f64], is_permutation: bool, is_binary: bool, rng: &
     if is_binary {
         return apply_random_bitflip(source, rng);
     }
-    //if source.is_empty() {
-    //    return source.to_vec();
-    //}
-    //let mut out = source.to_vec();
-    //let idx = rng.gen_range(0..out.len());
-    //out[idx] += if rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
-    //out
+    if source.is_empty() {
+        return source.to_vec();
+    }
+    let mut out = source.to_vec();
+    let idx = rng.gen_range(0..out.len());
+    out[idx] += if rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
+    out
 }
 
 fn is_same_vec(a: &[f64], b: &[f64]) -> bool {

@@ -12,11 +12,13 @@
  * Funcion en el flujo (inicio -> ejecucion de grafo):
  * - Memoria ligera del flujo. En modo accumulate acumula el historico de candidatos
  *   que despues restara substraction. Si es nodo final, la primera solucion (mejor) es el resultado.
+ * El nodo también mantiene un array `history` que almacena el valor objetivo de cada
+ * solución que recibe. Este history se usa para exportar el CSV de ejecución.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import { parseJson } from '../../../../utils/flowHelpers';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
-import { RuntimeComponent, formatCompact, solutionsEqualByVars, toPretty } from '../base';
+import { RuntimeComponent, formatCompact, solutionScore, solutionsEqualByVars, toPretty } from '../base';
 
 // Lee el set acumulado en modo accumulate, manejando ambos formatos posibles (array o string)
 function readAccumulated(ctx: ComponentContext): SolutionLike[] {
@@ -46,6 +48,11 @@ export class StorageComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const outgoing = ctx.getOutgoingTargets();
     const feedsSubstraction = outgoing.some((o) => o.type === 'substraction');
+
+    if (!Array.isArray(ctx.nodeData.history)) {
+      ctx.updateNodeData({ history: [] });
+    }
+    const history = (ctx.nodeData.history as number[]) || [];
     
     if (feedsSubstraction) {
       const existing = readAccumulated(ctx);
@@ -75,6 +82,11 @@ export class StorageComponent extends RuntimeComponent {
             // Remove best from current position and place at index 0
             const filtered = existing.filter((sol) => !solutionsEqualByVars(sol, best));
             existing.splice(0, existing.length, best, ...filtered);
+            
+            const score = solutionScore(best);
+            if (Number.isFinite(score)) {
+              history.push(score);
+            }
           }
         } catch (error) {
           ctx.appendTrace(`⚠️ Storage: could not determine best via Rust, keeping current order`);
@@ -85,6 +97,7 @@ export class StorageComponent extends RuntimeComponent {
         solutionSet: toPretty(existing),
         setSize: existing.length,
         solution: undefined,
+        history,
       });
       ctx.appendTrace(`📦 Storage (accumulate): added ${added}, total size=${existing.length}`);
 
@@ -97,10 +110,20 @@ export class StorageComponent extends RuntimeComponent {
 
     if (Array.isArray(incoming.solutionSet) && incoming.solutionSet.length > 0) {
       const set = incoming.solutionSet;
+      
+      if (set.length > 0) {
+        const best = set[0] as SolutionLike;
+        const score = solutionScore(best);
+        if (Number.isFinite(score)) {
+          history.push(score);
+        }
+      }
+      
       ctx.updateNodeData({
         solutionSet: toPretty(set),
         setSize: set.length,
         solution: undefined,
+        history,
       });
       ctx.appendTrace(`📦 Storage: population size=${set.length}`);
       return {
@@ -111,10 +134,19 @@ export class StorageComponent extends RuntimeComponent {
     }
 
     const solution = incoming.solution ?? null;
+    
+    if (solution) {
+      const score = solutionScore(solution);
+      if (Number.isFinite(score)) {
+        history.push(score);
+      }
+    }
+    
     ctx.updateNodeData({
       solution: solution ? toPretty(solution) : undefined,
       solutionSet: undefined,
       setSize: 0,
+      history,
     });
     if (solution) {
       ctx.appendTrace(`📦 Storage: ${formatCompact(solution)}`);
