@@ -38,8 +38,10 @@ function nodeClassName(data: FlowNodeData) {
 function ProblemNode({ data }: { data: FlowNodeData }) {
   return (
     <div className={nodeClassName(data)}>
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Problem definition</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Problem definition</div>
+      </div>
     </div>
   );
 }
@@ -163,11 +165,13 @@ function SingleSolutionNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-header">
-        <div className="custom-node-title">{data.label}</div>
-        {renderStartBadge(data)}
+      <div className="custom-node-info">
+        <div className="custom-node-header">
+          <div className="custom-node-title">{data.label}</div>
+          {renderStartBadge(data)}
+        </div>
+        <div className="custom-node-subtitle">Generates when trigger arrives</div>
       </div>
-      <div className="custom-node-subtitle">Generates when trigger arrives</div>
       {data.error ? <div className="error-text">{data.error}</div> : null}
       {renderSolutionSummary(data)}
     </div>
@@ -179,11 +183,13 @@ function PopulationGenerationNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-header">
-        <div className="custom-node-title">{data.label}</div>
-        {renderStartBadge(data)}
+      <div className="custom-node-info">
+        <div className="custom-node-header">
+          <div className="custom-node-title">{data.label}</div>
+          {renderStartBadge(data)}
+        </div>
+        <div className="custom-node-subtitle">Generates a feasible population</div>
       </div>
-      <div className="custom-node-subtitle">Generates a feasible population</div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Population size</span>
@@ -223,8 +229,10 @@ function SelectionNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Selects parents from population</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Selects parents from population</div>
+      </div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Tournament size</span>
@@ -290,8 +298,10 @@ function CrossoverNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Combines parents into offspring</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Combines parents into offspring</div>
+      </div>
       {renderSolutionSetList(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
@@ -303,8 +313,10 @@ function MutationNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Mutates offspring into next generation</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Mutates offspring into next generation</div>
+      </div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Mutation rate</span>
@@ -346,8 +358,10 @@ function LocalSearchNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Improves candidate solution</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Improves candidate solution</div>
+      </div>
       {data.error ? <div className="error-text">{data.error}</div> : null}
       {renderSolutionSummary(data)}
     </div>
@@ -359,8 +373,10 @@ function AcceptanceNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Accepts one incoming solution and forwards winner</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Accepts one incoming solution and forwards winner</div>
+      </div>
       {renderSolutionSummary(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
@@ -373,8 +389,10 @@ function TemperatureAcceptanceNode({ data }: { data: FlowNodeData }) {
       <Handle type="target" position={Position.Left} id="in-perturbation" style={{ top: 24 }} />
       <Handle type="target" position={Position.Left} id="in-storage" style={{ top: 52 }} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Accepts worse candidate by probability based on temperature</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Accepts worse candidate by probability based on temperature</div>
+      </div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Temperature</span>
@@ -397,8 +415,10 @@ function ReduceTemperatureNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Reduces temperature using loop iteration and forwards solution</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Reduces temperature using loop iteration and forwards solution</div>
+      </div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Temperature</span>
@@ -415,11 +435,13 @@ function StorageNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-header">
-        <div className="custom-node-title">{data.label}</div>
-        {renderEndBadge(data)}
+      <div className="custom-node-info">
+        <div className="custom-node-header">
+          <div className="custom-node-title">{data.label}</div>
+          {renderEndBadge(data)}
+        </div>
+        <div className="custom-node-subtitle">Stored solutions</div>
       </div>
-      <div className="custom-node-subtitle">Stored solutions</div>
       {renderStoredSolutions(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
@@ -432,12 +454,14 @@ function TerminationNode({ data }: { data: FlowNodeData }) {
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} id="to-single" style={{ top: 24 }} />
       <Handle type="source" position={Position.Right} id="to-storage" style={{ top: 52 }} />
-      <div className="custom-node-header">
-        <div className="custom-node-title">{data.label}</div>
-        {renderStartBadge(data)}
-        {renderEndBadge(data)}
+      <div className="custom-node-info">
+        <div className="custom-node-header">
+          <div className="custom-node-title">{data.label}</div>
+          {renderStartBadge(data)}
+          {renderEndBadge(data)}
+        </div>
+        <div className="custom-node-subtitle">Controls the loop lifecycle</div>
       </div>
-      <div className="custom-node-subtitle">Controls the loop lifecycle</div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Max iterations</span>
@@ -483,8 +507,10 @@ function ChangeNeighborhoodNode({ data }: { data: FlowNodeData }) {
       <Handle type="target" position={Position.Left} id="in-acceptance" style={{ top: 24 }} />
       <Handle type="target" position={Position.Left} id="in-secondary" style={{ top: 52 }} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Adjusts neighbourhood size when both inputs match</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Adjusts neighbourhood size when both inputs match</div>
+      </div>
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Neighbourhood</span>
@@ -507,8 +533,10 @@ function NeighborhoodNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Builds feasible neighbours set from input solution</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Builds feasible neighbours set from input solution</div>
+      </div>
       {renderNeighborList(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
@@ -521,8 +549,10 @@ function SubstractionNode({ data }: { data: FlowNodeData }) {
       <Handle type="target" position={Position.Left} id="in-neighborhood" style={{ top: 24 }} />
       <Handle type="target" position={Position.Left} id="in-archive" style={{ top: 52 }} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Returns given population minus archive (tabu list)</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Returns given population minus archive (tabu list)</div>
+      </div>
       {data.trace ? (
         <div className="solution-summary">
           <div className="solution-summary-row">
@@ -541,8 +571,10 @@ function SelectionBestNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Selects the best solution in the set</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Selects the best solution in the set</div>
+      </div>
       {renderSolutionSummary(data)}
       {data.error ? <div className="error-text">{data.error}</div> : null}
     </div>
@@ -554,8 +586,10 @@ function PerturbationNode({ data }: { data: FlowNodeData }) {
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
-      <div className="custom-node-title">{data.label}</div>
-      <div className="custom-node-subtitle">Perturbs solution and repairs feasibility</div>
+      <div className="custom-node-info">
+        <div className="custom-node-title">{data.label}</div>
+        <div className="custom-node-subtitle">Perturbs solution and repairs feasibility</div>
+      </div>
       {data.error ? <div className="error-text">{data.error}</div> : null}
       {renderSolutionSummary(data)}
     </div>

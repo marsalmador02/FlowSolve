@@ -103,58 +103,61 @@ export function FlowSidebar({
 
       </div>
 
-      <div className="sidebar-scroll">
-        <details className="sidebar-dropdown">
-          <summary className="sidebar-title">PERSONALIZED TEMPLATES</summary>
-          <div className="template-icon-actions">
-            <button className="toolbar-button template-icon-button" onClick={onSaveCustomTemplate} title="Save current as template" aria-label="Save current as template">
-              💾
-            </button>
-            <label className="toolbar-button custom-import-label template-icon-button" title="Import template" aria-label="Import template">
-              ⬇️
-              <input
-                className="custom-import-input"
-                type="file"
-                accept="application/json,.json"
-                onChange={async (event) => {
-                  const input = event.currentTarget;
-                  const file = input.files?.[0];
-                  if (!file) {
-                    return;
-                  }
-                  try {
-                    const raw = await file.text();
-                    onImportCustomTemplate(raw);
-                  } catch {
-                    // Ignore unreadable file.
-                  } finally {
-                    input.value = '';
-                  }
-                }}
-              />
-            </label>
-          </div>
-          {customTemplates.length > 0 ? (
-            <div className="custom-template-list">
-              {customTemplates.map((template) => (
-                <div key={template.id}>
-                  <div className="custom-template-name" title={template.name}>{template.name}</div>
-                  <div className="custom-template-row">
-                    <button className="toolbar-button custom-template-load" onClick={() => onLoadCustomTemplate(template.id)}>
-                      Load
-                    </button>
-                    <button className="toolbar-button custom-template-export" onClick={() => onExportCustomTemplate(template.id)}>
-                      Export
-                    </button>
-                    <button className="toolbar-button custom-template-delete" onClick={() => onDeleteCustomTemplate(template.id)}>
-                      Delete
-                    </button>
-                  </div>
+      <div className="sidebar-divider" aria-hidden="true" />
+
+      <details className="sidebar-dropdown">
+        <summary className="sidebar-title">PERSONALIZED TEMPLATES</summary>
+        <div className="template-icon-actions">
+          <button className="toolbar-button template-icon-button" onClick={onSaveCustomTemplate} title="Save current as template" aria-label="Save current as template">
+            💾
+          </button>
+          <label className="toolbar-button custom-import-label template-icon-button" title="Import template" aria-label="Import template">
+            ⬇️
+            <input
+              className="custom-import-input"
+              type="file"
+              accept="application/json,.json"
+              onChange={async (event) => {
+                const input = event.currentTarget;
+                const file = input.files?.[0];
+                if (!file) {
+                  return;
+                }
+                try {
+                  const raw = await file.text();
+                  onImportCustomTemplate(raw);
+                } catch {
+                  // Ignore unreadable file.
+                } finally {
+                  input.value = '';
+                }
+              }}
+            />
+          </label>
+        </div>
+        {customTemplates.length > 0 ? (
+          <div className="custom-template-list">
+            {customTemplates.map((template) => (
+              <div key={template.id}>
+                <div className="custom-template-name" title={template.name}>{template.name}</div>
+                <div className="custom-template-row">
+                  <button className="toolbar-button custom-template-load" onClick={() => onLoadCustomTemplate(template.id)}>
+                    Load
+                  </button>
+                  <button className="toolbar-button custom-template-export" onClick={() => onExportCustomTemplate(template.id)}>
+                    Export
+                  </button>
+                  <button className="toolbar-button custom-template-delete" onClick={() => onDeleteCustomTemplate(template.id)}>
+                    Delete
+                  </button>
                 </div>
-              ))}
-            </div>
-          ) : null}
-        </details>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </details>
+
+      <div className="sidebar-scroll">
         <details className="sidebar-dropdown">
           <summary className="sidebar-title">Metaheuristic Component</summary>
           <div className="sidebar-section-title">Generation Component</div>
