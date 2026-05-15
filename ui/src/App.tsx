@@ -169,6 +169,8 @@ function estimateNextNodeId(nodes: Array<{ id: string }>) {
 
 // Top-level React component for the interactive flow builder.
 export default function App() {
+  const othimiColorImage = new URL('./othimi_color.png', import.meta.url).href;
+
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
@@ -257,7 +259,7 @@ export default function App() {
       'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
       'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubstractionComponent', 'SelectionOfBestComponent',
     ];
-    const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent', 'Problem'];
+    const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent'];
 
     const make = (kinds: string[]) => kinds.map((k) => ({ kind: k, label: withLeadingEmoji(COMPONENT_LABELS[k as keyof typeof COMPONENT_LABELS] ?? k, k) }));
 
@@ -492,10 +494,9 @@ export default function App() {
         return;
       }
 
-      const position = {
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      };
+      const x = event.clientX - reactFlowBounds.left;
+      const y = event.clientY - reactFlowBounds.top;
+      const position = rfInstance.current ? rfInstance.current.project({ x, y }) : { x, y };
 
       setNodes((nds) => nds.concat(createNode(kind, position)));
     },
@@ -930,6 +931,10 @@ export default function App() {
           <Controls />
           <Background color="#aaa" gap={16} />
         </ReactFlow>
+
+        <div className="canvas-footer-brand" aria-hidden="true">
+          <img src={othimiColorImage} alt="Brand" className="canvas-footer-brand-image" />
+        </div>
 
         <FlowInspectorPanel
           selectedNode={selectedNode}

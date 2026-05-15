@@ -93,6 +93,7 @@ export function FlowInspectorPanel({
               />
             </label>
           ) : null}
+          {canBeStart && canBeEnd ? <div className="form-divider" /> : null}
           {canBeEnd ? (
             <label className="form-label">
               End node
