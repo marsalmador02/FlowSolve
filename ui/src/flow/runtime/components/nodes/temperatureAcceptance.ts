@@ -3,7 +3,7 @@
  *
  * Que contiene:
  * - Componente temperature-acceptance (SA) de 2 entradas: acepta la mejor solucion
- *   o la peor con probabilidad exp(delta/T) (via Rust 'temperature-acceptance').
+ *   o la peor con probabilidad exp(-delta/T) (via Rust 'temperature-acceptance').
  *
  * Funcion en el flujo (inicio -> ejecucion de grafo):
  * - Sincroniza dos caminos y emite la solucion aceptada segun la politica SA.
@@ -59,7 +59,13 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
       winner?: SolutionLike;
       accepted?: boolean;
     };
-    const winner = payload.winner as SolutionLike;
+    const winner = payload.winner;
+    if (!winner) {
+      return {
+        kind: 'error',
+        message: 'temperatureAcceptance runtime response is missing winner.',
+      };
+    }
 
     ctx.updateNodeData({
       solution: toPretty(winner),
@@ -69,7 +75,7 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
     const storedScore = formatScore(solutionScore(stored));
     const accepted = payload.accepted ? '✓ Accepted' : '✗ Rejected';
     ctx.appendTrace(
-      `🌡️ Temperature Acceptance (T=${temperatureCurrent.toFixed(0)}): candidate=${candScore} | stored=${storedScore} | ${accepted}`,
+      `🌡️ Temperature Acceptance (T=${temperatureCurrent.toFixed(2)}): candidate=${candScore} | stored=${storedScore} | ${accepted}`,
     );
 
     return {

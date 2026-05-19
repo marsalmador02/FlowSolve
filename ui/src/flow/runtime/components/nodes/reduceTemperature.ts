@@ -2,8 +2,8 @@
  * Archivo: reduceTemperature.ts
  *
  * Que contiene:
- * - Componente SA que reduce la temperatura linealmente.
- *   Reducción por paso = 100 / maxIterations (p.ej., 10 pasos → 10% cada paso, 100 pasos → 1% cada paso)
+ * - Componente SA que reduce la temperatura con una curva geométrica.
+ *   Interpola entre T0 = 100 y Tf = 0.1 a lo largo de maxIterations pasos.
  *
  * Funcion en el flujo (inicio -> ejecucion de grafo):
  * - Forwardea la solucion aceptada y reduce la temperatura.
@@ -23,10 +23,19 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     }
 
     const temperatureCurrent = ctx.nodeData.temperatureCurrent ?? TEMPERATURE_MAX;
-    const maxIterations = ctx.nodeData.maxIterations ?? 10;
+    const maxIterations = Math.max(1, ctx.nodeData.maxIterations ?? 10);
 
-    const reduction = TEMPERATURE_MAX / maxIterations;
-    const nextTemp = Math.max(MIN_TEMPERATURE, temperatureCurrent - reduction);
+    // Determine step index (0-based). Use idIteration-1 so the first step starts at T0.
+    const stepIndex = Math.max(0, (incoming.idIteration ?? 1) - 1);
+    // Normalized fraction over (maxIterations - 1) so that:
+    // - fraction = 0 -> T0
+    // - fraction = 1 -> Tf
+    const denom = Math.max(1, maxIterations - 1);
+    const fraction = Math.min(1, stepIndex / denom);
+
+    const T0 = TEMPERATURE_MAX;
+    const Tf = MIN_TEMPERATURE;
+    const nextTemp = T0 * Math.pow(Tf / T0, fraction);
 
     const forwarded = accepted as SolutionLike;
 
@@ -41,9 +50,8 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     }
 
     const tempStr = Number.isFinite(nextTemp) ? nextTemp.toFixed(2) : '-';
-    const reductionStr = reduction.toFixed(2);
     ctx.appendTrace(
-      `❄️ Reduce Temperature: T ${temperatureCurrent.toFixed(2)} - ${reductionStr} = ${tempStr} | ${formatCompact(forwarded)}`,
+      `❄️ Reduce Temperature: T ${temperatureCurrent.toFixed(2)} -> ${tempStr} | ${formatCompact(forwarded)}`,
     );
 
     return {

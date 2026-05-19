@@ -1,7 +1,7 @@
 //! Mode: `temperature-acceptance`.
 //!
-//! Simple simulated annealing acceptance rule: compare two candidate vectors
-//! and decide whether to accept the new candidate based on score and temperature.
+//! Simulated annealing acceptance rule: accept improvements always and
+//! accept worse candidates with probability `exp(-delta / T)`.
 
 use anyhow::{Context, Result};
 use rand::Rng;
@@ -12,14 +12,15 @@ use crate::domain::Solution;
 use crate::api::response::build_solver_result;
 use crate::modes::context::{ModeContext, ModeOutcome};
 
-/// Simulated Annealing acceptance (simplified): decide if `candidate` replaces `stored`.
+/// Simulated Annealing acceptance: decide if `candidate` replaces `stored`.
 ///
 /// Payload: `{ "candidate": [v1, v2, ...], "stored": [v1, v2, ...], "temperatureCurrent": float }`
 /// Returns: `{ "accepted": bool, "winner": [best_vector] }`
 ///
 /// Rule:
 /// - If candidate is better (score improves), always accept.
-/// - If candidate is worse, accept only if random(0,100) < temperatureCurrent.
+/// - If candidate is worse, accept with probability `exp(-delta / T)`.
+/// - `delta` is positive when the candidate is worse.
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
 
@@ -42,18 +43,23 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let candidate_score = ctx.runtime.objective_score(&candidate_solution)?;
     let stored_score = ctx.runtime.objective_score(&stored_solution)?;
 
+    // Compute score difference `delta` such that delta > 0 when candidate is worse
     let is_maximize = ctx.runtime.is_maximize();
-    let is_better = if is_maximize {
-        candidate_score > stored_score
+    let delta = if is_maximize {
+        stored_score - candidate_score
     } else {
-        candidate_score < stored_score
+        candidate_score - stored_score
     };
 
-    let accepted = if is_better {
+    // Classical Simulated Annealing acceptance:
+    // - If candidate is better (delta <= 0) => accept
+    // - Otherwise accept with probability exp(-delta / T)
+    let accepted = if delta <= 0.0 {
         true
     } else {
-        // Worse solution: accept if random(0,100) < temperature
-        ctx.rng.gen::<f64>() * 100.0 < temperature
+        let temp = temperature.max(1e-12);
+        let prob = (-delta / temp).exp();
+        ctx.rng.gen::<f64>() < prob
     };
 
     let winner_solution = if accepted { candidate_solution } else { stored_solution };

@@ -170,7 +170,7 @@ function SingleSolutionNode({ data }: { data: FlowNodeData }) {
           <div className="custom-node-title">{data.label}</div>
           {renderStartBadge(data)}
         </div>
-        <div className="custom-node-subtitle">Generates when trigger arrives</div>
+        <div className="custom-node-subtitle">Generates feasible solution when trigger arrives</div>
       </div>
       {data.error ? <div className="error-text">{data.error}</div> : null}
       {renderSolutionSummary(data)}
@@ -396,7 +396,7 @@ function TemperatureAcceptanceNode({ data }: { data: FlowNodeData }) {
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Temperature</span>
-          <span className="solution-summary-value">{(data.temperatureCurrent ?? 100).toFixed(2)}%</span>
+          <span className="solution-summary-value">{(data.temperatureCurrent ?? 100).toFixed(2)}</span>
         </div>
         {data.decisionSummary ? (
           <div className="solution-summary-row">
@@ -422,7 +422,7 @@ function ReduceTemperatureNode({ data }: { data: FlowNodeData }) {
       <div className="solution-summary">
         <div className="solution-summary-row">
           <span className="solution-summary-key">Temperature</span>
-          <span className="solution-summary-value">{(data.temperatureCurrent ?? 100).toFixed(2)}%</span>
+          <span className="solution-summary-value">{(data.temperatureCurrent ?? 100).toFixed(2)}</span>
         </div>
       </div>
       {data.error ? <div className="error-text">{data.error}</div> : null}

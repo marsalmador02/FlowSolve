@@ -76,7 +76,7 @@ export function FlowInspectorPanel({
         <aside className="properties properties-node-flags">
           {canBeStart ? (
             <label className="form-label">
-              Start node
+              <b>Start node</b>
               <input
                 type="checkbox"
                 checked={selectedData?.start === true}
@@ -87,7 +87,7 @@ export function FlowInspectorPanel({
           {canBeStart && canBeEnd ? <div className="form-divider" /> : null}
           {canBeEnd ? (
             <label className="form-label">
-              End node
+              <b>End node</b>
               <input
                 type="checkbox"
                 checked={selectedData?.end === true}
