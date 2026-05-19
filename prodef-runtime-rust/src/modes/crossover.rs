@@ -14,7 +14,7 @@ use crate::modes::common;
 use crate::modes::context::{ModeContext, ModeOutcome};
 use crate::operators::{
     apply_random_bitflip, apply_random_swap,
-    one_point_crossover, order_crossover_f64, pmx_crossover_f64, uniform_crossover_f64,
+    pmx_crossover_f64, uniform_crossover_f64,
     variable_flags,
 };
 
@@ -24,10 +24,6 @@ fn distinct_parent_pair(
     rng: &mut StdRng,
 ) -> (Solution, Solution) {
     let len = parents.len();
-    if len < 2 {
-        return (parents[0].clone(), parents[0].clone());
-    }
-
     let mut best_pair = (parents[0].clone(), parents[1].clone());
     for _ in 0..16 {
         let i = rng.gen_range(0..len);
@@ -56,30 +52,23 @@ fn pick_valid_child(runtime: &crate::domain::RuntimeProblem, child_vec: Vec<f64>
 }
 
 // If crossover fails to produce a valid child after several attempts, apply a forced variation to try to escape local optima.
-fn force_variation(source: &[f64], is_permutation: bool, is_binary: bool, rng: &mut StdRng) -> Vec<f64> {
+fn force_variation(source: &[f64], is_permutation: bool, rng: &mut StdRng) -> Vec<f64> {
     if is_permutation {
-        return apply_random_swap(source, rng);
+        apply_random_swap(source, rng)
+    } else {
+        // binary
+        apply_random_bitflip(source, rng)
     }
-    if is_binary {
-        return apply_random_bitflip(source, rng);
-    }
-    if source.is_empty() {
-        return source.to_vec();
-    }
-    let mut out = source.to_vec();
-    let idx = rng.gen_range(0..out.len());
-    out[idx] += if rng.gen::<f64>() < 0.5 { -1.0 } else { 1.0 };
-    out
 }
 
 fn is_same_vec(a: &[f64], b: &[f64]) -> bool {
     a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| x == y)
 }
 
-/// Produce offspring from `parents[]` using the selected crossover operator.
+/// Produce offspring from `parents[]` using the fixed crossover operator for the problem type.
 ///
-/// Operator defaults depend on whether the variable is permutation, binary,
-/// or continuous/integer.
+/// - Permutation problems: PMX (Partially Mapped Crossover)
+/// - Binary problems: uniform crossover
 pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
     let obj = payload_object(ctx.payload)?;
     let parents = obj
@@ -117,12 +106,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         .map(|v| v as usize)
         .unwrap_or(parent_solutions.len());
 
-    let (is_permutation, is_binary) = variable_flags(ctx.runtime);
-    let operator = obj
-        .get("crossoverOperator")
-        .and_then(Value::as_str)
-        .map(|v| v.to_ascii_lowercase())
-        .unwrap_or_else(|| "uniform".to_string());
+    let (is_permutation, _) = variable_flags(ctx.runtime);
 
     let elites: Vec<Solution> = parent_entries
         .iter()
@@ -142,21 +126,10 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         let mut chosen: Option<Solution> = None;
         for _ in 0..10 {
             let child_vec = if is_permutation {
-                if operator.contains("pmx") {
-                    pmx_crossover_f64(&v1, &v2, ctx.rng)
-                } else {
-                    order_crossover_f64(&v1, &v2, ctx.rng)
-                }
-            } else if is_binary {
-                if operator.contains("one") {
-                    one_point_crossover(&v1, &v2, ctx.rng)
-                } else {
-                    uniform_crossover_f64(&v1, &v2, ctx.rng)
-                }
-            } else if operator.contains("uniform") {
-                uniform_crossover_f64(&v1, &v2, ctx.rng)
+                pmx_crossover_f64(&v1, &v2, ctx.rng)
             } else {
-                one_point_crossover(&v1, &v2, ctx.rng)
+                // is_binary
+                uniform_crossover_f64(&v1, &v2, ctx.rng)
             };
 
             if is_same_vec(&child_vec, &v1) || is_same_vec(&child_vec, &v2) {
@@ -172,7 +145,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         }
 
         if chosen.is_none() {
-            let varied = force_variation(&v1, is_permutation, is_binary, ctx.rng);
+            let varied = force_variation(&v1, is_permutation, ctx.rng);
             if !is_same_vec(&varied, &v1) && !is_same_vec(&varied, &v2) {
                 chosen = match vec_to_solution(ctx.runtime, &varied) {
                     Some(solution) if ctx.runtime.is_feasible(&solution).unwrap_or(false) => Some(solution),
@@ -194,7 +167,6 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
 
     Ok(ModeOutcome::with_payload(json!({
         "offspring": offspring_json,
-        "crossoverOperator": operator,
         "eliteBypassed": elite_count,
     })))
 }
@@ -212,7 +184,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
 
-        let parents = json!({ "parents": [ { "variableValue": [0,1,2,3] }, { "variableValue": [3,2,1,0] } ], "targetSize": 2, "crossoverOperator": "pmx" });
+        let parents = json!({ "parents": [ { "variableValue": [0,1,2,3] }, { "variableValue": [3,2,1,0] } ], "targetSize": 2 });
         let ctx = ModeContext { runtime: &runtime, payload: &parents, rng: &mut rng };
 
         let outcome = execute(ctx).expect("crossover execute");

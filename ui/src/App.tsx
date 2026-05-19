@@ -143,7 +143,26 @@ function mapCatalogCategory(category: string): 'generation' | 'modification' | '
 }
 
 function sanitizeNodeDataForTemplate(data: FlowNodeData): FlowNodeData {
-  const { onUpdate, isRunning, error, trace, ...rest } = data;
+  const {
+    onUpdate,
+    isRunning,
+    error,
+    trace,
+    solution,
+    solutionSet,
+    decisionSummary,
+    history,
+    acceptCount,
+    bestSolution,
+    bestScore,
+    currentSolution,
+    currentScore,
+    temperatureCurrent,
+    iteration,
+    shouldStop,
+    status,
+    ...rest
+  } = data;
   return {
     ...rest,
     trace: '',
@@ -229,7 +248,10 @@ export default function App() {
           id: item.id,
           name: item.name,
           createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
-          nodes: item.nodes,
+          nodes: item.nodes.map((node: StoredTemplateNode) => ({
+            ...node,
+            data: sanitizeNodeDataForTemplate(node.data),
+          })),
           edges: item.edges,
         }));
       setCustomTemplates(normalized);
@@ -505,8 +527,12 @@ export default function App() {
 
   const loadTemplateGraph = useCallback(
     (template: { nodes: FlowNode[]; edges: FlowEdge[] }, algorithmName = 'Custom') => {
-      const hasProblem = template.nodes.some((node) => node.type === 'problem');
-      const nextNodes = hasProblem ? template.nodes : [createDefaultProblemNode(), ...template.nodes];
+      const sanitizedNodes = template.nodes.map((node) => ({
+        ...node,
+        data: sanitizeNodeDataForTemplate(node.data),
+      }));
+      const hasProblem = sanitizedNodes.some((node) => node.type === 'problem');
+      const nextNodes = hasProblem ? sanitizedNodes : [createDefaultProblemNode(), ...sanitizedNodes];
 
       nodeId.current = estimateNextNodeId(nextNodes);
       activeIterationRef.current = null;
@@ -652,7 +678,10 @@ export default function App() {
         id: parsed.id,
         name: parsed.name,
         createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
-        nodes: parsed.nodes,
+        nodes: parsed.nodes.map((node: StoredTemplateNode) => ({
+          ...node,
+          data: sanitizeNodeDataForTemplate(node.data),
+        })),
         edges: parsed.edges,
       };
 

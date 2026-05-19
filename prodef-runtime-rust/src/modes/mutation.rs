@@ -11,10 +11,7 @@ use crate::api::parse::{parse_candidate, payload_object, solution_to_f64_vec, ve
 use crate::domain::Solution;
 use crate::modes::common;
 use crate::modes::context::{ModeContext, ModeOutcome};
-use crate::operators::{
-    apply_random_bitflip, apply_random_swap, detect_problem_family,
-    mutate_permutation_inversion_f64, variable_flags, ProblemFamily,
-};
+use crate::operators::{apply_random_bitflip, apply_random_swap, variable_flags};
 
 fn repair_solution(runtime: &crate::domain::RuntimeProblem, base: &Solution, vars: &[f64]) -> Solution {
     match vec_to_solution(runtime, vars) {
@@ -61,15 +58,11 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         .unwrap_or(0.25);
 
     let (is_permutation, is_binary) = variable_flags(ctx.runtime);
-    let family = detect_problem_family(ctx.runtime);
 
     let operator = if is_binary {
         "bit-flip+repair".to_string()
     } else if is_permutation {
-        match family {
-            ProblemFamily::Assignment => "swap".to_string(),
-            _ => "inversion".to_string(),
-        }
+        "swap".to_string()
     } else {
         "delta".to_string()
     };
@@ -99,13 +92,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
 
         for _ in 0..steps {
             let next_vars = if is_permutation {
-                if operator.contains("swap") {
-                    apply_random_swap(&vars, ctx.rng)
-                } else {
-                    let mut candidate = vars.clone();
-                    mutate_permutation_inversion_f64(&mut candidate, ctx.rng);
-                    candidate
-                }
+                apply_random_swap(&vars, ctx.rng)
             } else if is_binary {
                 apply_random_bitflip(&vars, ctx.rng)
             } else {

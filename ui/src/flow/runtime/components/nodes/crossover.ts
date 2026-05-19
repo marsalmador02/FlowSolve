@@ -30,15 +30,14 @@ export class CrossoverComponent extends RuntimeComponent {
       },
     });
 
-    const payload = response.payload as { offspring: SolutionLike[]; crossoverOperator: string; eliteBypassed?: number };
+    const payload = response.payload as { offspring: SolutionLike[]; eliteBypassed?: number };
     const offspring = Array.isArray(payload.offspring) && payload.offspring.length > 0
       ? payload.offspring
       : parents;
 
     ctx.updateNodeData({ solutionSet: toPretty(offspring), setSize: offspring.length });
-    const op = payload.crossoverOperator ?? 'uniform+repair';
     const eliteBypassed = payload.eliteBypassed ?? 0;
-    const lines = [`🧬 Crossover: operator=${op}, eliteBypassed=${eliteBypassed}`];
+    const lines = [`🧬 Crossover: eliteBypassed=${eliteBypassed}`];
     offspring.forEach((individual, idx) => {
       lines.push(`      s${idx + 1}: ${formatCompact(individual)}`);
     });
