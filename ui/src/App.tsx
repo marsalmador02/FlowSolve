@@ -529,7 +529,10 @@ export default function App() {
     (template: { nodes: FlowNode[]; edges: FlowEdge[] }, algorithmName = 'Custom') => {
       const sanitizedNodes = template.nodes.map((node) => ({
         ...node,
-        data: sanitizeNodeDataForTemplate(node.data),
+        data: {
+          ...sanitizeNodeDataForTemplate(node.data),
+          onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(node.id, patch),
+        },
       }));
       const hasProblem = sanitizedNodes.some((node) => node.type === 'problem');
       const nextNodes = hasProblem ? sanitizedNodes : [createDefaultProblemNode(), ...sanitizedNodes];
@@ -544,7 +547,7 @@ export default function App() {
       setNeighborhoodLevel(1);
       setTimeout(() => rfInstance.current?.fitView({ duration: 300, padding: 0.2 }), 60);
     },
-    [createDefaultProblemNode, setNeighborhoodLevel],
+    [createDefaultProblemNode, setNeighborhoodLevel, updateNodeData],
   );
 
   const loadGraspTemplate = useCallback(() => {

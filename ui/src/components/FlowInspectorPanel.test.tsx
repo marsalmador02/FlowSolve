@@ -1,11 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  ASSIGNMENT_COMPLEX_TEMPLATE_JSON,
   ASSIGNMENT_TEMPLATE_JSON,
-  KNAPSACK_COMPLEX_TEMPLATE_JSON,
   KNAPSACK_TEMPLATE_JSON,
-  TSP_COMPLEX_TEMPLATE_JSON,
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 import type { FlowNode } from '../types/flow';
@@ -39,23 +36,14 @@ describe('FlowInspectorPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Knapsack' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Knapsack1' }));
     expect(applyProblemExample).toHaveBeenCalledWith(KNAPSACK_TEMPLATE_JSON);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complex knapsack' }));
-    expect(applyProblemExample).toHaveBeenCalledWith(KNAPSACK_COMPLEX_TEMPLATE_JSON);
-
-    fireEvent.click(screen.getByRole('button', { name: 'TSP' }));
+    fireEvent.click(screen.getByRole('button', { name: 'TSP1' }));
     expect(applyProblemExample).toHaveBeenCalledWith(TSP_TEMPLATE_JSON);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complex TSP' }));
-    expect(applyProblemExample).toHaveBeenCalledWith(TSP_COMPLEX_TEMPLATE_JSON);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Assignment' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment1' }));
     expect(applyProblemExample).toHaveBeenCalledWith(ASSIGNMENT_TEMPLATE_JSON);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Complex Assignment' }));
-    expect(applyProblemExample).toHaveBeenCalledWith(ASSIGNMENT_COMPLEX_TEMPLATE_JSON);
 
     const editor = screen.getByRole('textbox') as HTMLTextAreaElement;
     expect(editor.value).toBe('{"existing":true}');

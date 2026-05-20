@@ -4,106 +4,6 @@
 
 export const KNAPSACK_TEMPLATE_JSON = `{
   "name": "BinaryKnapsack1",
-  "description": "Optional description (optimal: 130)",
-  "parameters": [
-    {"name": "Number of items", "symbol": "N", "value": 5},
-    {"name": "Maximum weight", "symbol": "MaxWeight", "value": 80}
-  ],
-  "variables": [
-    {
-      "name": "Items in the knapsack",
-      "symbol": "x",
-      "within": "integers",
-      "range": {"lowerBound": 0, "upperBound": 1},
-      "shape": {
-        "type": "vector",
-        "isPermutation": false,
-        "size": {"fixed": false, "value": "N"}
-      }
-    }
-  ],
-  "goals": [
-    {
-      "name": "Maximize the value of the items",
-      "sense": "maximize",
-      "expression": "sum x[i]*item[i].value over i=(1:N)",
-      "weight": 1
-    }
-  ],
-  "constraints": [
-    {
-      "name": "Limit the total weight of the items in the knapsack",
-      "expression": "sum x[i]*item[i].weight over i=(1:N) <= MaxWeight"
-    }
-  ],
-  "classes": [
-    {
-      "name": "Item",
-      "symbol": "item",
-      "attributes": [
-        {"name": "Name", "symbol": "name"},
-        {"name": "Value", "symbol": "value"},
-        {"name": "Weight", "symbol": "weight"}
-      ]
-    }
-  ],
-  "objects": [
-    {"class": "item", "attributes": [{"attribute": "name", "value": "Item 1"}, {"attribute": "value", "value": 33}, {"attribute": "weight", "value": 15}]},
-    {"class": "item", "attributes": [{"attribute": "name", "value": "Item 2"}, {"attribute": "value", "value": 24}, {"attribute": "weight", "value": 20}]},
-    {"class": "item", "attributes": [{"attribute": "name", "value": "Item 3"}, {"attribute": "value", "value": 36}, {"attribute": "weight", "value": 17}]},
-    {"class": "item", "attributes": [{"attribute": "name", "value": "Item 4"}, {"attribute": "value", "value": 37}, {"attribute": "weight", "value": 8}]},
-    {"class": "item", "attributes": [{"attribute": "name", "value": "Item 5"}, {"attribute": "value", "value": 12}, {"attribute": "weight", "value": 31}]}
-  ]
-}`;
-
-export const TSP_TEMPLATE_JSON = `{
-  "name": "TSP1",
-  "description": "TSP instance from the document",
-  "parameters": [
-    {"name": "Number of cities", "symbol": "N", "value": 4}
-  ],
-  "variables": [
-    {
-      "name": "Visited cities",
-      "symbol": "city",
-      "within": "integers",
-      "shape": {
-        "type": "vector",
-        "isPermutation": true,
-        "size": {"fixed": false, "value": "N"}
-      }
-    }
-  ],
-  "goals": [
-    {
-      "name": "Minimize the distance traveled",
-      "sense": "minimize",
-      "expression": "sum distance[city[i], city[i+1]] over i=(1:N-1) + distance[city[N], city[1]]",
-      "weight": 1
-    }
-  ],
-  "classes": [
-    {
-      "name": "Distance between cities",
-      "symbol": "distance",
-      "attributes": [
-        {"name": "Distance with city 1", "symbol": "dist_c1"},
-        {"name": "Distance with city 2", "symbol": "dist_c2"},
-        {"name": "Distance with city 3", "symbol": "dist_c3"},
-        {"name": "Distance with city 4", "symbol": "dist_c4"}
-      ]
-    }
-  ],
-  "objects": [
-    {"class": "distance", "attributes": [{"attribute": "dist_c1", "value": 0}, {"attribute": "dist_c2", "value": 12}, {"attribute": "dist_c3", "value": 25}, {"attribute": "dist_c4", "value": 17}]},
-    {"class": "distance", "attributes": [{"attribute": "dist_c1", "value": 12}, {"attribute": "dist_c2", "value": 0}, {"attribute": "dist_c3", "value": 35}, {"attribute": "dist_c4", "value": 8}]},
-    {"class": "distance", "attributes": [{"attribute": "dist_c1", "value": 25}, {"attribute": "dist_c2", "value": 35}, {"attribute": "dist_c3", "value": 0}, {"attribute": "dist_c4", "value": 11}]},
-    {"class": "distance", "attributes": [{"attribute": "dist_c1", "value": 17}, {"attribute": "dist_c2", "value": 8}, {"attribute": "dist_c3", "value": 11}, {"attribute": "dist_c4", "value": 0}]}
-  ]
-}`;
-
-export const KNAPSACK_COMPLEX_TEMPLATE_JSON = `{
-  "name": "BinaryKnapsack2",
   "description": "Larger instance with 15 items and broader value/weight ranges.",
   "parameters": [
     {"name": "Number of items", "symbol": "N", "value": 15},
@@ -166,8 +66,8 @@ export const KNAPSACK_COMPLEX_TEMPLATE_JSON = `{
   ]
 }`;
 
-export const TSP_COMPLEX_TEMPLATE_JSON = `{
-  "name": "TSP2",
+export const TSP_TEMPLATE_JSON = `{
+  "name": "TSP1",
   "description": "12-city TSP with larger edge costs.",
   "parameters": [
     {"name": "Number of cities", "symbol": "N", "value": 12}
@@ -230,52 +130,6 @@ export const TSP_COMPLEX_TEMPLATE_JSON = `{
 
 export const ASSIGNMENT_TEMPLATE_JSON = `{
   "name": "Assignment1",
-  "description": "4x4 worker-task assignment problem",
-  "parameters": [
-    {"name": "Number of workers/tasks", "symbol": "N", "value": 4}
-  ],
-  "variables": [
-    {
-      "name": "Task assigned to each worker",
-      "symbol": "assignment",
-      "within": "integers",
-      "shape": {
-        "type": "vector",
-        "isPermutation": true,
-        "size": {"fixed": false, "value": "N"}
-      }
-    }
-  ],
-  "goals": [
-    {
-      "name": "Minimize total assignment cost",
-      "sense": "minimize",
-      "expression": "sum cost[i, assignment[i]] over i=(1:N)",
-      "weight": 1
-    }
-  ],
-  "classes": [
-    {
-      "name": "Cost matrix worker->task",
-      "symbol": "cost",
-      "attributes": [
-        {"name": "Task 1 cost", "symbol": "task_1"},
-        {"name": "Task 2 cost", "symbol": "task_2"},
-        {"name": "Task 3 cost", "symbol": "task_3"},
-        {"name": "Task 4 cost", "symbol": "task_4"}
-      ]
-    }
-  ],
-  "objects": [
-    {"class": "cost", "attributes": [{"attribute": "task_1", "value": 14}, {"attribute": "task_2", "value": 5}, {"attribute": "task_3", "value": 8}, {"attribute": "task_4", "value": 7}]},
-    {"class": "cost", "attributes": [{"attribute": "task_1", "value": 2}, {"attribute": "task_2", "value": 12}, {"attribute": "task_3", "value": 6}, {"attribute": "task_4", "value": 5}]},
-    {"class": "cost", "attributes": [{"attribute": "task_1", "value": 7}, {"attribute": "task_2", "value": 8}, {"attribute": "task_3", "value": 3}, {"attribute": "task_4", "value": 9}]},
-    {"class": "cost", "attributes": [{"attribute": "task_1", "value": 2}, {"attribute": "task_2", "value": 4}, {"attribute": "task_3", "value": 6}, {"attribute": "task_4", "value": 10}]}
-  ]
-}`;
-
-export const ASSIGNMENT_COMPLEX_TEMPLATE_JSON = `{
-  "name": "Assignment2",
   "description": "9x9 worker-task assignment with wider costs",
   "parameters": [
     {"name": "Number of workers/tasks", "symbol": "N", "value": 9}

@@ -14,11 +14,8 @@
  */
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {
-  ASSIGNMENT_COMPLEX_TEMPLATE_JSON,
   ASSIGNMENT_TEMPLATE_JSON,
-  KNAPSACK_COMPLEX_TEMPLATE_JSON,
   KNAPSACK_TEMPLATE_JSON,
-  TSP_COMPLEX_TEMPLATE_JSON,
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 
@@ -58,13 +55,13 @@ export function FlowInspectorPanel({
         <aside className="properties">
           <div className="properties-title">Problem JSON</div>
           <div className="properties-actions">
-            <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_COMPLEX_TEMPLATE_JSON)}>
+            <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_TEMPLATE_JSON)}>
               Knapsack
             </button>
-            <button className="sidebar-action" onClick={() => applyProblemExample(TSP_COMPLEX_TEMPLATE_JSON)}>
+            <button className="sidebar-action" onClick={() => applyProblemExample(TSP_TEMPLATE_JSON)}>
               TSP
             </button>
-            <button className="sidebar-action" onClick={() => applyProblemExample(ASSIGNMENT_COMPLEX_TEMPLATE_JSON)}>
+            <button className="sidebar-action" onClick={() => applyProblemExample(ASSIGNMENT_TEMPLATE_JSON)}>
               Assignment
             </button>
           </div>
