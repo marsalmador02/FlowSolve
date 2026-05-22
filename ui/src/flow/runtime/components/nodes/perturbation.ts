@@ -47,7 +47,7 @@ export class PerturbationComponent extends RuntimeComponent {
 
     ctx.updateNodeData({ solution: toPretty(result) });
     ctx.appendTrace(
-      `🌪️ Perturbation: attempts = ${attempts}/${maxAttempts}${k > 1 ? `, k=${k}` : ''} | baseline = ${formatCompact(base)}\n      Attempt ${attempts} -> ${formatCompact(result)} (Δ${sign})`,
+      `🌪️ Perturbation: attempts = ${attempts}/${maxAttempts} | baseline = ${formatCompact(base)}\n      Attempt ${attempts} -> ${formatCompact(result)} (Δ${sign})`,
     );
 
     return {

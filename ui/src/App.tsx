@@ -158,6 +158,8 @@ function sanitizeNodeDataForTemplate(data: FlowNodeData): FlowNodeData {
     currentSolution,
     currentScore,
     temperatureCurrent,
+    neighborhoodValue,
+    neighborhoodInfo,
     iteration,
     shouldStop,
     status,
@@ -848,14 +850,30 @@ export default function App() {
       }
 
       if (node.type === 'acceptance' || node.type === 'temperatureAcceptance' || node.type === 'selectionBest' || node.type === 'localSearch' || node.type === 'perturbation' || node.type === 'singleSolution') {
+        const resetData: Partial<typeof node.data> = {
+          ...baseData,
+          solution: undefined,
+          decisionSummary: undefined,
+          temperatureCurrent: undefined,
+        };
+
+        if (node.type === 'perturbation') {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              ...resetData,
+              neighborhoodValue: 1,
+              neighborhoodInfo: 'run start -> k=1',
+            },
+          };
+        }
+
         return {
           ...node,
           data: {
             ...node.data,
-            ...baseData,
-            solution: undefined,
-            decisionSummary: undefined,
-            temperatureCurrent: undefined,
+            ...resetData,
           },
         };
       }
