@@ -1,16 +1,16 @@
 /*
- * Archivo: flowNodes.tsx
+ * File: flowNodes.tsx
  *
- * Que contiene:
- * - Renderizadores visuales de cada tipo de nodo en React Flow.
- * - Handles de entrada/salida (incluyendo handles especializados como
+ * Contains:
+ * - Visual renderers for each node type in React Flow.
+ * - Input/output handles (including specialized handles like
  *   in-local, in-storage, to-single, to-storage).
- * - Resumenes visuales de soluciones, sets, score, estados de running y errores.
+ * - Visual summaries for solutions, sets, scores, running states and errors.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Materializa en pantalla el grafo que el usuario construye en App.
- * - Define la estructura de conexion visible y, por sus handles, ayuda a
- *   enrutar correctamente los paquetes entre nodos en el runtime.
+ * Role in the flow (startup -> graph execution):
+ * - Renders the graph the user builds in App.
+ * - Defines visible connection structure and, via handles, assists routing of
+ *   packets between nodes in the runtime.
  */
 
 import React from 'react';

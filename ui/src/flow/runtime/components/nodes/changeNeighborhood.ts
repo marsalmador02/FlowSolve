@@ -1,16 +1,14 @@
 /*
- * Archivo: changeNeighborhood.ts
+ * File: changeNeighborhood.ts
  *
- * Que contiene:
- * - Componente VNS que ajusta k comparando dos paquetes con el mismo idIteration.
- *   Si ambas soluciones son iguales (por variableValue) -> k se incrementa.
- *   Si difieren -> k se resetea a 1 (si previamente se habia incrementado).
+ * Contains:
+ * - VNS component that adjusts neighborhood size `k` by comparing two packets
+ *   with the same `idIteration`.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Sincroniza baseline (desde loop) y accepted (desde acceptance u otro camino).
- * - Propaga el valor de k resultante a los nodos perturbation para que el numero
- *   de bit-flips/swaps en la siguiente iteracion escale con el vecindario.
- * - Re-emite la solucion accepted (la mejor del ciclo) hacia el siguiente componente.
+ * Role in the flow (startup -> graph execution):
+ * - Synchronizes baseline (from loop) and accepted (from acceptance or other path).
+ * - Propagates the computed `k` value to perturbation nodes so neighbor size scales.
+ * - Re-emits the accepted solution (the cycle winner) to the next component.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, formatCompact, solutionScore, solutionsEqualByVars, toPretty } from '../base';
@@ -48,7 +46,7 @@ function selectAcceptedAndBaseline(
   return { accepted: sorted[0], baseline: sorted[1] };
 }
 
-export class ChangeNeighborhoodComponent extends JoinRuntimeComponent {
+export class ChangeNeighbourhoodComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {
       return { kind: 'wait' };

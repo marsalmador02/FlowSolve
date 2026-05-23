@@ -1,12 +1,12 @@
 /*
- * Archivo: temperatureAcceptance.ts
+ * File: temperatureAcceptance.ts
  *
- * Que contiene:
- * - Componente temperature-acceptance (SA) de 2 entradas: acepta la mejor solucion
- *   o la peor con probabilidad exp(-delta/T) (via Rust 'temperature-acceptance').
+ * Contains:
+ * - Two-input SA acceptance component: accepts the better solution or a worse one
+ *   with probability exp(-delta/T) (delegates to Rust 'temperature-acceptance').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Sincroniza dos caminos y emite la solucion aceptada segun la politica SA.
+ * Role in the flow (startup -> graph execution):
+ * - Synchronizes two paths and emits the solution accepted by the SA policy.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

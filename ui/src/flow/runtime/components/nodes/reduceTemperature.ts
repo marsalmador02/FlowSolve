@@ -1,13 +1,13 @@
 /*
- * Archivo: reduceTemperature.ts
+ * File: reduceTemperature.ts
  *
- * Que contiene:
- * - Componente SA que reduce la temperatura con una curva geométrica.
- *   Interpola entre T0 = 100 y Tf = 0.1 a lo largo de maxIterations pasos.
+ * Contains:
+ * - SA node that reduces temperature using a geometric schedule.
+ *   It interpolates between T0 = 100 and Tf = 0.1 across maxIterations steps.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Forwardea la solucion aceptada y reduce la temperatura.
- * - El Loop node propaga maxIterations en la primera iteración.
+ * Role in the flow (startup -> graph execution):
+ * - Forwards the accepted solution and reduces the temperature value.
+ * - The Loop node propagates `maxIterations` on the first iteration.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';

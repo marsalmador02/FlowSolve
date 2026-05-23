@@ -24,7 +24,7 @@ import { CrossoverComponent } from './nodes/crossover';
 import { MutationComponent } from './nodes/mutation';
 import { TemperatureAcceptanceComponent } from './nodes/temperatureAcceptance';
 import { ReduceTemperatureComponent } from './nodes/reduceTemperature';
-import { ChangeNeighborhoodComponent } from './nodes/changeNeighborhood';
+import { ChangeNeighbourhoodComponent } from './nodes/changeNeighborhood';
 
 export type ComponentFactory = () => RuntimeComponent;
 
@@ -44,7 +44,7 @@ const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
   mutation: () => new MutationComponent(),
   temperatureAcceptance: () => new TemperatureAcceptanceComponent(),
   reduceTemperature: () => new ReduceTemperatureComponent(),
-  changeNeighborhood: () => new ChangeNeighborhoodComponent(),
+  changeNeighborhood: () => new ChangeNeighbourhoodComponent(),
 };
 
 /**

@@ -1,12 +1,12 @@
 /*
- * Archivo: mutation.ts
+ * File: mutation.ts
  *
- * Que contiene:
- * - Componente de mutacion evolutiva que aplica variaciones sobre una poblacion
- *   con tasa configurable (via Rust 'mutation').
+ * Contains:
+ * - Evolutionary mutation component that applies variations to a population
+ *   using a configurable rate (delegates to Rust 'mutation').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Recibe un solutionSet y emite un solutionSet mutado del mismo tamano.
+ * Role in the flow (startup -> graph execution):
+ * - Receives a solutionSet and emits a mutated solutionSet of the same size.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

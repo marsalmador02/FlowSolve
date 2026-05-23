@@ -1,12 +1,11 @@
 /*
- * Archivo: singleGenerator.ts
+ * File: singleGenerator.ts
  *
- * Que contiene:
- * - Componente que genera UNA solucion aleatoria factible via Rust (mode 'generate').
+ * Contains:
+ * - Component that generates a single random feasible solution via Rust (mode 'generate').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Solo se usa cuando esta marcado como start: al arrancar, produce el seed inicial
- *   que luego viaja al loop conectado.
+ * Role in the flow (startup -> graph execution):
+ * - Used as a start node: on startup it produces the initial seed that travels into the loop.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

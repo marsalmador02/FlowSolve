@@ -1,18 +1,17 @@
 /*
- * Archivo: App.tsx
+ * File: App.tsx
  *
- * Que contiene:
- * - Contenedor principal del editor visual de metaheuristicas.
- * - Estado reactivo del canvas: nodos, aristas, seleccion, trazas y paneles.
- * - Integracion de React Flow (render, drag-and-drop, conexiones, minimapa).
- * - Carga de catalogo de componentes desde backend y manejo de templates.
- * - Puente con useFlowRunner para ejecutar Run Flow y Run Next Step.
+ * Contains:
+ * - Main container for the metaheuristics visual editor.
+ * - Reactive canvas state: nodes, edges, selection, traces and panels.
+ * - Integration with React Flow (render, drag-and-drop, connections, minimap).
+ * - Loads component catalog from backend and handles templates.
+ * - Bridge to useFlowRunner for executing Run Flow and Run Next Step.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Recibe el control desde main.tsx y construye toda la experiencia de edicion.
- * - Hidrata la paleta de componentes via API y muestra el lienzo editable.
- * - Dispara la ejecucion del grafo cuando el usuario corre el flujo, delegando
- *   al runtime de ejecucion (graphExecutor) a traves de useFlowRunner.
+ * Role in the flow (startup -> graph execution):
+ * - Receives control from main.tsx and builds the editing experience.
+ * - Hydrates the component palette via API and displays the editable canvas.
+ * - Triggers graph execution delegating to the execution runtime via useFlowRunner.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactFlow, {

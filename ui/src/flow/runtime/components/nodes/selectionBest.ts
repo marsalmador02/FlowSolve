@@ -1,11 +1,11 @@
 /*
- * Archivo: selectionBest.ts
+ * File: selectionBest.ts
  *
- * Que contiene:
- * - Componente que recibe un set y devuelve la mejor solucion (via Rust 'select-best').
+ * Contains:
+ * - Component that receives a set and returns the best solution (delegates to Rust 'select-best').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Convierte un paquete con solutionSet en un paquete con solution unica.
+ * Role in the flow (startup -> graph execution):
+ * - Converts a packet with a solutionSet into a packet with a single solution.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

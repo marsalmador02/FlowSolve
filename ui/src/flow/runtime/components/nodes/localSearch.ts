@@ -1,12 +1,11 @@
 /*
- * Archivo: localSearch.ts
+ * File: localSearch.ts
  *
- * Que contiene:
- * - Componente que genera vecinos de una solucion y se queda con el mejor (via Rust 'local-search').
+ * Contains:
+ * - Node that runs a local search on a given solution using neighborhood operators.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Mejora la solucion entrante usando la estructura de vecindad apropiada al tipo
- *   de problema (bit-flip o swap segun runtime Rust).
+ * Role in the flow (startup -> graph execution):
+ * - Consumes a solution and returns an improved solution or the same if no improvement.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
@@ -39,6 +38,7 @@ export class LocalSearchComponent extends RuntimeComponent {
     const outScore = solutionScore(improved);
     const delta = outScore - baseScore;
     const sign = delta > 0 ? `+${delta.toFixed(0)}` : delta.toFixed(0);
+
     ctx.appendTrace(
       `🔍 LocalSearch: baseline = ${formatCompact(base)}\n      Best move: ${formatCompact(improved)} (Δ${sign})`,
     );

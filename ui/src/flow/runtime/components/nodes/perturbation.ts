@@ -1,13 +1,12 @@
 /*
- * Archivo: perturbation.ts
+ * File: perturbation.ts
  *
- * Que contiene:
- * - Componente que aplica un bit-flip/swap aleatorio y reintenta hasta encontrar
- *   una solucion factible (via Rust 'perturbation').
+ * Contains:
+ * - Component that applies random bit-flip/swap perturbations and retries until
+ *   a feasible solution is found (delegates to Rust 'perturbation').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Convierte la solucion entrante en una solucion vecina factible mediante movimientos
- *   aleatorios, con maxAttempts configurable por el usuario (por defecto 10).
+ * Role in the flow (startup -> graph execution):
+ * - Converts an incoming solution into a feasible neighbor with configurable maxAttempts.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

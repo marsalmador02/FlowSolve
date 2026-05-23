@@ -1,13 +1,13 @@
 /*
- * Archivo: substraction.ts
+ * File: substraction.ts
  *
- * Que contiene:
- * - Componente substraction de 2 entradas: espera un paquete desde storage y otro
- *   desde un componente distinto con el mismo idIteration.
- * - Resta (set difference por vector de variables) el conjunto de storage al otro set.
+ * Contains:
+ * - Two-input substraction component: expects one packet from storage and another
+ *   from a different component with the same idIteration.
+ * - Performs set difference (by variable vector) removing storage elements from the other set.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Sincroniza dos caminos; una entrada DEBE venir de storage. Emite el set resultante.
+ * Role in the flow (startup -> graph execution):
+ * - Synchronizes two paths; one input MUST come from a storage node. Emits the resulting set.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, toPretty } from '../base';

@@ -1,17 +1,13 @@
 /*
- * Archivo: loop.ts
+ * File: loop.ts
  *
- * Que contiene:
- * - Componente loop (termination): reloj del flujo. Mantiene el contador de
- *   iteraciones y decide cuando detener la ejecucion.
+ * Contains:
+ * - Loop (termination) component: flow clock. Keeps iteration counter and decides when to stop.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Se dispara cuando es start o cuando recibe el paquete inicial del generator start.
- * - En su primer disparo emite idIteration=1 a sus salientes.
- * - En cada disparo posterior (cycle closure) incrementa iteration en 1.
- * - Al superar maxIterations emite stop y marca fin de flujo.
- * El nodo también mantiene un array `history` que almacena el valor objetivo de cada
- * solución que recibe. Este history se usa para exportar el CSV de ejecución.
+ * Role in the flow (startup -> graph execution):
+ * - Emits idIteration=1 on first trigger and increments iteration on subsequent closures.
+ * - When maxIterations is exceeded, emits stop and marks flow end.
+ * - Maintains `history` array storing objective values for CSV export.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, solutionScore, toPretty } from '../base';
@@ -30,7 +26,6 @@ export class LoopComponent extends RuntimeComponent {
     const patchPayload: Record<string, unknown> = {};
     if (incoming.solution) {
       patchPayload.solution = toPretty(incoming.solution);
-      
       const score = solutionScore(incoming.solution);
       if (Number.isFinite(score)) {
         history.push(score);
@@ -39,7 +34,7 @@ export class LoopComponent extends RuntimeComponent {
     if (Array.isArray(incoming.solutionSet)) {
       patchPayload.solutionSet = toPretty(incoming.solutionSet);
       patchPayload.setSize = incoming.solutionSet.length;
-      
+
       if (incoming.solutionSet.length > 0) {
         const best = incoming.solutionSet[0] as SolutionLike;
         const score = solutionScore(best);

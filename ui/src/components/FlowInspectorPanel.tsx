@@ -1,16 +1,16 @@
 /*
- * Archivo: FlowInspectorPanel.tsx
+ * File: FlowInspectorPanel.tsx
  *
- * Que contiene:
- * - Panel lateral derecho con:
- *   - Editor del JSON del Problem con botones de ejemplos.
- *   - Marcado Start/End del nodo seleccionado.
- *   - Traza global de la ejecucion.
- *   - Exportacion simple de la traza a un archivo de texto.
+ * Contains:
+ * - Right-side inspector panel with:
+ *   - Problem JSON editor with example buttons.
+ *   - Start/End flags for the selected node.
+ *   - Global execution trace view.
+ *   - Simple export of the trace to a text file.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Permite definir el problema, elegir el nodo de arranque y el de cierre,
- *   seguir la traza global mientras corre el flujo y exportarla al final.
+ * Role in the flow (startup -> graph execution):
+ * - Allows defining the problem, selecting start/end nodes, monitoring the
+ *   global trace during execution, and exporting results.
  */
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {

@@ -1,12 +1,11 @@
 /*
- * Archivo: populationGenerator.ts
+ * File: populationGenerator.ts
  *
- * Que contiene:
- * - Componente que genera una poblacion de soluciones via Rust (mode 'generate-population').
+ * Contains:
+ * - Node that generates an initial population of solutions.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Usado cuando esta marcado como start: produce el conjunto inicial de soluciones
- *   y lo envia al loop conectado.
+ * Role in the flow (startup -> graph execution):
+ * - Emits a solutionSet ready for evolutionary operators or further processing.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

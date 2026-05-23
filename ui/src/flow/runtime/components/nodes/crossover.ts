@@ -1,12 +1,12 @@
 /*
- * Archivo: crossover.ts
+ * File: crossover.ts
  *
- * Que contiene:
- * - Componente de cruzamiento evolutivo que produce descendencia de una poblacion
- *   de padres (via Rust 'crossover').
+ * Contains:
+ * - Evolutionary crossover component that produces offspring from a parent
+ *   population (delegates to Rust 'crossover').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Recibe un solutionSet (padres) y emite un solutionSet (descendencia).
+ * Role in the flow (startup -> graph execution):
+ * - Receives a solutionSet (parents) and emits a solutionSet (offspring).
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

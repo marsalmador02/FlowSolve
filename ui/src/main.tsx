@@ -1,15 +1,15 @@
 /*
- * Archivo: main.tsx
+ * File: main.tsx
  *
- * Que contiene:
- * - Punto de entrada de la aplicacion React de la UI.
- * - Importacion del componente raiz (App) y estilos globales.
- * - Montaje del arbol React sobre el nodo DOM #root.
+ * Contains:
+ * - Entry point for the UI React application.
+ * - Imports the root component (App) and global styles.
+ * - Mounts the React tree onto the DOM node #root.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Es el primer archivo ejecutado cuando el usuario abre la pagina.
- * - Inicializa el runtime de React y entrega control a App.tsx, donde comienza
- *   la orquestacion del editor visual, el estado del grafo y las acciones de run.
+ * Role in the flow (startup -> graph execution):
+ * - First script executed when the page loads.
+ * - Initializes the React runtime and hands control to App.tsx, where the
+ *   visual editor orchestration, graph state and run actions begin.
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';

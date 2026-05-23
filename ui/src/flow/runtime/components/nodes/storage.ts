@@ -1,19 +1,18 @@
 /*
- * Archivo: storage.ts
+ * File: storage.ts
  *
- * Que contiene:
- * - Componente storage con dos modos automaticos:
- *   - Overwrite: cuando ningun sucesor es substraction, reemplaza la solucion/set.
- *   - Accumulate: cuando algun sucesor es substraction, va acumulando todas las
- *     soluciones que recibe en una lista que crece con el tiempo.
- *     Al accumular, se llama a Rust para determinar la mejor solucion y se coloca
- *     al inicio de la lista para acceso rápido.
+ * Contains:
+ * - Storage component with two automatic modes:
+ *   - Overwrite: when no successor is a substraction node, it replaces the solution/set.
+ *   - Accumulate: when a successor is substraction, it accumulates received
+ *     solutions into a growing list. While accumulating it calls Rust to pick
+ *     the best solution and places it at index 0 for fast access.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Memoria ligera del flujo. En modo accumulate acumula el historico de candidatos
- *   que despues restara substraction. Si es nodo final, la primera solucion (mejor) es el resultado.
- * El nodo también mantiene un array `history` que almacena el valor objetivo de cada
- * solución que recibe. Este history se usa para exportar el CSV de ejecución.
+ * Role in the flow (startup -> graph execution):
+ * - Lightweight flow memory. In accumulate mode it gathers candidate history
+ *   later substracted by `substraction`. If used as terminal node, the first
+ *   solution (best) is considered the result. The node also maintains a `history`
+ *   array storing objective values for CSV export.
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import { parseJson } from '../../../../utils/flowHelpers';

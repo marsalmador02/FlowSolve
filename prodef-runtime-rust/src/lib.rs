@@ -4,6 +4,7 @@
 //! purposes.
 
 #![cfg_attr(test, allow(dead_code))]
+#![allow(dead_code)]
 
 pub(crate) mod api;
 pub(crate) mod domain;

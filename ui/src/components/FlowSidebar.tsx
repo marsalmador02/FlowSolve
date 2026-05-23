@@ -1,16 +1,16 @@
 /*
- * Archivo: FlowSidebar.tsx
+ * File: FlowSidebar.tsx
  *
- * Que contiene:
- * - Panel lateral izquierdo del editor.
- * - Acciones de alto nivel: cargar templates, ejecutar flujo completo, ejecutar
- *   siguiente paso, reset y gestion de templates personalizados.
- * - Paleta drag-and-drop de componentes disponibles para construir el grafo.
+ * Contains:
+ * - Left-side sidebar for the editor.
+ * - High-level actions: load templates, run full flow, run next step, reset,
+ *   and manage custom templates.
+ * - Drag-and-drop palette of components available to build the graph.
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Es la puerta de entrada de la interaccion del usuario con el proceso.
- * - Desde aqui se arma el grafo (arrastrando nodos) y se dispara la ejecucion
- *   que luego recorre App -> useFlowRunner -> graphExecutor.
+ * Role in the flow (startup -> graph execution):
+ * - Entry point for user interaction with the process.
+ * - From here users assemble the graph (dragging nodes) and trigger execution
+ *   that flows through App -> useFlowRunner -> graphExecutor.
  */
 
 interface SidebarPaletteItem {

@@ -1,11 +1,11 @@
 /*
- * Archivo: neighborhood.ts
+ * File: neighborhood.ts
  *
- * Que contiene:
- * - Componente que genera todos los vecinos factibles de una solucion (via Rust 'neighborhood').
+ * Contains:
+ * - Component that generates feasible neighbors for a solution (delegates to Rust 'neighborhood').
  *
- * Funcion en el flujo (inicio -> ejecucion de grafo):
- * - Convierte un paquete con solution unica en un paquete con solutionSet (vecinos factibles).
+ * Role in the flow (startup -> graph execution):
+ * - Converts a packet with a single solution into a packet with a solutionSet (feasible neighbors).
  */
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

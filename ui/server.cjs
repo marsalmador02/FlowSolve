@@ -42,7 +42,7 @@ function runRustRequest(payload, onSuccess, res) {
   }
 
   const args = ['--exec-request', tmpRequest];
-  // Ejecuta el binario Rust como proceso hijo y captura stdout/stderr.
+  // Runs the Rust binary as a child process and captures stdout/stderr.
   execFile(RUST_BIN, args, { cwd: RUST_BIN_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
     try {
       // Siempre intentamos borrar el request temporal al finalizar.
@@ -70,7 +70,7 @@ app.post('/execute', (req, res) => {
     return res.status(400).json({ error: 'Missing execution request JSON body' });
   }
 
-  // Forward del request al runtime Rust y respuesta directa al cliente UI.
+  // Forwards the request to the Rust runtime and returns the response to the UI client.
   runRustRequest(payload, (parsed) => {
     res.json(parsed);
   }, res);
