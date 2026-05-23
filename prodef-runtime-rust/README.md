@@ -1,22 +1,27 @@
-﻿# prodef-runtime-rust
+﻿# FlowSolve Runtime (Rust) - Summary
 
-Motor Rust que ejecuta la semántica de optimización de FlowSolve.
-Este crate recibe una definición de problema y un modo de ejecución en JSON,
-valida y normaliza el problema, ejecuta el operador correspondiente y devuelve
-una respuesta JSON lista para consumir desde la UI.
+This README gives a concise overview of the `prodef-runtime-rust/` crate, what it does, how it is organized and how it fits with the UI.
 
-## Qué hace
+## 1. What this runtime is
 
-1. Lee un archivo JSON con `ExecutionRequest`.
-2. Convierte `problem` en un `RuntimeProblem` ejecutable.
-3. Despacha `execution.mode` al handler adecuado.
-4. Ejecuta generación, selección, cruce, mutación, búsqueda local o aceptación.
-5. Serializa el resultado como `ExecutionResponse`.
+`prodef-runtime-rust/` is the Rust execution engine for FlowSolve's optimization semantics. It receives a JSON request, validates and normalizes the problem, dispatches the selected execution mode, and returns a JSON response for the UI.
 
-## Resumen de arquitectura
+In practice it:
+
+1. Reads an `ExecutionRequest` from JSON.
+2. Builds a runtime-ready `RuntimeProblem` from `execution.problem`.
+3. Dispatches the request through `execution.mode`.
+4. Runs the corresponding generation, selection, crossover, mutation, local-search, perturbation, neighborhood, or acceptance logic.
+5. Serializes an `ExecutionResponse` back to JSON.
+
+## 2. How the runtime works
+
+### 2.1 Execution flow
 
 ```
-CLI / server bridge
+CLI / UI bridge
+  ↓
+src/main.rs
   ↓
 api::run
   ↓
@@ -29,155 +34,88 @@ operators / search / evaluation
 ExecutionResponse
 ```
 
-El binario se usa desde la UI a través de `server.cjs`, pero también puede
-ejecutarse de forma directa desde CLI con un request JSON guardado en disco.
+### 2.2 Request contract
 
-## Estructura del crate
-
-```
-prodef-runtime-rust/
-├── Cargo.toml
-├── README.md
-├── src/
-│   ├── main.rs
-│   ├── lib.rs
-│   ├── api/
-│   │   ├── mod.rs
-│   │   ├── parse.rs
-│   │   ├── response.rs
-│   │   └── validation.rs
-│   ├── domain/
-│   │   ├── feasible.rs
-│   │   ├── model.rs
-│   │   ├── result.rs
-│   │   ├── runtime.rs
-│   ├── evaluation/
-│   │   ├── expr.rs
-│   │   └── mod.rs
-│   ├── modes/
-│   │   ├── common.rs
-│   │   ├── context.rs
-│   │   ├── crossover.rs
- en los demás modos, construye el runtime y delega en `modes::dispatch`.
-│   │   ├── mutation.rs
-│   │   ├── neighborhood.rs
-│   │   ├── perturbation.rs
-│   │   ├── selection.rs
-## Punto de entrada
-
-### `src/main.rs`
-
-El binario hace exactamente esto:
-
-1. Parsear `--exec-request <path>`.
-2. Leer el archivo JSON.
-3. Deserializarlo como `api::ExecutionRequest`.
-4. Llamar a `api::run(request)`.
-5. Imprimir la respuesta en JSON pretty por `stdout`.
-
-No mantiene servidor HTTP propio: esa capa vive en `ui/server.cjs`.
-
-## Contrato de entrada
-
-### `ExecutionRequest`
+`execution.problem` is required for the supported modes.
 
 ```json
 {
-  "problem": {
-    "name": "knapsack",
-    "variables": [
-      {
-        "symbol": "x",
-        "within": "binary",
-        "shape": {
-          "type": "vector",
-          "isPermutation": false,
-          "size": { "fixed": false, "value": "N" }
-        }
-      }
-    ],
-    "goals": [
-      {
-        "sense": "maximize",
-        "expression": "sum x[i]*item[i].value over i=(1:N)"
-      }
-    ]
-  },
+  "problem": { ... },
   "execution": {
     "mode": "generate",
-    "payload": {
-      "count": 10
-    }
+    "payload": { ... }
   }
 }
 ```
 
-### Estructura real
+### 2.3 Response contract
 
-- `problem` es opcional en el tipo, pero obligatorio para todos los modos que resuelven el problema.
-- `execution.mode` es un `String` libre que luego se valida en el dispatcher.
-- `execution.payload` es un `serde_json::Value` y cambia por modo.
+`ExecutionResponse` can contain one or more of:
 
-## Contrato de salida
+- `result`: a single `SolverResult`.
+- `population`: a list of `SolverResult`.
+- `payload`: free JSON with mode metadata.
 
-### `ExecutionResponse`
+## 3. Folder structure
 
-El motor devuelve uno o varios de estos campos:
+### Root files
 
-- `result`: una solución única evaluada como `SolverResult`.
-- `population`: lista de `SolverResult`.
-- `payload`: JSON libre con metadatos del modo.
+- `Cargo.toml`: crate manifest and dependencies.
+- `README.md`: this document.
 
-### `SolverResult`
+### `src/`
 
-```json
-{
-  "problemName": "knapsack",
-  "isFeasible": true,
-  "goalValues": [130],
-  "variableValue": [1, 0, 1, 1, 0]
-}
-```
+- `src/main.rs`: CLI entry point.
+- `src/lib.rs`: module wiring for the crate.
 
-Notas importantes:
+#### `src/api/`
 
-- En permutaciones, `variableValue` se serializa en formato 1-based para legibilidad.
-- El score no se calcula como un campo separado; la UI puede derivarlo a partir de `goalValues`.
+- `src/api/mod.rs`: request/response boundary and `run` entry point.
+- `src/api/parse.rs`: `variableValue` parsing and normalization helpers.
+- `src/api/response.rs`: conversion from runtime solutions to JSON responses.
+- `src/api/validation.rs`: shared payload validation helpers.
 
-## Flujo interno
+#### `src/domain/`
 
-```
-1. main.rs
-   └─ lee el request JSON desde disco
+- `src/domain/model.rs`: external problem schema.
+- `src/domain/runtime.rs`: runtime-ready problem representation.
+- `src/domain/solution.rs`: internal solution types.
+- `src/domain/result.rs`: solver result type.
+- `src/domain/feasible.rs`: feasible solution generation helpers.
 
-2. api::run(req)
-  ├─ construye RuntimeProblem
-  ├─ crea RNG determinista por ejecución
-  └─ llama a modes::dispatch
-   │   ├─ construye RuntimeProblem
-   │   ├─ crea RNG determinista por ejecución
-   │   └─ llama a modes::dispatch
+#### `src/evaluation/`
 
-3. modes::dispatch(mode, ctx)
-   ├─ normaliza aliases
-   ├─ llama al handler concreto
-   └─ produce ModeOutcome
+- `src/evaluation/expr.rs`: expression evaluator for goals and constraints.
+- `src/evaluation/mod.rs`: evaluation module wiring.
 
-4. api::response
-   ├─ convierte Solution -> SolverResult
-   └─ serializa JSON final
+#### `src/modes/`
 
-5. stdout
-   └─ el bridge de la UI captura el JSON y lo reenvía al frontend
-```
+- `src/modes/mod.rs`: mode dispatcher.
+- `src/modes/context.rs`: shared execution context and outcome types.
+- `src/modes/common.rs`: shared helpers for modes.
+- `src/modes/generate.rs`: single and population generation.
+- `src/modes/selection.rs`: selection logic.
+- `src/modes/crossover.rs`: crossover logic.
+- `src/modes/mutation.rs`: mutation logic.
+- `src/modes/perturbation.rs`: perturbation logic.
+- `src/modes/neighborhood.rs`: neighborhood generation.
+- `src/modes/local_search.rs`: local-search execution mode.
+- `src/modes/select_best.rs`: best-candidate selection.
+- `src/modes/temperature_acceptance.rs`: simulated-annealing-style acceptance.
 
-## Modelo de dominio
+#### `src/operators/`
 
-### `domain/model.rs`
+- `src/operators/mod.rs`: low-level operators and defaults by problem family.
 
-Define el esquema del problema.
+#### `src/search/`
 
-Soporta:
+- `src/search/local_search.rs`: search helpers.
+
+## 4. Core runtime model
+
+### 4.1 Problem schema (`domain/model.rs`)
+
+The runtime accepts problems with:
 
 - `name`
 - `parameters`
@@ -187,34 +125,30 @@ Soporta:
 - `classes`
 - `objects`
 
-### Limitaciones actuales del runtime
+### 4.2 Current runtime limitations
 
-Estas restricciones están codificadas en `RuntimeProblem::new`:
+`RuntimeProblem::new` enforces the current executable subset:
 
-- solo se soporta **una variable** por problema;
-- solo se soporta `shape.type == "vector"`;
-- la variable puede ser de tipo permutación o vector normal;
-- los índices de la evaluación son **1-based**;
-- para `binary`, el dominio por defecto es `[0, 1]`;
-- para variables no binarias, el rango por defecto cae en `[0, 10]` si no se define explícitamente.
+- only one decision variable per problem,
+- only `shape.type == "vector"`,
+- the vector can be permutation-encoded or numeric,
+- indexing is 1-based in the evaluation layer,
+- binary variables default to `[0, 1]` when no range is provided,
+- non-binary variables default to `[0, 10]` when no range is provided.
 
-## `RuntimeProblem`
+### 4.3 `RuntimeProblem`
 
-### `domain/runtime.rs`
+`RuntimeProblem` adapts the JSON problem into an executable form. It is responsible for:
 
-Este tipo adapta el problema JSON a una versión lista para ejecutar.
+- building the parameter map,
+- loading class and instance data,
+- validating solution shape and size,
+- generating random solutions,
+- checking feasibility,
+- evaluating goals,
+- comparing scores for maximize/minimize problems.
 
-Responsabilidades:
-
-- construir el mapa de parámetros;
-- cargar datos de clases e instancias;
-- validar tamaño y forma de la solución;
-- generar soluciones aleatorias factibles;
-- evaluar objetivos;
-- verificar restricciones;
-- comparar scores según `maximize` o `minimize`.
-
-### Funciones clave
+Key methods include:
 
 - `generate_random_solution`
 - `evaluate_goals`
@@ -224,9 +158,7 @@ Responsabilidades:
 - `solution_size`
 - `solution_is_permutation`
 
-## Tipos de solución
-
-### `domain/solution.rs`
+### 4.4 Solution types
 
 ```rust
 pub enum Solution {
@@ -235,515 +167,48 @@ pub enum Solution {
 }
 ```
 
-El motor trabaja con dos representaciones:
+- `Vector` is used for binary, integer, and continuous problems.
+- `Permutation` is used for TSP, assignment, ordering, and similar problems.
 
-- `Vector` para problemas binarios, enteros o continuos.
-- `Permutation` para TSP, assignment y otros problemas de orden.
+### 4.5 Expression evaluation (`evaluation/expr.rs`)
 
-## Evaluación de expresiones
+The evaluator supports:
 
-### `evaluation/expr.rs`
+- numeric literals and problem parameters,
+- `x[i]` variable access,
+- class attributes like `item[i].weight`,
+- matrix access like `d[i,j]`,
+- sum notation such as `sum ... over i=(1:N)`,
+- comparisons `<=`, `>=`, and `=`,
+- additive chaining with `+`.
 
-Este parser es el corazón semántico del runtime.
+## 5. Supported modes
 
-Soporta:
+`modes::dispatch` currently recognizes:
 
-- literales numéricos;
-- parámetros del problema;
-- acceso a variables `x[i]`;
-- acceso a atributos de clase `item[i].weight`;
-- acceso a matrices `d[i,j]`;
-- sumatorias estilo `sum ... over i=(1:N)`;
-- comparaciones `<=`, `>=` y `=`;
-- continuidad de expresión en sumas, por ejemplo `sum ... over ... + rest`.
+| Mode | Handler | Description | Main payload fields |
+|------|---------|-------------|---------------------|
+| `generate` | `generate::execute_single` | Generate one feasible solution | none or empty |
+| `generate-population` | `generate::execute_population` | Generate a feasible population | `count` |
+| `selection` | `selection::execute` | Elitist plus tournament selection | `candidates`, `targetSize`, `tournamentSize`, `eliteSize` |
+| `crossover` | `crossover::execute` | Crossover between parents | `parents`, `targetSize`, `crossoverOperator` |
+| `mutation` | `mutation::execute` | Mutate an input set | `incomingSet`, `mutationRate` |
+| `perturbation` | `perturbation::execute` | Sequential perturbation | `base`, `k`, `maxAttempts` |
+| `neighborhood` | `neighborhood::execute` | Generate neighbors from a base solution | `base` |
+| `local-search` | `local_search::execute` | Hill-climbing local search | `solution` |
+| `select-best` | `select_best::execute` | Pick the best feasible candidate | `candidates` |
+| `temperature-acceptance` | `temperature_acceptance::execute` | Simulated-annealing-style acceptance rule | `candidate`, `stored`, `temperatureCurrent` |
 
-### Restricciones
+## 6. Parsing and response helpers
 
-- El lenguaje es deliberadamente pequeño y orientado a problemas de optimización.
-- La indexación siempre es 1-based dentro de las expresiones.
-- Si una expresión no entra en los patrones soportados, el evaluador falla con un error explícito.
+### `src/api/parse.rs`
 
-## API y contrato JSON
+This module converts JSON payloads to internal solutions and back. It accepts permutation arrays in either 0-based or 1-based form, rejects duplicates and wrong lengths, and normalizes everything to the runtime representation.
 
-### `api/mod.rs`
+### `src/api/response.rs`
 
-Punto de orquestación del crate.
+This module converts runtime solutions back to JSON. It also computes `SolverResult` values with feasibility and objective metadata.
 
-Cuando recibe una request:
+### `src/api/validation.rs`
 
-- si `mode == "catalog"`, devuelve el catálogo estático de componentes;
-- en los demás modos, construye el runtime y delega en `modes::dispatch`.
-
-### `api/catalog.rs`
-
-Publica el catálogo nativo para la UI.
-
-Componentes expuestos actualmente:
-
-- `problem`
-- `singleSolution`
-- `populationGeneration`
-- `selection`
-- `crossover`
-- `mutation`
-- `localSearch`
-- `perturbation`
-- `neighborhood`
-- `substraction`
-- `selectionBest`
-- `acceptance`
-- `temperatureAcceptance`
-- `reduceTemperature`
-- `changeNeighborhood`
-- `storage`
-- `termination`
-
-### `api/parse.rs`
-
-Convierte `variableValue` a `Solution` y viceversa.
-
-Puntos relevantes:
-
-- detecta si la solución es permutación o vector;
-- acepta permutaciones en formato 0-based o 1-based al leer;
-- rechaza permutaciones con duplicados o longitudes incorrectas;
-- convierte soluciones a vectores `f64` para operadores genéricos.
-
-### `api/response.rs`
-
-Convierte `Solution` en `SolverResult` evaluando:
-
-- factibilidad,
-- `goalValues`,
-- `variableValue` serializado.
-
-### `api/validation.rs`
-
-Centraliza errores de payload para que los modos respondan con mensajes homogéneos.
-
-## Modos soportados
-
-Los modos disponibles se despachan desde `modes::dispatch`.
-
-| Modo | Handler | Descripción | Payload principal |
-|------|---------|-------------|-------------------|
-| `generate` | `generate::execute_single` | Genera una solución factible | ninguno o vacío |
-| `generate-population` | `generate::execute_population` | Genera una población factible | `count` |
-| `selection` | `selection::execute` | Selección elitista + torneo | `candidates`, `targetSize`, `tournamentSize`, `eliteSize` |
-| `crossover` | `crossover::execute` | Cruce entre padres | `parents`, `targetSize`, `crossoverOperator` |
-| `mutation` | `mutation::execute` | Mutación sobre un conjunto de entrada | `incomingSet`, `mutationRate` |
-| `perturbation` | `perturbation::execute` | Perturbación secuencial | `base`, `k`, `maxAttempts` |
-| `neighborhood` | `neighborhood::execute` | Genera vecindad de una solución base | `base` |
-| `local-search` | `local_search::execute` | Ejecuta búsqueda local hill-climbing | `solution` |
-| `select-best` | `select_best::execute` | Elige el mejor candidato factible | `candidates` |
-| `temperature-acceptance` | `temperature_acceptance::execute` | Regla de aceptación tipo SA | `candidate`, `stored`, `temperatureCurrent` |
- 
-
-### Alias aceptados
-
-El dispatcher acepta algunos nombres alternativos:
-
-- `local_search` como alias de `local-search`
-- `selection-best` como alias de `select-best`
-- `temperature_acceptance` como alias de `temperature-acceptance`
-
-## Payloads por modo
-
-### `generate`
-
-```json
-{
-  "execution": {
-    "mode": "generate",
-    "payload": null
-  }
-}
-```
-
-Devuelve `result` con una solución factible.
-
-### `generate-population`
-
-```json
-{
-  "execution": {
-    "mode": "generate-population",
-    "payload": {
-      "count": 20
-    }
-  }
-}
-```
-
-Si `count` falta, usa `10`.
-
-### `selection`
-
-```json
-{
-  "execution": {
-    "mode": "selection",
-    "payload": {
-      "candidates": [
-        { "variableValue": [1, 0, 1, 0, 1] },
-        { "variableValue": [0, 0, 0, 0, 0] }
-      ],
-      "targetSize": 2,
-      "tournamentSize": 3,
-      "eliteSize": 1
-    }
-  }
-}
-```
-
-Retorna `payload.selected`.
-
-### `crossover`
-
-```json
-{
-  "execution": {
-    "mode": "crossover",
-    "payload": {
-      "parents": [
-        { "variableValue": [1, 2, 3, 4] },
-        { "variableValue": [4, 3, 2, 1] }
-      ],
-      "targetSize": 2,
-      "crossoverOperator": "pmx"
-    }
-  }
-}
-```
-
-Para permutaciones, selecciona `pmx` u `order` según el operador solicitado. Para vectores binarios/continuos, usa `one-point` o `uniform`.
-
-### `mutation`
-
-```json
-{
-  "execution": {
-    "mode": "mutation",
-    "payload": {
-      "incomingSet": [
-        { "variableValue": [1, 1, 0, 1, 0] }
-      ],
-      "mutationRate": 0.25
-    }
-  }
-}
-```
-
-Retorna `payload.mutated`.
-
-### `perturbation`
-
-```json
-{
-  "execution": {
-    "mode": "perturbation",
-    "payload": {
-      "base": { "variableValue": [1, 1, 0, 1, 0] },
-      "k": 3,
-      "maxAttempts": 100
-    }
-  }
-}
-```
-
-Retorna `payload.winner`, `payload.attempts`, `payload.k` y `payload.maxAttempts`.
-
-### `neighborhood`
-
-```json
-{
-  "execution": {
-    "mode": "neighborhood",
-    "payload": {
-      "base": { "variableValue": [1, 0, 1, 0, 1] }
-    }
-  }
-}
-```
-
-Retorna `payload.generated` y `payload.feasible`.
-
-### `local-search`
-
-```json
-{
-  "execution": {
-    "mode": "local-search",
-    "payload": {
-      "solution": [1, 1, 0, 1, 0]
-    }
-  }
-}
-```
-
-Requiere una solución inicial factible.
-
-### `select-best`
-
-```json
-{
-  "execution": {
-    "mode": "select-best",
-    "payload": {
-      "candidates": [
-        { "variableValue": [1, 0, 0, 0, 0] },
-        { "variableValue": [1, 1, 1, 1, 0] }
-      ]
-    }
-  }
-}
-```
-
-Retorna `payload.winner`, `payload.selectedIndex` y `payload.score`.
-
-### `temperature-acceptance`
-
-```json
-{
-  "execution": {
-    "mode": "temperature-acceptance",
-    "payload": {
-      "candidate": [1, 1, 0, 1, 0],
-      "stored": [1, 0, 0, 1, 0],
-      "temperatureCurrent": 0.75
-    }
-  }
-}
-```
-
-Retorna `payload.accepted` y `payload.winner`.
-
-## Generación de soluciones factibles
-
-### `domain/feasible.rs`
-
-La generación inicial intenta producir soluciones que ya respeten las restricciones.
-
-Esto es importante porque varios modos asumen entrada factible:
-
-- `local-search`
-- `selection`
-- `select-best`
-- `temperature-acceptance`
-
-Si el problema o los candidatos son inválidos, el modo falla con un error claro.
-
-## Búsqueda local
-
-### `search/local_search.rs`
-
-El motor actual implementa una búsqueda local de un paso con trazas detalladas.
-
-Comportamiento:
-
-- exige una solución inicial factible;
-- explora vecinos por tipo de solución;
-- prueba swaps para permutaciones;
-- prueba flips para binarios;
-- prueba movimientos +/- 1 para vectores enteros o continuos;
-- conserva la mejor mejora encontrada;
-- devuelve trazas legibles para depuración.
-
-## Operadores reutilizables
-
-### `operators/mod.rs`
-
-El módulo centraliza operadores de bajo nivel.
-
-Componentes principales:
-
-- `detect_problem_family`
-- `variable_flags`
-- `one_point_crossover`
-- `uniform_crossover_f64`
-- `order_crossover_f64`
-- `pmx_crossover_f64`
-- `mutate_permutation_swap_f64`
-- `mutate_permutation_inversion_f64`
-- `apply_random_bitflip`
-- `apply_random_swap`
-- `generate_neighbor_vectors`
-
-También expone utilidades para decidir el operador por defecto según el problema:
-
-- Assignment -> operadores de intercambio.
-- TSP -> operadores de permutación.
-- Otros -> operadores genéricos.
-
-## Catálogo para la UI
-
-### `api/catalog.rs`
-
-La UI usa el modo `catalog` para poblar la barra lateral.
-
-Cada descriptor incluye:
-
-- `kind`
-- `label`
-- `category`
-- `stateful`
-
-El catálogo actual ya coincide con los nodos visibles en la UI de FlowSolve.
-
-## Ejecución desde CLI
-
-### Compilar
-
-```bash
-cargo build --release
-```
-
-### Ejecutar un request
-
-```bash
-target/release/prodef-runtime-rust --exec-request path/to/request.json
-```
-
-En Windows el binario final será `target\\release\\prodef-runtime-rust.exe`.
-
-## Desarrollo
-
-### Formatear
-
-```bash
-cargo fmt
-```
-
-### Chequear compilación
-
-```bash
-cargo check
-```
-
-### Ejecutar tests
-
-```bash
-cargo test
-```
-
-### Generar documentación
-
-```bash
-cargo doc --no-deps --open
-```
-
-## Qué valida este crate
-
-- forma del `Problem`;
-- tamaño de la solución;
-- consistencia de permutaciones;
-- factibilidad contra restricciones;
-- score de objetivos;
-- compatibilidad de payloads por modo.
-
-## Casos de uso típicos
-
-### Generar una solución inicial para Knapsack
-
-```json
-{
-  "problem": {
-    "name": "knapsack",
-    "variables": [
-      {
-        "symbol": "x",
-        "within": "binary",
-        "shape": {
-          "type": "vector",
-          "isPermutation": false,
-          "size": { "fixed": true, "value": 5 }
-        }
-      }
-    ],
-    "goals": [
-      { "sense": "maximize", "expression": "sum x[i]*item[i].value over i=(1:5)" }
-    ]
-  },
-  "execution": {
-    "mode": "generate"
-  }
-}
-```
-
-### Mejorar una solución con búsqueda local
-
-```json
-{
-  "problem": {
-    "name": "tsp",
-    "variables": [
-      {
-        "symbol": "route",
-        "within": "integers",
-        "shape": {
-          "type": "vector",
-          "isPermutation": true,
-          "size": { "fixed": true, "value": 4 }
-        }
-      }
-    ],
-    "goals": [
-      { "sense": "minimize", "expression": "sum distance[route[i],route[i+1]] over i=(1:3)" }
-    ]
-  },
-  "execution": {
-    "mode": "local-search",
-    "payload": {
-      "solution": [1, 2, 3, 4]
-    }
-  }
-}
-```
-
-## Notas de implementación
-
-- El runtime es pequeño a propósito: la lógica compleja vive en `modes`, `operators` y `search`.
-- La serialización de soluciones está normalizada para que la UI no tenga que reconstruir resultados.
-- El catálogo está codificado en Rust para que la UI y el backend compartan una fuente de verdad.
-
-## Limitaciones conocidas
-
-- Un solo vector de decisión por problema.
-- Sin soporte general para múltiples variables simultáneas.
-- La gramática de expresiones es intencionalmente acotada.
-- El motor está orientado a problemas como Knapsack, TSP, Assignment y variantes cercanas.
-
-## Relación con la UI
-
-La UI de FlowSolve llama a este motor para:
-
-- obtener el catálogo de componentes;
-- generar soluciones;
-- evaluar mutación, cruce y selección;
-- ejecutar búsquedas locales y reglas de aceptación.
-
-El contrato entre ambos lados está pensado para ser estable y pequeño:
-
-- request simple,
-- response simple,
-- trazas y validación internas en Rust.
-
-## Archivos de ejemplo
-
-La carpeta `examples/` contiene problemas listos para probar:
-
-- `knapsack.json`
-- `knapsack_complex.json`
-- `tsp.json`
-- `tsp_complex.json`
-- `assignment.json`
-- `assignment_complex.json`
-- `diet.json`
-
-Estos archivos son útiles para validar:
-
-- generación factible,
-- evaluación de expresiones,
-- búsqueda local,
-- operadores sobre permutaciones.
-```
+This module centralizes payload validation so mode handlers return consistent errors.

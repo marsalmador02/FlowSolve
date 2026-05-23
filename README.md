@@ -1,282 +1,133 @@
-﻿# Herramienta visual de optimización metaheurística
+﻿# Othimi FlowSolve
 
-Plataforma completa para construir, visualizar y ejecutar flujos de optimización usando una interfaz basada en nodos. Permite modelar rápidamente estrategias metaheurísticas sin escribir código, utilizando un motor en Rust.
+Othimi FlowSolve is a visual tool for building, visualizing, and executing metaheuristics using node-based graphs. It makes it possible to design optimization algorithms without writing code, through a visual interface connected to a Rust execution engine.
 
-## Arquitectura general
+## General architecture
 
-El sistema está dividido en tres capas principales:
+The system is divided into three main layers:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
-│  UI (React + React Flow) - src/App.tsx                  │
-│  - Modelado visual de flujos con nodos y aristas        │
-│  - Configuración de parámetros por nodo                 │
-│  - Ejecución completa o paso a paso                     │
-│  - Visualización de trazas y resultados                 │
+│ UI (React + React Flow)                                 │
+│ - Visual graph design                                   │
+│ - Node and parameter configuration                      │
+│ - Step-by-step or full execution                        │
+│ - Trace and result visualization                        │
 └────────────────────┬────────────────────────────────────┘
-                     │ HTTP (localhost:3000)
+                     │ HTTP
 ┌────────────────────▼────────────────────────────────────┐
-│  Backend bridge (server.cjs)                            │
-│  - REST API                                             │
-│  - Intermediario entre UI y Rust                        │
-│  - Gestión temporal de requests/responses               │
+│ Intermediate backend (Node.js)                          │
+│ - REST API                                              │
+│ - Communication between UI and Rust engine              │
+│ - Request/response management                           │
 └────────────────────┬────────────────────────────────────┘
-                     │ Invocación de proceso
+                     │ Process execution
 ┌────────────────────▼────────────────────────────────────┐
-│  Motor Rust (prodef-runtime-rust)                       │
-│  - Ejecución de modos: generate, mutation, crossover... │
-│  - Evaluación de restricciones y objetivos              │
-│  - Operadores: permutación, crossover, neighborhood     │
-│  - Devolución de resultados JSON                        │
+│ Optimization engine (Rust)                              │
+│ - Solution generation and evaluation                    │
+│ - Metaheuristic operators                               │
+│ - Local search and perturbation                         │
+│ - JSON-based responses                                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Requisitos previos
+## Requirements
 
-Asegúrate de tener instalado:
+- Node.js
+- npm
+- Rust
+- cargo
+- Git
 
-- **Node.js** (v16+) y **npm** (v7+)
-- **Rust** (1.70+) y **cargo** (incluido con Rust)
-- **Git** (para clonar el repo)
+## Installation
 
-## Instalación e inicio rápido
-
-### 1. Clonar e instalar dependencias
-
-```bash
-# Instala dependencias del proyecto principal y de la UI
-npm run install:all
-```
-
-### 2. Iniciar todo con un solo comando
+### Install dependencies
 
 ```bash
-# Compila el runtime Rust en release y arranca UI + servidor bridge
-npm run start:all
+npm install
 ```
 
-Luego abre **http://localhost:3000** en tu navegador.
-
-## Estructura del Proyecto
-
-```
-proy/
-├── README.md                          # Este archivo
-├── package.json                       # Scripts de orquestación
-├── examples/                          # Casos de prueba JSON
-│   ├── assignment.json
-│   ├── diet.json
-│   ├── knapsack.json
-│   ├── tsp.json
-│   └── ...
-│
-├── prodef-runtime-rust/               # Motor de ejecución
-│   ├── Cargo.toml
-│   ├── src/
-│   │   ├── main.rs                    # Punto de entrada del binario
-│   │   ├── lib.rs                     # Fachada de librería (para doctests y docs)
-│   │   ├── api/                       # Frontera JSON (parse, validation, response)
-│   │   ├── domain/                    # Modelos de problema, solución, runtime
-│   │   ├── operators/                 # Operadores: crossover, mutation, perturbation
-│   │   ├── modes/                     # Handlers de ejecución (generate, mutation, etc.)
-│   │   ├── evaluation/                # Evaluador de expresiones y restricciones
-│   │   ├── search/                    # Búsqueda local
-│   │   └── ...
-│   └── README.md                      # Documentación del runtime
-│
-├── ui/                                # Interfaz React
-│   ├── package.json
-│   ├── src/
-│   │   ├── App.tsx                    # Componente principal
-│   │   ├── main.tsx                   # Entry point
-│   │   ├── components/                # Componentes React
-│   │   ├── services/prodefApi.ts      # Cliente HTTP del runtime
-│   │   ├── hooks/useFlowRunner.ts     # Lógica de ejecución
-│   │   ├── flow/                      # Orquestación de flujos
-│   │   │   ├── algorithms/            # Template builders (GRASP, ILS, VNS, etc.)
-│   │   │   ├── runtime/               # Motor packet-based
-│   │   │   │   ├── engine/            # Validación, packets, contracts
-│   │   │   │   ├── executor/          # Ejecución de nodos
-│   │   │   │   └── components/        # Componentes por NodeKind
-│   │   │   └── README.md              # Documentación de flow runtime
-│   │   ├── types/                     # Tipos TypeScript
-│   │   ├── templates/                 # Plantillas personalizadas
-│   │   └── ...
-│   ├── server.cjs                     # Backend bridge (Express)
-│   ├── vite.config.ts                 # Config Vite
-│   ├── tsconfig.json
-│   └── README.md                      # Documentación de UI
-│
-└── scripts/                           # Scripts utilitarios
-    └── test-examples.mjs              # Validador de ejemplos JSON
-```
-
-## Flujo de ejecución típico
-
-1. **Usuario interactúa con la UI**
-   - Arrastra nodos a la canvas
-   - Conecta nodos con aristas
-   - Configura parámetros en cada nodo
-
-2. **Usuario hace clic en "Run"**
-   - UI envía grafo serializado a backend bridge (`POST /execute`)
-   - Backend escribe el request
-   - Backend invoca binario Rust: `cargo run --release -- --exec-request <tempfile>`
-
-3. **Motor Rust procesa**
-   - Parsea JSON request
-   - Construye `RuntimeProblem` desde definición del problema
-   - Redirige al modo solicitado (e.g., `generate`, `mutation`, etc.)
-   - Ejecuta operador/búsqueda según modo
-   - Serializa `ExecutionResponse` (población, resultado, payload)
-   - Retorna JSON al backend
-
-4. **Backend bridge retorna respuesta al frontend**
-   - UI recibe resultado
-   - Actualiza visualización de nodos
-   - Muestra trazas, métricas y resultados
-
-## Flujo detallado (internals)
-
-Este apartado describe paso a paso lo que ocurre desde que se crea/lanza el grafo hasta que aparece el resultado en la UI, con referencias a los módulos principales del proyecto:
-
-1. Usuario diseña el grafo en la UI (drag & drop) — componente principal: `src/App.tsx`.
-2. Al ejecutar, `App` delega a `useFlowRunner` (`src/hooks/useFlowRunner.ts`) que construye el conjunto de dependencias (refs y setters) usadas por el motor.
-3. `useFlowRunner` llama a `runPacketExecutor` (`src/flow/runtime/executor/packetExecutor.ts`) con `mode: 'full'` o `mode: 'iteration'`.
-4. `packetExecutor` valida el grafo (`validateGraph`) y serializa el `problem` desde el nodo `problem`.
-5. Se encola un paquete semilla hacia el `startNode` (o hacia el `loopNode` si se reanuda), y comienza el bucle FIFO de procesamiento de paquetes.
-6. Para cada paquete extraído de la cola:
-   - Se obtiene el nodo destino y se crea el componente correspondiente vía `createComponent(kind)` (implementado en `src/flow/runtime/components/registry`).
-   - Se arma el `ComponentContext` con `buildContext` (incluye `appendTrace`, `updateNodeData`, `getIncomingSources`, etc.).
-   - Si el componente es un `JoinRuntimeComponent`, el executor acumula paquetes en `joinBuffers` por `nodeId` y `idIteration` hasta alcanzar la aridad necesaria.
-   - Se ejecuta `component.execute` o `component.executeJoin`, que internamente puede llamar al backend Rust (si es un componente runtime) usando `services/prodefApi.callRuntimeExecute`.
-   - El resultado (packet emitido) se enruta a las aristas salientes y se encola para su procesamiento.
-7. Cuando el `termination` node procesa un paquete se registra una visita de bucle (`loopVisits`) y se actualiza `activeIterationRef`. En modo `full` se inserta un salto visual en la traza global entre iteraciones para separar salidas (implementación: `appendGlobalTrace('')` en `packetExecutor`).
-8. Al finalizar (stop condition, budget o modo `iteration` que cierra el ciclo), `storeFinalResult` resume el mejor resultado encontrado y lo añade a la traza global (`🏁 FINAL: ...`).
-9. Si el componente delegó a Rust, el binario de `prodef-runtime-rust` recibe un `ExecutionRequest`, ejecuta la lógica del modo solicitado (vía `modes::dispatch`), y devuelve un `ExecutionResponse` que la UI normaliza y presenta.
-
-Puntos clave y archivos de referencia:
-- `ui/src/flow/runtime/executor/packetExecutor.ts`: motor de paquetes y lógica de iteración.
-- `ui/src/hooks/useFlowRunner.ts`: puente entre React state y executor.
-- `ui/src/flow/runtime/components/*`: implementaciones de cada tipo de nodo.
-   - `ui/src/services/prodefApi.ts`: cliente para `/execute`.
-- `prodef-runtime-rust/src/modes/*` y `prodef-runtime-rust/src/domain/*`: lógica y modelos del runtime Rust.
-
-Con esta descripción tienes una trazabilidad clara del dato: UI (grafo) → executor (packets) → componentes (local o remotos) → Rust runtime → resultado JSON → UI.
- 
-Detalles adicionales: servidor bridge (server.cjs)
-------------------------------------------------
-
-1. Recepción del request
-   - La UI envía `POST /execute` con un JSON que contiene el grafo serializado y los parámetros de ejecución.
-   - El servidor (archivo: ui/server.cjs) valida el cuerpo y crea un archivo temporal (`tmpfile.json`) donde escribe el `ExecutionRequest` completo.
-
-2. Invocación del runtime
-   - El bridge lanza el binario Rust con un comando similar a:
+### Run the application
 
 ```bash
-cargo run --release -- --exec-request /path/to/tmpfile.json
+npm start
 ```
 
-   - La invocación puede hacerse usando `child_process.spawn` o `execFile`. El bridge captura `stdout` y `stderr`, y espera la finalización del proceso.
-   - Si el proceso devuelve un código distinto de 0 o produce un `stderr` no vacío, el bridge transforma ese error en una respuesta HTTP 500 con un cuerpo JSON estilo `{ error: string }`.
+Then open:
 
-3. Mecanismo de tiempo y limpieza
-   - El bridge aplica un timeout configurable para evitar procesos colgados; si el timeout expira, mata el proceso y responde error.
-   - Tras terminar (éxito o error) el bridge borra el archivo temporal.
-
-4. Respuesta al cliente
-   - En caso de éxito el runtime escribe en `stdout` un `ExecutionResponse` JSON. El bridge lee ese JSON, comprueba estructura y lo reenvía al cliente UI como respuesta a la petición `POST /execute`.
-
-Formato típico del `ExecutionRequest` (simplificado):
-
-```json
-{
-  "mode": "generate-population",
-  "problem": { /* nodo problem serializado */ },
-  "params": { "population_size": 100, "seed": 123 }
-}
+```text
+http://localhost:5173
 ```
 
-Ejemplo de `ExecutionResponse` (simplificado):
+## Project structure
 
-```json
-{
-  "status": "ok",
-  "best": { "solution": [1,2,3], "cost": 123.45 },
-  "population": [ /* si aplica */ ],
-  "trace": ["iter 1: ...", "iter 2: ..."],
-  "metrics": { "evaluations": 2000, "time_ms": 512 }
-}
+```text
+FlowSolve/
+├── README.md
+├── package.json
+├── prodef-runtime-rust/          # Execution engine
+├── ui/                           # React interface
 ```
 
-Detalles adicionales: runtime Rust (prodef-runtime-rust)
----------------------------------------------------
+## Execution flow
 
-1. Parseo y validación
-   - El binario principal (`prodef-runtime-rust/src/main.rs`) carga el fichero indicado por `--exec-request`, parsea JSON y valida la estructura (`api::parse` y `api::validation`).
-   - Si hay errores de validación, el runtime sale con código 2 y escribe un `ExecutionResponse` con `status: "error"` y campo `error` describiendo el problema.
+1. The user builds a graph in the visual interface.
+2. The UI serializes the flow and sends it to the backend.
+3. The backend runs the Rust engine with the received request.
+4. The engine processes the selected mode and returns a JSON result.
+5. The UI updates nodes and traces on screen.
 
-2. Construcción del `RuntimeProblem`
-   - A partir del `problem` en el request el runtime construye estructuras internas (`domain::model`, `domain::runtime`) que representen variables, restricciones y funciones objetivo.
+## Main components
 
-3. Dispatch de modos
-   - El runtime despacha según `mode` hacia `modes::dispatch`, que mapea a handlers en `src/modes/*`.
-   - Cada handler sigue el contrato: recibe un `ExecutionRequest` y devuelve un `ExecutionResponse` serializable.
+The tool includes nodes for common metaheuristic operations such as:
 
-4. Ejecución y trazas
-   - Dentro de un modo (por ejemplo `generate-population` o `local-search`) se actualizan trazas internas y métricas. El runtime puede incluir una lista `trace` con mensajes legibles por humanos.
+- Solution generation
+- Population generation
+- Mutation
+- Crossover
+- Perturbation
+- Local search
+- Selection
+- Best-solution selection
+- Neighborhood generation
+- Temperature-based acceptance
+- Iteration control
+- Solution storage
 
-5. Serialización de respuesta
-   - Al finalizar, el runtime serializa un `ExecutionResponse` incluyendo: `status`, `best`, `population` (si aplica), `trace`, `metrics` y un `payload` opcional con datos específicos del modo.
+## Runtime modes supported
 
-6. Errores y códigos de salida
-   - Errores controlados producen `status: "error"` en la respuesta, y el proceso normalmente termina con código 0 (el bridge reenvía el JSON).
-   - Errores graves (panic, fallos no capturados) pueden terminar con código != 0; el bridge entonces considera la ejecución fallida.
+| Mode | Description |
+|---|---|
+| `generate` | Generates a random solution |
+| `generate-population` | Generates an initial population |
+| `mutation` | Applies mutation |
+| `crossover` | Applies crossover |
+| `perturbation` | Perturbs a solution |
+| `neighborhood` | Generates neighbors |
+| `selection` | Selects solutions |
+| `select-best` | Returns the best solution |
+| `local-search` | Runs local search |
+| `temperature-acceptance` | Temperature-based acceptance |
 
-Cómo vuelve la información a la UI y cómo se normaliza
-----------------------------------------------------
+## Documentation
 
-1. Recepción por la UI
-   - `ui/services/prodefApi.ts` recibe el `ExecutionResponse` y lo devuelve al `packetExecutor` (o al componente que hizo la llamada).
+The project includes both manual documentation and automatically generated documentation:
 
-2. Normalización
-   - La UI convierte campos del `ExecutionResponse` en actualizaciones para nodos:
-     - `best` se mapea al `result` del `problem` node y a `node.data` del nodo `termination`.
-     - `trace` se concatena a la `globalTrace` usando `appendGlobalTrace`.
-     - `metrics` se muestran en la barra de estado o en paneles de monitorización.
+- General documentation in the various `README.md` files
+- Rust runtime documentation generated with `rustdoc`
+- UI documentation generated with `TypeDoc`
 
-3. Actualización visual
-   - Los nodos que emitieron paquetes reciben `updateNodeData(nodeId, payload)` para mostrar soluciones parciales.
-   - Si el `ExecutionResponse` contiene una `population`, la UI puede renderizarla en un panel específico o permitir inspección por el usuario.
+### Generate documentation
 
-4. Ejemplo end-to-end (resumen):
-   - UI -> `POST /execute` con `ExecutionRequest` → server escribe `/tmp/rq.json` → lanza rust binary → rust procesa y escribe `ExecutionResponse` en stdout → bridge lee y responde HTTP 200 → UI recibe respuesta y actualiza trazas y nodos.
+```bash
+npm run docs:rust
+npm run docs:ui
+```
 
-Conclusión y verificación
--------------------------
+### Generated HTML documentation
 
-- Para validar los cambios end-to-end: ejecutar el bridge y el runtime (`npm run start:all`), lanzar una ejecución desde la UI y comprobar que la traza global, métricas y nodos se actualizan correctamente.
-- Revisar logs del bridge (`stdout`/`stderr`) y la salida del runtime si hay errores.
+- UI (`TypeDoc`):
+  - `ui/docs/ui/index.html`
 
-## Modos de ejecución soportados
-
-El motor soporta estos modos:
-
-| Modo | Descripción |
-|------|------------|
-| `generate` | Genera una única solución aleatoria |
-| `generate-population` | Genera población inicial de tamaño N |
-| `mutation` | Aplica operador de mutación a solución |
-| `crossover` | Cruce genético entre dos soluciones |
-| `perturbation` | Perturbación de solución |
-| `neighborhood` | Genera vecindad de una solución |
-| `selection` | Selecciona mejores soluciones de población |
-| `select-best` | Elige mejor solución de población |
-| `local-search` | Búsqueda local |
-| `temperature-acceptance` | Simulated Annealing (aceptación por temperatura) |
- 
-
-## Licencia y estado
-
-En desarrollo activo. Código educativo/experimental.
+- Rust runtime (`rustdoc`):
+  - `prodef-runtime-rust/target/doc/prodef_runtime_rust/index.html`
