@@ -189,7 +189,7 @@ function estimateNextNodeId(nodes: Array<{ id: string }>) {
 
 // Top-level React component for the interactive flow builder.
 export default function App() {
-  const othimiColorImage = new URL('./othimi_color.png', import.meta.url).href;
+  const othimiColorImage = '/othimi_color.png';
 
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
