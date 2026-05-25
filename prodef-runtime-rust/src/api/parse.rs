@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn parse_and_vec_to_solution_permutation() {
-        let raw: Problem = serde_json::from_str(include_str!("../../../examples/tsp.json")).expect("parse tsp example");
+        let raw: Problem = serde_json::from_str(include_str!("../../examples/tsp.json")).expect("parse tsp example");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
 
         let vals = vec![0.0, 1.0, 2.0, 3.0];
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn vec_to_solution_vector_accepts_knapsack() {
-        let raw: Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack example");
+        let raw: Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
         assert!(!runtime.solution_is_permutation());
         let vals = vec![1.0, 0.0, 1.0, 0.0, 1.0];

@@ -1,0 +1,40 @@
+{
+  "name": "Assignment1",
+  "parameters": [
+    { "symbol": "N", "value": 4 }
+  ],
+  "variables": [
+    {
+      "symbol": "assignment",
+      "within": "integers",
+      "shape": {
+        "type": "vector",
+        "isPermutation": true,
+        "size": { "fixed": false, "value": 4 }
+      }
+    }
+  ],
+  "goals": [
+    {
+      "sense": "minimize",
+      "expression": "sum cost[i, assignment[i]] over i=(1:N)"
+    }
+  ],
+  "classes": [
+    {
+      "symbol": "cost",
+      "attributes": [
+        { "symbol": "task_1" },
+        { "symbol": "task_2" },
+        { "symbol": "task_3" },
+        { "symbol": "task_4" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 10 }, { "attribute": "task_2", "value": 0 }, { "attribute": "task_3", "value": 50 }, { "attribute": "task_4", "value": 8 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 1 }, { "attribute": "task_2", "value": 10 }, { "attribute": "task_3", "value": 4 }, { "attribute": "task_4", "value": 20 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 50 }, { "attribute": "task_2", "value": 8 }, { "attribute": "task_3", "value": 9 }, { "attribute": "task_4", "value": 50 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 3 }, { "attribute": "task_2", "value": 50 }, { "attribute": "task_3", "value": 50 }, { "attribute": "task_4", "value": 10 } ] }
+  ]
+}

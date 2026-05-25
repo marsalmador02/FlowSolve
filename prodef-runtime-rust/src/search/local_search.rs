@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn local_search_runs_on_knapsack_example() {
-        let raw: Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack");
+        let raw: Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
         
         let init = Solution::Vector(vec![0.0; runtime.solution_size()]);
@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn local_search_runs_on_knapsack_complex() {
-        let raw: Problem = serde_json::from_str(include_str!("../../../examples/knapsack_complex.json")).expect("parse knapsack complex");
+        let raw: Problem = serde_json::from_str(include_str!("../../examples/knapsack_complex.json")).expect("parse knapsack complex");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
         
         let init = Solution::Vector(vec![0.0; runtime.solution_size()]);
@@ -365,7 +365,7 @@ mod tests {
     #[test]
     fn local_search_runs_on_tsp_example() {
         let raw: Problem =
-            serde_json::from_str(include_str!("../../../examples/tsp.json"))
+            serde_json::from_str(include_str!("../../examples/tsp.json"))
                 .expect("parse tsp");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
 
@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn local_search_runs_on_tsp_complex_example() {
         let raw: Problem =
-            serde_json::from_str(include_str!("../../../examples/tsp_complex.json"))
+            serde_json::from_str(include_str!("../../examples/tsp_complex.json"))
                 .expect("parse tsp complex");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
 
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn local_search_runs_on_assignment_example() {
         let raw: Problem =
-            serde_json::from_str(include_str!("../../../examples/assignment.json"))
+            serde_json::from_str(include_str!("../../examples/assignment.json"))
                 .expect("parse assignment");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
 
@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn local_search_runs_on_assignment_complex_example() {
         let raw: Problem =
-            serde_json::from_str(include_str!("../../../examples/assignment_complex.json"))
+            serde_json::from_str(include_str!("../../examples/assignment_complex.json"))
                 .expect("parse assignment complex");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
 

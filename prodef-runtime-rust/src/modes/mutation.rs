@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn mutation_mutates_and_returns_payload() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack example");
+        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
 
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn mutation_uses_swap_for_assignment_and_keeps_permutation_valid() {
         let raw: crate::domain::model::Problem =
-            serde_json::from_str(include_str!("../../../examples/assignment.json"))
+            serde_json::from_str(include_str!("../../examples/assignment.json"))
                 .expect("parse assignment example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);

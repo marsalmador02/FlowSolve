@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn selection_selects_target_size_knapsack() {
         let raw: crate::domain::model::Problem =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json"))
+            serde_json::from_str(include_str!("../../examples/knapsack.json"))
                 .expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
@@ -228,7 +228,7 @@ mod tests {
     #[test]
     fn selection_selects_best_knapsack_candidates() {
         let raw: crate::domain::model::Problem =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json"))
+            serde_json::from_str(include_str!("../../examples/knapsack.json"))
                 .expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn selection_selects_best_assignment_candidates() {
         let raw: crate::domain::model::Problem =
-            serde_json::from_str(include_str!("../../../examples/assignment.json"))
+            serde_json::from_str(include_str!("../../examples/assignment.json"))
                 .expect("parse assignment example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);

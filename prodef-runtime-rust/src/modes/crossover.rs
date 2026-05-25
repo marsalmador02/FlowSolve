@@ -180,7 +180,7 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
 
     #[test]
     fn crossover_produces_offspring() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../../examples/assignment.json")).expect("parse assignment example");
+        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/assignment.json")).expect("parse assignment example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
 

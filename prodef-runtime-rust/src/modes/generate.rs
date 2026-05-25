@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn execute_population_respects_count() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack example");
+        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
         let payload = json!({ "count": 3 });
@@ -64,7 +64,7 @@ mod tests {
     
     #[test]
     fn execute_population_generates_feasible() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack example");
+        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
         let payload = json!({ "count": 5 });
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn execute_single_generates_feasible() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../../examples/knapsack.json")).expect("parse knapsack example");
+        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
         let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
         let mut rng = StdRng::seed_from_u64(42);
         let ctx = ModeContext { runtime: &runtime, payload: &json!(null), rng: &mut rng };

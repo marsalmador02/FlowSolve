@@ -1,0 +1,40 @@
+{
+  "name": "TSP1",
+  "parameters": [
+    { "symbol": "N", "value": 4 }
+  ],
+  "variables": [
+    {
+      "symbol": "city",
+      "within": "integers",
+      "shape": {
+        "type": "vector",
+        "isPermutation": true,
+        "size": { "fixed": false, "value": 4 }
+      }
+    }
+  ],
+  "goals": [
+    {
+      "sense": "minimize",
+      "expression": "sum distance[city[i], city[i+1]] over i=(1:N-1) + distance[city[N], city[1]]"
+    }
+  ],
+  "classes": [
+    {
+      "symbol": "distance",
+      "attributes": [
+        { "symbol": "c1" },
+        { "symbol": "c2" },
+        { "symbol": "c3" },
+        { "symbol": "c4" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 0 }, { "attribute": "c2", "value": 10 }, { "attribute": "c3", "value": 20 }, { "attribute": "c4", "value": 20 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 10 }, { "attribute": "c2", "value": 0 }, { "attribute": "c3", "value": 30 }, { "attribute": "c4", "value": 11 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 20 }, { "attribute": "c2", "value": 30 }, { "attribute": "c3", "value": 0 }, { "attribute": "c4", "value": 15 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 20 }, { "attribute": "c2", "value": 11 }, { "attribute": "c3", "value": 15 }, { "attribute": "c4", "value": 0 } ] }
+  ]
+}

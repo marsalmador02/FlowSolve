@@ -1,0 +1,46 @@
+{
+  "name": "KnapsackComplex",
+  "parameters": [
+    { "symbol": "N", "value": 10 },
+    { "symbol": "MaxWeight", "value": 40 }
+  ],
+  "variables": [
+    {
+      "symbol": "x",
+      "within": "binary",
+      "shape": {
+        "type": "vector",
+        "isPermutation": false,
+        "size": { "fixed": false, "value": "N" }
+      },
+      "range": { "lowerBound": 0, "upperBound": 1 }
+    }
+  ],
+  "goals": [
+    { "sense": "maximize", "expression": "sum x[i]*item[i].value over i=(1:N)" }
+  ],
+  "constraints": [
+    { "expression": "sum x[i]*item[i].weight over i=(1:N) <= MaxWeight" }
+  ],
+  "classes": [
+    {
+      "symbol": "item",
+      "attributes": [
+        { "symbol": "value" },
+        { "symbol": "weight" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 8 }, { "attribute": "weight", "value": 2 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 12 }, { "attribute": "weight", "value": 3 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 14 }, { "attribute": "weight", "value": 4 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 9 }, { "attribute": "weight", "value": 2 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 11 }, { "attribute": "weight", "value": 3 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 13 }, { "attribute": "weight", "value": 4 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 10 }, { "attribute": "weight", "value": 3 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 7 }, { "attribute": "weight", "value": 2 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 35 }, { "attribute": "weight", "value": 1 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 5 }, { "attribute": "weight", "value": 1 } ] }
+  ]
+}

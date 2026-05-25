@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn runtime_from_tsp_example_and_evaluate() {
-        let raw: Problem = serde_json::from_str(include_str!("../../../examples/tsp.json")).expect("parse example");
+        let raw: Problem = serde_json::from_str(include_str!("../../examples/tsp.json")).expect("parse example");
         let runtime = RuntimeProblem::new(raw).expect("build runtime");
         assert_eq!(runtime.solution_size(), 4);
 
