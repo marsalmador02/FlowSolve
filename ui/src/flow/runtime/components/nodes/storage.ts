@@ -103,6 +103,7 @@ export class StorageComponent extends RuntimeComponent {
       return {
         kind: 'emit',
         idIteration: incoming.idIteration,
+        maxIterations: incoming.maxIterations,
         solutionSet: existing,
       };
     }
@@ -128,6 +129,7 @@ export class StorageComponent extends RuntimeComponent {
       return {
         kind: 'emit',
         idIteration: incoming.idIteration,
+        maxIterations: incoming.maxIterations,
         solutionSet: set,
       };
     }
@@ -156,6 +158,7 @@ export class StorageComponent extends RuntimeComponent {
     return {
       kind: 'emit',
       idIteration: incoming.idIteration,
+      maxIterations: incoming.maxIterations,
       solution,
     };
   }

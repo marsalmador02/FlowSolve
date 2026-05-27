@@ -117,6 +117,7 @@ The following list covers the current files, excluding `node_modules`, `dist` an
 
 - `src/main.tsx`: React entry point.
 - `src/App.tsx`: main container. Canvas state, templates, execution and general wiring.
+- `src/App.test.tsx`: App wiring tests for templates, selection, flags and exports.
 - `src/style.css`: global styles (sidebar, canvas, nodes, panels, controls).
 
 ### 5.3 `src/components/`
@@ -174,11 +175,12 @@ The following list covers the current files, excluding `node_modules`, `dist` an
 ### 5.6 `src/hooks/`
 
 - `src/hooks/useFlowRunner.ts`: bridge between React state and the runtime executor.
+- `src/hooks/useFlowRunner.test.tsx`: hook tests for trace, error and execution orchestration.
 
 ### 5.7 `src/services/`
 
 - `src/services/prodefApi.ts`: HTTP client for `/execute`.
-- `src/services/flowExporter.ts`: validation and export utilities.
+- `src/services/prodefApi.test.ts`: HTTP contract tests for execute requests and fallback endpoints.
 
 ### 5.8 `src/templates/`
 
@@ -195,6 +197,7 @@ The following list covers the current files, excluding `node_modules`, `dist` an
 
 ### 5.11 `src/utils/`
 
+- `src/utils/executionCsv.ts`: CSV export helpers for execution metrics.
 - `src/utils/flowHelpers.ts`: pure helpers and data utilities.
 
 ## 6. End-to-end execution flow

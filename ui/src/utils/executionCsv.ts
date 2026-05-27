@@ -245,25 +245,30 @@ export function buildExecutionCsvFromGraph(params: {
   nodes: FlowNode[];
   edges: FlowEdge[];
   instance: string;
+  executionHistories?: number[][];
 }): string {
-  const { nodes, edges, instance } = params;
+  const { nodes, edges, instance, executionHistories } = params;
 
   const algorithm = detectAlgorithmFromGraph(nodes, edges);
   const maxIterations = extractMaxIterations(nodes);
-  const history = extractHistoryFromEndNode(nodes, maxIterations);
+  const histories = Array.isArray(executionHistories) && executionHistories.length > 0
+    ? executionHistories
+    : [extractHistoryFromEndNode(nodes, maxIterations)];
 
   const rows: ExecutionCsvRow[] = [];
 
-  for (let i = 0; i < history.length; i++) {
-    rows.push({
-      Algorithm: algorithm,
-      Instance: instance,
-      MetricName: 'ObjectiveValue',
-      ExecutionId: 1,
-      MetricValue: history[i],
-      Generation: i + 1,
+  histories.forEach((history, executionIndex) => {
+    history.forEach((metricValue, generationIndex) => {
+      rows.push({
+        Algorithm: algorithm,
+        Instance: instance,
+        MetricName: 'ObjectiveValue',
+        ExecutionId: executionIndex + 1,
+        MetricValue: metricValue,
+        Generation: generationIndex + 1,
+      });
     });
-  }
+  });
 
   const header: (keyof ExecutionCsvRow)[] = [
     'Algorithm',

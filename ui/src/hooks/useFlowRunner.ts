@@ -27,6 +27,7 @@ export interface UseFlowRunnerArgs {
   setNodes: Dispatch<SetStateAction<FlowNode[]>>;
   setSelectedNode: Dispatch<SetStateAction<FlowNode | null>>;
   setGlobalTrace: Dispatch<SetStateAction<string[]>>;
+  appendExecutionHistory: (history: number[]) => void;
   setNeighborhoodSize: Dispatch<SetStateAction<number>>;
 }
 
@@ -41,6 +42,7 @@ export function useFlowRunner({
   setNodes,
   setSelectedNode,
   setGlobalTrace,
+  appendExecutionHistory,
   setNeighborhoodSize,
 }: UseFlowRunnerArgs) {
   const executionContextRef = useRef<{ targetId: string; targetType: NodeKind } | null>(null);
@@ -154,6 +156,7 @@ export function useFlowRunner({
       executionContextRef.current = null;
     },
     getProblemParsed,
+    appendExecutionHistory,
     setNodeError,
     clearNodeError,
     updateNodeData,
@@ -169,6 +172,7 @@ export function useFlowRunner({
     updateNodeData,
     appendTrace,
     appendGlobalTrace,
+    appendExecutionHistory,
     appendGlobalSeparator,
     activeIterationRef,
     nodesRef,

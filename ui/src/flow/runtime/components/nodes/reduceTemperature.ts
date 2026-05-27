@@ -7,7 +7,7 @@
  *
  * Role in the flow (startup -> graph execution):
  * - Forwards the accepted solution and reduces the temperature value.
- * - The Loop node propagates `maxIterations` on the first iteration.
+ * - Uses the loop budget forwarded in the packet when available.
  */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
@@ -23,7 +23,7 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     }
 
     const temperatureCurrent = ctx.nodeData.temperatureCurrent ?? TEMPERATURE_MAX;
-    const maxIterations = Math.max(1, ctx.nodeData.maxIterations ?? 10);
+    const maxIterations = Math.max(1, incoming.maxIterations ?? ctx.nodeData.maxIterations ?? 10);
 
     // Determine step index (0-based). Use idIteration-1 so the first step starts at T0.
     const stepIndex = Math.max(0, (incoming.idIteration ?? 1) - 1);
@@ -57,6 +57,7 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     return {
       kind: 'emit',
       idIteration: incoming.idIteration,
+      maxIterations: incoming.maxIterations,
       solution: forwarded,
     };
   }

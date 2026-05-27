@@ -27,6 +27,7 @@ export interface PacketExecutorDeps {
   getEdges: () => FlowEdge[];
   getNodeById: (id: string) => FlowNode | undefined;
   getProblemParsed: () => unknown;
+  appendExecutionHistory: (history: number[]) => void;
   updateNodeData: (id: string, patch: Partial<FlowNodeData>) => void;
   setExecutionContext: (targetId: string, targetType: NodeKind) => void;
   clearExecutionContext: () => void;
@@ -361,6 +362,7 @@ export async function runPacketExecutor(
         lastPacket = {
           idIteration: current.packet.idIteration,
           fromId: node.id,
+          maxIterations: current.packet.maxIterations,
           solution: result.solution ?? null,
           solutionSet: result.solutionSet ?? null,
         };
@@ -371,6 +373,7 @@ export async function runPacketExecutor(
       const emitted: Packet = {
         idIteration: result.idIteration ?? current.packet.idIteration,
         fromId: node.id,
+        maxIterations: result.maxIterations ?? current.packet.maxIterations,
         solution: result.solution ?? null,
         solutionSet: result.solutionSet ?? null,
       };
@@ -385,6 +388,12 @@ export async function runPacketExecutor(
     const finalNode: FlowNode = endNode ?? loopNode;
     if (options.mode === 'full' || stopped) {
       storeFinalResult(deps, finalNode, lastPacket);
+      const completedHistory = Array.isArray(finalNode?.data?.history)
+        ? [...(finalNode.data.history as number[])]
+        : [];
+      if (completedHistory.length > 0) {
+        deps.appendExecutionHistory(completedHistory);
+      }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Graph execution failed.';

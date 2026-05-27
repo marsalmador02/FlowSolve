@@ -12,6 +12,34 @@ import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, formatCompact, formatScore, solutionScore, toPretty } from '../base';
 
+function isMaximizeProblem(problem: unknown): boolean {
+  try {
+    const rawProblem = (problem as any)?.raw || problem;
+    if (rawProblem && Array.isArray(rawProblem.goals) && rawProblem.goals.length > 0) {
+      const sense = rawProblem.goals[0].sense || '';
+      return sense.toLowerCase().includes('maximiz');
+    }
+  } catch {
+  }
+  return false;
+}
+
+function acceptanceProbability(problem: unknown, candidate: SolutionLike, stored: SolutionLike, temperatureCurrent: number): number {
+  const candidateScore = solutionScore(candidate);
+  const storedScore = solutionScore(stored);
+  const isMaximize = isMaximizeProblem(problem);
+  const delta = isMaximize
+    ? storedScore - candidateScore
+    : candidateScore - storedScore;
+
+  if (delta <= 0.0) {
+    return 1.0;
+  }
+
+  const temp = Math.max(temperatureCurrent, 1e-12);
+  return Math.exp(-delta / temp);
+}
+
 export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {
@@ -73,14 +101,16 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
     });
     const candScore = formatScore(solutionScore(candidate));
     const storedScore = formatScore(solutionScore(stored));
+    const acceptancePct = (acceptanceProbability(ctx.problem, candidate, stored, temperatureCurrent) * 100).toFixed(1);
     const accepted = payload.accepted ? '✓ Accepted' : '✗ Rejected';
     ctx.appendTrace(
-      `🌡️ Temperature Acceptance (T=${temperatureCurrent.toFixed(2)}): candidate=${candScore} | stored=${storedScore} | ${accepted}`,
+      `🌡️ Temperature Acceptance (T=${temperatureCurrent.toFixed(2)} | p=${acceptancePct}%): candidate=${candScore} | stored=${storedScore} | ${accepted}`,
     );
 
     return {
       kind: 'emit',
       idIteration: candidatePacket.idIteration,
+      maxIterations: candidatePacket.maxIterations ?? storedPacket.maxIterations,
       solution: winner,
     };
   }

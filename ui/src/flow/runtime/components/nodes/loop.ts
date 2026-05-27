@@ -72,6 +72,7 @@ export class LoopComponent extends RuntimeComponent {
     return {
       kind: 'emit',
       idIteration: next,
+      maxIterations,
       solution: incoming.solution ?? null,
       solutionSet: incoming.solutionSet ?? null,
     };

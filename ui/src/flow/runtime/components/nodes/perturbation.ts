@@ -52,6 +52,7 @@ export class PerturbationComponent extends RuntimeComponent {
     return {
       kind: 'emit',
       idIteration: incoming.idIteration,
+      maxIterations: incoming.maxIterations,
       solution: result,
     };
   }

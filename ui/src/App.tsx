@@ -195,6 +195,7 @@ export default function App() {
   const [edges, setEdges] = useState<FlowEdge[]>([]);
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
   const [globalTrace, setGlobalTrace] = useState<string[]>([]);
+  const [executionHistories, setExecutionHistories] = useState<number[][]>([]);
   const [neighborhoodSize, setNeighborhoodSize] = useState(1);
   const [customTemplates, setCustomTemplates] = useState<StoredTemplate[]>([]);
   const [generationPaletteItems, setGenerationPaletteItems] = useState<SidebarPaletteItem[]>([]);
@@ -305,8 +306,99 @@ export default function App() {
     setNodes,
     setSelectedNode,
     setGlobalTrace,
+    appendExecutionHistory: (history: number[]) => {
+      if (!Array.isArray(history) || history.length === 0) {
+        return;
+      }
+      setExecutionHistories((prev) => [...prev, [...history]]);
+    },
     setNeighborhoodSize,
   });
+
+  const resetRuntimeState = useCallback((options: {
+    clearTrace: boolean;
+    clearExecutionHistories: boolean;
+    clearSelection: boolean;
+  }) => {
+    const { clearTrace, clearExecutionHistories, clearSelection } = options;
+    if (clearTrace) {
+      setGlobalTrace([]);
+    }
+    if (clearExecutionHistories) {
+      setExecutionHistories([]);
+    }
+    setExecutionAlgorithm('Custom');
+    activeIterationRef.current = null;
+    setNeighborhoodLevel(1);
+    setNodes((prev) => prev.map((node) => {
+      const baseData: Partial<typeof node.data> = {
+        trace: '',
+        error: undefined,
+        isRunning: false,
+      };
+
+      if (node.type === 'termination') {
+        const maxIterations = Math.max(1, Number(node.data.maxIterations ?? 10));
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...baseData,
+            iteration: 0,
+            shouldStop: false,
+            status: `continue: 0/${maxIterations}`,
+            solutionSet: undefined,
+            solution: undefined,
+            history: [],
+          },
+        };
+      }
+
+      if (node.type === 'storage') {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...baseData,
+            acceptCount: 0,
+            solutionSet: undefined,
+            solution: undefined,
+            setSize: 0,
+            history: [],
+          },
+        };
+      }
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          ...baseData,
+        },
+      };
+    }));
+    if (clearSelection) {
+      setSelectedNode(null);
+    }
+  }, [setExecutionHistories, setNeighborhoodLevel, setNodes]);
+
+  const resetFlow = useCallback(() => {
+    resetRuntimeState({
+      clearTrace: true,
+      clearExecutionHistories: true,
+      clearSelection: true,
+    });
+  }, [resetRuntimeState]);
+
+  const runFlowAndKeepTrace = useCallback(async () => {
+    resetRuntimeState({
+      clearTrace: false,
+      clearExecutionHistories: false,
+      clearSelection: false,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await runFlowUntilEnd();
+  }, [resetRuntimeState, runFlowUntilEnd]);
 
   const createDefaultProblemNode = useCallback((): FlowNode => {
     const id = 'problem';
@@ -336,6 +428,7 @@ export default function App() {
         nodes,
         edges,
         instance,
+        executionHistories,
       });
 
       if (!csv || csv.length === 0) {
@@ -347,7 +440,7 @@ export default function App() {
     } catch {
       // Ignore export failures silently.
     }
-  }, [edges, getNodeByType, nodes]);
+  }, [edges, executionHistories, getNodeByType, nodes]);
 
   // Ensure the editor always starts with one Problem node.
   useEffect(() => {
@@ -358,51 +451,6 @@ export default function App() {
       return [createDefaultProblemNode(), ...prev];
     });
   }, [createDefaultProblemNode]);
-
-  // Connect two nodes by adding an arrowed edge.
-  const onConnect = useCallback(
-    (connection: Edge | Connection) =>
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...connection,
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-            },
-          },
-          eds
-        )
-      ),
-    []
-  );
-
-  // Apply node-level position/selection edits from React Flow.
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    const filteredChanges = changes.filter((change) => !(change.type === 'remove' && change.id === 'problem'));
-    setNodes((nds) => {
-      const updated = applyNodeChanges(filteredChanges, nds);
-      if (updated.some((node) => node.type === 'problem')) {
-        return updated;
-      }
-      return [createDefaultProblemNode(), ...updated];
-    });
-  }, [createDefaultProblemNode]);
-
-  // Apply edge-level edits from React Flow.
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
-  }, []);
-
-  // Track current node selection for the properties panel.
-  const onSelectionChange = useCallback(({ nodes }: { nodes: FlowNode[] }) => {
-    setSelectedNode(nodes[0] ?? null);
-  }, []);
-
-  // Enable drag-over behavior for sidebar-to-canvas drops.
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
 
   // Store React Flow instance to support fitView and imperative actions.
   const onInit = useCallback((instance: ReactFlowInstance) => {
@@ -525,6 +573,37 @@ export default function App() {
     },
     [createNode]
   );
+
+  // Keep React Flow state synchronized with the local React state array.
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
+  }, []);
+
+  // Keep edge edits synchronized with local state.
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges((currentEdges) => applyEdgeChanges(changes, currentEdges));
+  }, []);
+
+  // Mirror the current selection into the inspector panel.
+  const onSelectionChange = useCallback((selection: { nodes: FlowNode[] }) => {
+    setSelectedNode(selection.nodes[0] ?? null);
+  }, []);
+
+  // Add a directed edge with the default arrow marker.
+  const onConnect = useCallback((connection: Connection) => {
+    setEdges((currentEdges) => addEdge({
+      ...connection,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+      },
+    }, currentEdges));
+  }, []);
+
+  // Prevent the browser from blocking drop events over the canvas.
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
 
   const loadTemplateGraph = useCallback(
     (template: { nodes: FlowNode[]; edges: FlowEdge[] }, algorithmName = 'Custom') => {
@@ -788,143 +867,6 @@ export default function App() {
     });
   }, [setNodes]);
 
-  const resetFlow = useCallback(() => {
-    setGlobalTrace([]);
-    setExecutionAlgorithm('Custom');
-    activeIterationRef.current = null;
-    setNeighborhoodLevel(1);
-    setNodes((prev) => prev.map((node) => {
-      const baseData: Partial<typeof node.data> = {
-        trace: '',
-        error: undefined,
-        isRunning: false,
-      };
-
-      if (node.type === 'termination') {
-        const maxIterations = Math.max(1, Number(node.data.maxIterations ?? 10));
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            iteration: 0,
-            shouldStop: false,
-            status: `continue: 0/${maxIterations}`,
-            solutionSet: undefined,
-            solution: undefined,
-          },
-        };
-      }
-
-      if (node.type === 'storage') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            history: [],
-            acceptCount: 0,
-            solutionSet: '[]',
-            setSize: 0,
-            currentSolution: undefined,
-            currentScore: undefined,
-            bestSolution: undefined,
-            bestScore: undefined,
-            solution: undefined,
-          },
-        };
-      }
-
-      if (node.type === 'populationGeneration' || node.type === 'selection' || node.type === 'crossover' || node.type === 'mutation' || node.type === 'neighborhood' || node.type === 'substraction') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            solutionSet: '[]',
-            setSize: 0,
-            solution: undefined,
-          },
-        };
-      }
-
-      if (node.type === 'acceptance' || node.type === 'temperatureAcceptance' || node.type === 'selectionBest' || node.type === 'localSearch' || node.type === 'perturbation' || node.type === 'singleSolution') {
-        const resetData: Partial<typeof node.data> = {
-          ...baseData,
-          solution: undefined,
-          decisionSummary: undefined,
-          temperatureCurrent: undefined,
-        };
-
-        if (node.type === 'perturbation') {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...resetData,
-              neighborhoodValue: 1,
-              neighborhoodInfo: 'run start -> k=1',
-            },
-          };
-        }
-
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...resetData,
-          },
-        };
-      }
-
-      if (node.type === 'changeNeighborhood') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            neighborhoodValue: 1,
-            neighborhoodInfo: 'run start -> k=1',
-          },
-        };
-      }
-
-      if (node.type === 'reduceTemperature') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            solution: undefined,
-            temperatureCurrent: undefined,
-            temperatureInitial: undefined,
-            temperaturePrevious: undefined,
-            alpha: undefined,
-          },
-        };
-      }
-
-      if (node.type === 'problem') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-          },
-        };
-      }
-
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          ...baseData,
-        },
-      };
-    }));
-    setSelectedNode(null);
-  }, [setNeighborhoodLevel]);
-
   // Convenience alias for selected node data used by the properties panel.
   const selectedData = selectedNode?.data;
 
@@ -953,10 +895,10 @@ export default function App() {
           <button className="canvas-icon-button" title="Run step" aria-label="Run step" onClick={() => { void runFlowNextStep(); }}>
             1x
           </button>
-          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow" onClick={() => { resetFlow(); void runFlowUntilEnd(); }}>
+          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow" onClick={() => { void runFlowAndKeepTrace(); }}>
             ▶
           </button>
-          <button className="canvas-icon-button" title="Reset flow" aria-label="Reset flow" onClick={resetFlow}>
+          <button className="canvas-icon-button" title="Reset flow" aria-label="Reset flow" onClick={() => { resetFlow(); }}>
             ↻
           </button>
           <button className="canvas-icon-button" title="Delete everything" aria-label="Delete everything" onClick={deleteEverything}>

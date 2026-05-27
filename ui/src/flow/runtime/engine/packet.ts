@@ -23,6 +23,8 @@ export type SolutionLike = {
 export interface Packet {
   // Monotonically increasing id controlled by the loop.
   idIteration: number;
+  // Optional loop budget forwarded so downstream nodes can mirror the same schedule.
+  maxIterations?: number;
   // Id of the node that emitted this packet ('__boot__' for the very first).
   fromId: string;
   // Single-solution payload (may be absent if solutionSet is used).
@@ -57,7 +59,7 @@ export interface ComponentContext {
 
 // Outcome of a single component execution step.
 export type ExecuteResult =
-  | { kind: 'emit'; solution?: SolutionLike | null; solutionSet?: SolutionLike[] | null; idIteration?: number }
+  | { kind: 'emit'; solution?: SolutionLike | null; solutionSet?: SolutionLike[] | null; idIteration?: number; maxIterations?: number }
   | { kind: 'wait' }
   | { kind: 'stop'; solution?: SolutionLike | null; solutionSet?: SolutionLike[] | null }
   | { kind: 'error'; message: string };
