@@ -36,13 +36,13 @@ describe('FlowInspectorPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Knapsack1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Knapsack' }));
     expect(applyProblemExample).toHaveBeenCalledWith(KNAPSACK_TEMPLATE_JSON);
 
-    fireEvent.click(screen.getByRole('button', { name: 'TSP1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'TSP' }));
     expect(applyProblemExample).toHaveBeenCalledWith(TSP_TEMPLATE_JSON);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Assignment1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment' }));
     expect(applyProblemExample).toHaveBeenCalledWith(ASSIGNMENT_TEMPLATE_JSON);
 
     const editor = screen.getByRole('textbox') as HTMLTextAreaElement;
