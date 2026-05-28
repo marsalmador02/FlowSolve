@@ -21,7 +21,7 @@
 <li>Some join nodes require two inputs:
 <ul>
 <li><code>acceptance</code> / <code>temperatureAcceptance</code></li>
-<li><code>substraction</code></li>
+<li><code>subtraction</code></li>
 <li><code>changeNeighborhood</code></li>
 </ul>
 </li>
@@ -68,7 +68,7 @@
 <li><code>termination</code>: iteration control and stopping.</li>
 <li><code>changeNeighborhood</code>: neighborhood-size adjustment.</li>
 <li><code>neighborhood</code>: neighborhood generation.</li>
-<li><code>substraction</code>: set / candidate difference.</li>
+<li><code>subtraction</code>: set / candidate difference.</li>
 <li><code>selectionBest</code>: best-candidate selection.</li>
 </ul>
 <p>UI rendering for these nodes is defined in <code>src/components/flowNodes.tsx</code>.<br>
@@ -92,6 +92,7 @@ Components are implemented in <code>src/flow/runtime/components/nodes/*.ts</code
 <a id="52-src" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.2 <code>src/</code><a href="#52-src" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
 <li><code>src/main.tsx</code>: React entry point.</li>
 <li><code>src/App.tsx</code>: main container. Canvas state, templates, execution and general wiring.</li>
+<li><code>src/App.test.tsx</code>: App wiring tests for templates, selection, flags and exports.</li>
 <li><code>src/style.css</code>: global styles (sidebar, canvas, nodes, panels, controls).</li>
 </ul>
 <a id="53-srccomponents" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.3 <code>src/components/</code><a href="#53-srccomponents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
@@ -127,7 +128,7 @@ Components are implemented in <code>src/flow/runtime/components/nodes/*.ts</code
 <li><code>src/flow/runtime/components/nodes/loop.ts</code>: iteration control.</li>
 <li><code>src/flow/runtime/components/nodes/neighborhood.ts</code>: neighborhood generation / evaluation.</li>
 <li><code>src/flow/runtime/components/nodes/changeNeighborhood.ts</code>: neighborhood parameter adjustment.</li>
-<li><code>src/flow/runtime/components/nodes/substraction.ts</code>: subtraction between flows.</li>
+<li><code>src/flow/runtime/components/nodes/subtraction.ts</code>: subtraction between flows.</li>
 <li><code>src/flow/runtime/components/nodes/selectionBest.ts</code>: deterministic best-candidate selection.</li>
 </ul>
 <a id="srcflowruntimeengine" class="tsd-anchor"></a><h5 class="tsd-anchor-link"><code>src/flow/runtime/engine/</code><a href="#srcflowruntimeengine" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h5><ul>
@@ -139,10 +140,11 @@ Components are implemented in <code>src/flow/runtime/components/nodes/*.ts</code
 </ul>
 <a id="56-srchooks" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.6 <code>src/hooks/</code><a href="#56-srchooks" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
 <li><code>src/hooks/useFlowRunner.ts</code>: bridge between React state and the runtime executor.</li>
+<li><code>src/hooks/useFlowRunner.test.tsx</code>: hook tests for trace, error and execution orchestration.</li>
 </ul>
 <a id="57-srcservices" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.7 <code>src/services/</code><a href="#57-srcservices" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
 <li><code>src/services/prodefApi.ts</code>: HTTP client for <code>/execute</code>.</li>
-<li><code>src/services/flowExporter.ts</code>: validation and export utilities.</li>
+<li><code>src/services/prodefApi.test.ts</code>: HTTP contract tests for execute requests and fallback endpoints.</li>
 </ul>
 <a id="58-srctemplates" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.8 <code>src/templates/</code><a href="#58-srctemplates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
 <li><code>src/templates/flowTemplates.ts</code>: node and edge definitions for GRASP, ILS, VNS, Tabu, SA, and EA.</li>
@@ -155,6 +157,7 @@ Components are implemented in <code>src/flow/runtime/components/nodes/*.ts</code
 <li><code>src/types/runtimeContract.ts</code>: typed contract between UI and backend.</li>
 </ul>
 <a id="511-srcutils" class="tsd-anchor"></a><h3 class="tsd-anchor-link">5.11 <code>src/utils/</code><a href="#511-srcutils" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><code>src/utils/executionCsv.ts</code>: CSV export helpers for execution metrics.</li>
 <li><code>src/utils/flowHelpers.ts</code>: pure helpers and data utilities.</li>
 </ul>
 <a id="6-end-to-end-execution-flow" class="tsd-anchor"></a><h2 class="tsd-anchor-link">6. End-to-end execution flow<a href="#6-end-to-end-execution-flow" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ol>

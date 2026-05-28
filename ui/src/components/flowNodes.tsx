@@ -543,7 +543,7 @@ function NeighborhoodNode({ data }: { data: FlowNodeData }) {
   );
 }
 
-function SubstractionNode({ data }: { data: FlowNodeData }) {
+function SubtractionNode({ data }: { data: FlowNodeData }) {
   return (
     <div className={nodeClassName(data)}>
       <Handle type="target" position={Position.Left} id="in-neighborhood" style={{ top: 24 }} />
@@ -612,6 +612,6 @@ export const flowNodeTypes: NodeTypes = {
   termination: TerminationNode,
   changeNeighborhood: ChangeNeighborhoodNode,
   neighborhood: NeighborhoodNode,
-  substraction: SubstractionNode,
+  subtraction: SubtractionNode,
   selectionBest: SelectionBestNode,
 };

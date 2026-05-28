@@ -3,14 +3,14 @@
  *
  * Contains:
  * - Storage component with two automatic modes:
- *   - Overwrite: when no successor is a substraction node, it replaces the solution/set.
- *   - Accumulate: when a successor is substraction, it accumulates received
+ *   - Overwrite: when no successor is a subtraction node, it replaces the solution/set.
+ *   - Accumulate: when a successor is subtraction, it accumulates received
  *     solutions into a growing list. While accumulating it calls Rust to pick
  *     the best solution and places it at index 0 for fast access.
  *
  * Role in the flow (startup -> graph execution):
  * - Lightweight flow memory. In accumulate mode it gathers candidate history
- *   later substracted by `substraction`. If used as terminal node, the first
+ *   later subtracted by `subtraction`. If used as terminal node, the first
  *   solution (best) is considered the result. The node also maintains a `history`
  *   array storing objective values for CSV export.
  */
@@ -46,14 +46,14 @@ function packetSolutions(incoming: Packet): SolutionLike[] {
 export class StorageComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const outgoing = ctx.getOutgoingTargets();
-    const feedsSubstraction = outgoing.some((o) => o.type === 'substraction');
+    const feedsSubtraction = outgoing.some((o) => o.type === 'subtraction');
 
     if (!Array.isArray(ctx.nodeData.history)) {
       ctx.updateNodeData({ history: [] });
     }
     const history = (ctx.nodeData.history as number[]) || [];
     
-    if (feedsSubstraction) {
+    if (feedsSubtraction) {
       const existing = readAccumulated(ctx);
       const arriving = packetSolutions(incoming);
       let added = 0;

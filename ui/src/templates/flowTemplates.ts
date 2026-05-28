@@ -363,15 +363,15 @@ export function buildTabuTemplate(updateNodeData: UpdateNodeData) {
       },
     },
     {
-      id: 'substraction-template',
-      type: 'substraction',
+      id: 'subtraction-template',
+      type: 'subtraction',
       position: { x: 1410, y: 180 },
       data: {
-        label: COMPONENT_LABELS.SubstractionComponent,
+        label: COMPONENT_LABELS.SubtractionComponent,
         trace: '',
         solutionSet: '[]',
         setSize: 0,
-        onUpdate: mkUpdater('substraction-template', updateNodeData),
+        onUpdate: mkUpdater('subtraction-template', updateNodeData),
       },
     },
     {
@@ -390,9 +390,9 @@ export function buildTabuTemplate(updateNodeData: UpdateNodeData) {
     mkEdge('e-single-loop', 'single-template', 'termination-template'),
     mkEdge('e-loop-storage', 'termination-template', 'storage-template'),
     mkEdge('e-loop-neighborhood', 'termination-template', 'neighborhood-template'),
-    mkEdge('e-storage-substraction', 'storage-template', 'substraction-template'),
-    mkEdge('e-neighborhood-substraction', 'neighborhood-template', 'substraction-template'),
-    mkEdge('e-substraction-selection', 'substraction-template', 'selection-template'),
+    mkEdge('e-storage-subtraction', 'storage-template', 'subtraction-template'),
+    mkEdge('e-neighborhood-subtraction', 'neighborhood-template', 'subtraction-template'),
+    mkEdge('e-subtraction-selection', 'subtraction-template', 'selection-template'),
     mkEdge('e-selection-loop', 'selection-template', 'termination-template'),
   ];
 

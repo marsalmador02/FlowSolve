@@ -64,17 +64,17 @@ export function validateGraph(nodes: FlowNode[], edges: FlowEdge[]) {
   }
 
   for (const node of nodes) {
-    if (node.type === 'substraction') {
+    if (node.type === 'subtraction') {
       const incoming = collectIncoming(edges, node.id);
       if (incoming.length !== 2) {
-        errors.push(`Substraction node ${node.id} requires exactly 2 incoming edges (found ${incoming.length}).`);
+        errors.push(`Subtraction node ${node.id} requires exactly 2 incoming edges (found ${incoming.length}).`);
         continue;
       }
       const sourceTypes = incoming
         .map((edge) => nodes.find((n) => n.id === edge.source)?.type)
         .filter(Boolean) as NodeKind[];
       if (!sourceTypes.includes('storage')) {
-        errors.push(`Substraction node ${node.id} must have one incoming edge from a storage node.`);
+        errors.push(`Subtraction node ${node.id} must have one incoming edge from a storage node.`);
       }
     }
 

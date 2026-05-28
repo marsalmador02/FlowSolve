@@ -1,8 +1,9 @@
+
 /*
- * File: substraction.ts
+ * File: subtraction.ts
  *
  * Contains:
- * - Two-input substraction component: expects one packet from storage and another
+ * - Two-input subtraction component: expects one packet from storage and another
  *   from a different component with the same idIteration.
  * - Performs set difference (by variable vector) removing storage elements from the other set.
  *
@@ -28,7 +29,7 @@ function packetToSet(packet: Packet): SolutionLike[] {
   return [];
 }
 
-export class SubstractionComponent extends JoinRuntimeComponent {
+export class SubtractionComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {
       return { kind: 'wait' };
@@ -43,7 +44,7 @@ export class SubstractionComponent extends JoinRuntimeComponent {
     if (!storagePacket || !otherPacket) {
       return {
         kind: 'error',
-        message: 'substraction requires one input from a storage node.',
+        message: 'subtraction requires one input from a storage node.',
       };
     }
 
@@ -61,7 +62,7 @@ export class SubstractionComponent extends JoinRuntimeComponent {
 
     ctx.updateNodeData({ solutionSet: toPretty(remaining), setSize: remaining.length });
     const filteredOut = Math.max(0, source.length - remaining.length);
-    ctx.appendTrace(`➖ Substraction: ${remaining.length} solutions remaining (${filteredOut} filtered out)`);
+    ctx.appendTrace(`➖ Subtraction: ${remaining.length} solutions remaining (${filteredOut} filtered out)`);
 
     return {
       kind: 'emit',

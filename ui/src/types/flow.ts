@@ -21,7 +21,7 @@ export type NodeKind =
   | 'termination'
   | 'changeNeighborhood'
   | 'neighborhood'
-  | 'substraction'
+  | 'subtraction'
   | 'selectionBest';
 
 // Runtime payload attached to each node in React Flow.

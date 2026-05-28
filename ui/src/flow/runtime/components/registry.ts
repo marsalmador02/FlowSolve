@@ -18,7 +18,7 @@ import { LocalSearchComponent } from './nodes/localSearch';
 import { NeighborhoodComponent } from './nodes/neighborhood';
 import { PerturbationComponent } from './nodes/perturbation';
 import { AcceptanceComponent } from './nodes/acceptance';
-import { SubstractionComponent } from './nodes/substraction';
+import { SubtractionComponent } from './nodes/subtraction';
 import { SelectionComponent } from './nodes/selection';
 import { CrossoverComponent } from './nodes/crossover';
 import { MutationComponent } from './nodes/mutation';
@@ -38,7 +38,7 @@ const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
   neighborhood: () => new NeighborhoodComponent(),
   perturbation: () => new PerturbationComponent(),
   acceptance: () => new AcceptanceComponent(),
-  substraction: () => new SubstractionComponent(),
+  subtraction: () => new SubtractionComponent(),
   selection: () => new SelectionComponent(),
   crossover: () => new CrossoverComponent(),
   mutation: () => new MutationComponent(),

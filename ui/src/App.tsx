@@ -86,7 +86,7 @@ const EMOJI_BY_SIDEBAR_KIND: Record<string, string> = {
   ReduceTemperatureComponent: '❄️',
   ChangeNeighbourhoodComponent: '🧭',
   NeighbourhoodComponent: '🧩',
-  SubstractionComponent: '➖',
+  SubtractionComponent: '➖',
   SelectionOfBestComponent: '🏆',
   StorageComponent: '📦',
   LoopComponent: '🔁',
@@ -122,7 +122,7 @@ function mapRuntimeKindToSidebarKind(kind: string): string {
     reduceTemperature: 'ReduceTemperatureComponent',
     changeNeighborhood: 'ChangeNeighbourhoodComponent',
     neighborhood: 'NeighbourhoodComponent',
-    substraction: 'SubstractionComponent',
+    subtraction: 'SubtractionComponent',
     selectionBest: 'SelectionOfBestComponent',
     storage: 'StorageComponent',
     termination: 'LoopComponent',
@@ -281,7 +281,7 @@ export default function App() {
     const modificationKinds = [
       'SelectionComponent', 'CrossoverComponent', 'MutationComponent', 'LocalSearchComponent',
       'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
-      'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubstractionComponent', 'SelectionOfBestComponent',
+      'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubtractionComponent', 'SelectionOfBestComponent',
     ];
     const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent'];
 
@@ -472,7 +472,7 @@ export default function App() {
       ReduceTemperatureComponent: 'reduceTemperature',
       NeighbourhoodComponent: 'neighborhood',
       ChangeNeighbourhoodComponent: 'changeNeighborhood',
-      SubstractionComponent: 'substraction',
+      SubtractionComponent: 'subtraction',
       SelectionOfBestComponent: 'selectionBest',
       StorageComponent: 'storage',
       LoopComponent: 'termination',
@@ -537,7 +537,7 @@ export default function App() {
       data.neighborhoodValue = neighborhoodSizeRef.current;
       data.neighborhoodInfo = `k=${neighborhoodSizeRef.current}`;
     }
-    if (type === 'neighborhood' || type === 'substraction') {
+    if (type === 'neighborhood' || type === 'subtraction') {
       data.solutionSet = '[]';
       data.setSize = 0;
     }

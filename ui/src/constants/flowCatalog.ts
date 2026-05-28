@@ -11,7 +11,7 @@ export const COMPONENT_LABELS: Record<string, string> = {
   ReduceTemperatureComponent: '❄️ Reduce Temperature Component',
   ChangeNeighbourhoodComponent: '🧭 Change Neighbourhood Component',
   NeighbourhoodComponent: '🧩 Neighbourhood Component',
-  SubstractionComponent: '➖ Substraction Component',
+  SubtractionComponent: '➖ Subtraction Component',
   SelectionOfBestComponent: '🏆 Selection of Best Component',
   StorageComponent: '📦 Storage Component',
   LoopComponent: '🔁 Loop Component',

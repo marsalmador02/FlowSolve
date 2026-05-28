@@ -31,7 +31,7 @@ Before running, `graphValidation.ts` checks rules such as:
 2. There must be exactly one `termination` node.
 3. Some join nodes require two inputs:
    - `acceptance` / `temperatureAcceptance`
-   - `substraction`
+   - `subtraction`
    - `changeNeighborhood`
 4. If the flow does not start at the loop, it must connect correctly to it.
 
@@ -83,7 +83,7 @@ Supported node types in the UI:
 - `termination`: iteration control and stopping.
 - `changeNeighborhood`: neighborhood-size adjustment.
 - `neighborhood`: neighborhood generation.
-- `substraction`: set / candidate difference.
+- `subtraction`: set / candidate difference.
 - `selectionBest`: best-candidate selection.
 
 UI rendering for these nodes is defined in `src/components/flowNodes.tsx`.  
@@ -160,7 +160,7 @@ The following list covers the current files, excluding `node_modules`, `dist` an
 - `src/flow/runtime/components/nodes/loop.ts`: iteration control.
 - `src/flow/runtime/components/nodes/neighborhood.ts`: neighborhood generation / evaluation.
 - `src/flow/runtime/components/nodes/changeNeighborhood.ts`: neighborhood parameter adjustment.
-- `src/flow/runtime/components/nodes/substraction.ts`: subtraction between flows.
+- `src/flow/runtime/components/nodes/subtraction.ts`: subtraction between flows.
 - `src/flow/runtime/components/nodes/selectionBest.ts`: deterministic best-candidate selection.
 
 ##### `src/flow/runtime/engine/`
