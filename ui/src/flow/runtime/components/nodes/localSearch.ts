@@ -40,7 +40,7 @@ export class LocalSearchComponent extends RuntimeComponent {
     const sign = delta > 0 ? `+${delta.toFixed(0)}` : delta.toFixed(0);
 
     ctx.appendTrace(
-      `🔍 LocalSearch: baseline = ${formatCompact(base)}\n      Best move: ${formatCompact(improved)} (Δ${sign})`,
+      `🔍 Local Search: baseline = ${formatCompact(base)}\n      Best move: ${formatCompact(improved)} (Δ${sign})`,
     );
 
     return {

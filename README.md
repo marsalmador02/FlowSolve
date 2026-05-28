@@ -45,6 +45,8 @@ The system is divided into three main layers:
 
 ```bash
 npm install
+
+npm --prefix ui install
 ```
 
 ### Run the application
