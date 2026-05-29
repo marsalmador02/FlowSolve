@@ -140,9 +140,9 @@ vi.mock('./components/FlowSidebar', () => ({
   ),
 }));
 
-vi.mock('./components/FlowInspectorPanel', () => ({
+vi.mock('./components/ExecutionPanel', () => ({
   __esModule: true,
-  FlowInspectorPanel: (props: any) => (
+  ExecutionPanel: (props: any) => (
     <aside data-testid="inspector">
       {props.selectedNode?.type === 'problem' ? (
         <>

@@ -33,7 +33,7 @@ import { KNAPSACK_TEMPLATE_JSON } from './constants/problemTemplates';
 import { COMPONENT_LABELS } from './constants/flowCatalog';
 import { flowNodeTypes } from './components/flowNodes';
 import { FlowSidebar } from './components/FlowSidebar';
-import { FlowInspectorPanel } from './components/FlowInspectorPanel';
+import { ExecutionPanel } from './components/ExecutionPanel';
 import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
@@ -927,7 +927,7 @@ export default function App() {
           <img src={othimiColorImage} alt="Brand" className="canvas-footer-brand-image" />
         </div>
 
-        <FlowInspectorPanel
+        <ExecutionPanel
           selectedNode={selectedNode}
           selectedData={selectedData}
           globalTrace={globalTrace}

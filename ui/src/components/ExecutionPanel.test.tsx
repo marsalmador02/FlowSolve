@@ -6,7 +6,7 @@ import {
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 import type { FlowNode } from '../types/flow';
-import { FlowInspectorPanel } from './FlowInspectorPanel';
+import { ExecutionPanel } from './ExecutionPanel';
 
 function makeNode(id: string, type: FlowNode['type'], label: string): FlowNode {
   return {
@@ -17,13 +17,13 @@ function makeNode(id: string, type: FlowNode['type'], label: string): FlowNode {
   };
 }
 
-describe('FlowInspectorPanel', () => {
+describe('ExecutionPanel', () => {
   it('loads concrete problem examples and propagates JSON edits', () => {
     const applyProblemExample = vi.fn();
     const onProblemJsonChange = vi.fn();
 
     render(
-      <FlowInspectorPanel
+      <ExecutionPanel
         selectedNode={makeNode('problem-1', 'problem', 'Problem')}
         selectedData={{ label: 'Problem', json: '{"existing":true}' }}
         globalTrace={[]}
@@ -57,7 +57,7 @@ describe('FlowInspectorPanel', () => {
     const setNodeEnd = vi.fn();
 
     render(
-      <FlowInspectorPanel
+      <ExecutionPanel
         selectedNode={makeNode('termination-1', 'termination', 'Termination')}
         selectedData={{ label: 'Termination', start: true, end: false }}
         globalTrace={[]}
@@ -87,7 +87,7 @@ describe('FlowInspectorPanel', () => {
     const onExportTrace = vi.fn();
 
     render(
-      <FlowInspectorPanel
+      <ExecutionPanel
         selectedNode={makeNode('storage-1', 'storage', 'Storage')}
         selectedData={{ label: 'Storage', end: true }}
         globalTrace={['step 1', 'step 2']}

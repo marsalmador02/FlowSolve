@@ -1,16 +1,10 @@
 /*
- * File: FlowInspectorPanel.tsx
+ * File: ExecutionPanel.tsx
  *
- * Contains:
- * - Right-side inspector panel with:
- *   - Problem JSON editor with example buttons.
- *   - Start/End flags for the selected node.
- *   - Global execution trace view.
- *   - Simple export of the trace to a text file.
- *
- * Role in the flow (startup -> graph execution):
- * - Allows defining the problem, selecting start/end nodes, monitoring the
- *   global trace during execution, and exporting results.
+ * Right-side execution inspector panel with:
+ *  - Problem JSON editor with example buttons.
+ *  - Start/End flags for the selected node.
+ *  - Global execution trace view and export actions.
  */
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {
@@ -19,7 +13,7 @@ import {
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 
-interface FlowInspectorPanelProps {
+interface ExecutionPanelProps {
   selectedNode: FlowNode | null;
   selectedData?: FlowNodeData;
   globalTrace: string[];
@@ -31,7 +25,7 @@ interface FlowInspectorPanelProps {
   onExportCsv: () => void;
 }
 
-export function FlowInspectorPanel({
+export function ExecutionPanel({
   selectedNode,
   selectedData,
   globalTrace,
@@ -41,7 +35,7 @@ export function FlowInspectorPanel({
   applyProblemExample,
   onExportTrace,
   onExportCsv,
-}: FlowInspectorPanelProps) {
+}: ExecutionPanelProps) {
   const canBeStart =
     selectedNode?.type === 'singleSolution'
     || selectedNode?.type === 'populationGeneration'

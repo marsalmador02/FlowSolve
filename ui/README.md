@@ -123,10 +123,10 @@ The following list covers the current files, excluding `node_modules`, `dist` an
 ### 5.3 `src/components/`
 
 - `src/components/FlowSidebar.tsx`: sidebar with palette and template actions.
-- `src/components/FlowInspectorPanel.tsx`: right panel for problem editing and global trace.
 - `src/components/flowNodes.tsx`: React Flow renderers.
 - `src/components/FlowSidebar.test.tsx`: sidebar behavior tests.
-- `src/components/FlowInspectorPanel.test.tsx`: inspector / trace panel tests.
+- `src/components/ExecutionPanel.tsx`: right panel for problem editing and global trace.
+- `src/components/ExecutionPanel.test.tsx`: inspector / trace panel tests.
 
 ### 5.4 `src/constants/`
 
