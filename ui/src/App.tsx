@@ -108,39 +108,6 @@ function withLeadingEmoji(label: string, sidebarKind: string): string {
   return `${emoji} ${trimmed}`;
 }
 
-function mapRuntimeKindToSidebarKind(kind: string): string {
-  const map: Record<string, string> = {
-    singleSolution: 'SingleSolutionGenerationComponent',
-    populationGeneration: 'PopulationGenerationComponent',
-    localSearch: 'LocalSearchComponent',
-    perturbation: 'PerturbationComponent',
-    selection: 'SelectionComponent',
-    crossover: 'CrossoverComponent',
-    mutation: 'MutationComponent',
-    acceptance: 'AcceptanceComponent',
-    temperatureAcceptance: 'TemperatureAcceptanceComponent',
-    reduceTemperature: 'ReduceTemperatureComponent',
-    changeNeighborhood: 'ChangeNeighbourhoodComponent',
-    neighborhood: 'NeighbourhoodComponent',
-    subtraction: 'SubtractionComponent',
-    selectionBest: 'SelectionOfBestComponent',
-    storage: 'StorageComponent',
-    termination: 'LoopComponent',
-    problem: 'Problem',
-  };
-  return map[kind] ?? kind;
-}
-
-function mapCatalogCategory(category: string): 'generation' | 'modification' | 'other' {
-  if (category === 'generation') {
-    return 'generation';
-  }
-  if (category === 'evolutionary' || category === 'improvement') {
-    return 'modification';
-  }
-  return 'other';
-}
-
 function sanitizeNodeDataForTemplate(data: FlowNodeData): FlowNodeData {
   const {
     onUpdate,

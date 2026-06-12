@@ -11,14 +11,3 @@ export function parseJson<T>(txt?: string): T | null {
     return null;
   }
 }
-
-// Compute an aggregate score from goalValues while handling infeasible payloads.
-export function resultScore(result: any): number {
-  if (!result || result.isFeasible === false) {
-    return Number.NEGATIVE_INFINITY / 2;
-  }
-  if (!Array.isArray(result.goalValues)) {
-    return Number.NEGATIVE_INFINITY / 2;
-  }
-  return result.goalValues.reduce((acc: number, v: any) => acc + (typeof v === 'number' ? v : 0), 0);
-}
