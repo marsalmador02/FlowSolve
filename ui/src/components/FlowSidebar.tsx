@@ -31,7 +31,6 @@ interface FlowSidebarProps {
   onLoadVnsTemplate: () => void;
   onLoadTabuTemplate: () => void;
   onLoadSaTemplate: () => void;
-  onLoadEvolutionaryTemplate: () => void;
   customTemplates: CustomTemplateItem[];
   onSaveCustomTemplate: () => void;
   onLoadCustomTemplate: (templateId: string) => void;
@@ -65,7 +64,6 @@ export function FlowSidebar({
   onLoadVnsTemplate,
   onLoadTabuTemplate,
   onLoadSaTemplate,
-  onLoadEvolutionaryTemplate,
   customTemplates,
   onSaveCustomTemplate,
   onLoadCustomTemplate,
@@ -95,9 +93,6 @@ export function FlowSidebar({
           </button>
           <button className="toolbar-button" onClick={onLoadSaTemplate}>
             Load Simulated Annealing Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadEvolutionaryTemplate}>
-            Load Evolutionary Template
           </button>
         </details>
 

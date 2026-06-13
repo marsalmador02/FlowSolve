@@ -1,86 +1,101 @@
-//! Mode: `select-best`.
-//!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+// modes/select_best.rs
+//
+// Mode: `select-best`
+//
+// Picks the best feasible candidate from a list.
+// If no candidate is feasible, returns the first parseable one as a fallback.
+//
+// Payload:  { "candidates": [ { "variableValue": [...] }, ... ] }
+// Response: { "winner": SolverResult, "selectedIndex": usize, "score": f64 }
 
-use anyhow::{Context, Result};
-use serde_json::json;
+use anyhow::{bail, Context, Result};
+use rand::prelude::StdRng;
+use serde_json::{json, Value};
 
-use crate::api::parse::{parse_candidate, payload_object};
-use crate::api::response::solver_result_json;
-use crate::api::validation;
-use crate::modes::context::{ModeContext, ModeOutcome};
+use crate::problem::Problem;
+use crate::solution::{require_object, Solution, SolverResult};
 
-/// Select the best feasible candidate from `candidates[]`.
-///
-/// Payload: `candidates[]` (array of candidate solver results).
-/// Returns: `winner`, `selectedIndex`, and `score`.
-pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
-    let obj = payload_object(ctx.payload)?;
-    let candidates = validation::non_empty_array_in_obj(obj, "candidates", "select-best")?;
+pub(crate) fn select_best(
+    problem: &Problem,
+    payload: &Value,
+    _rng: &mut StdRng,
+) -> Result<Value> {
+    let obj = require_object(payload)?;
+    let candidates = obj
+        .get("candidates")
+        .and_then(Value::as_array)
+        .filter(|a| !a.is_empty())
+        .context("select-best payload requires a non-empty `candidates` array")?;
 
-    let is_maximize = ctx.runtime.is_maximize();
-    let mut best_idx: Option<usize> = None;
-    let mut best_score = if is_maximize {
+    let worst = if problem.sense() == crate::problem::Sense::Maximize {
         f64::NEG_INFINITY
     } else {
         f64::INFINITY
     };
-    let mut fallback_solution = None;
+
+    let mut best_idx: Option<usize> = None;
+    let mut best_score = worst;
+    let mut fallback: Option<(usize, Solution)> = None;
 
     for (idx, candidate) in candidates.iter().enumerate() {
-        let Some(solution) = parse_candidate(ctx.runtime, candidate) else {
+        let Some(solution) = Solution::from_candidate(problem, candidate) else {
             continue;
         };
-        if fallback_solution.is_none() {
-            fallback_solution = Some((idx, solution.clone()));
+        if fallback.is_none() {
+            fallback = Some((idx, solution.clone()));
         }
-        if !ctx.runtime.is_feasible(&solution).unwrap_or(false) {
+        if !problem.is_feasible(&solution).unwrap_or(false) {
             continue;
         }
-        if let Ok(score) = ctx.runtime.objective_score(&solution) {
-            if ctx.runtime.is_better_score(score, best_score) {
+        if let Ok(score) = problem.score(&solution) {
+            if problem.is_better(score, best_score) {
                 best_score = score;
                 best_idx = Some(idx);
             }
         }
     }
 
-    let (winner_idx, winner_solution) = if let Some(idx) = best_idx {
-        (idx, parse_candidate(ctx.runtime, &candidates[idx]).unwrap())
-    } else {
-        fallback_solution.context("select-best could not parse any candidate variableValue[]")?
+    let (winner_idx, winner_solution) = match best_idx {
+        Some(idx) => (idx, Solution::from_candidate(problem, &candidates[idx]).unwrap()),
+        None => fallback.context("select-best could not parse any candidate")?,
     };
 
-    let winner = solver_result_json(ctx.runtime, &winner_solution)?;
-    let score = ctx.runtime.objective_score(&winner_solution).ok();
+    let score = problem.score(&winner_solution).ok();
+    let winner = serde_json::to_value(SolverResult::build(problem, &winner_solution)?)?;
 
-    Ok(ModeOutcome::with_payload(json!({
+    Ok(json!({
         "winner": winner,
         "selectedIndex": winner_idx,
         "score": score,
-    })))
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
-    use rand::SeedableRng;
     use rand::prelude::StdRng;
+    use rand::SeedableRng;
+    use serde_json::json;
+
+    fn knapsack() -> Problem {
+        let v: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
+    }
 
     #[test]
-    fn select_best_picks_feasible_winner() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
-        let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
+    fn picks_best_feasible_candidate() {
+        let p = knapsack();
         let mut rng = StdRng::seed_from_u64(42);
-
-        let candidates = json!({ "candidates": [ { "variableValue": [1,0,0,0,0] }, { "variableValue": [1,1,1,1,0] }, { "variableValue": [1,1,1,1,1] } ] });
-        let ctx = ModeContext { runtime: &runtime, payload: &candidates, rng: &mut rng };
-
-        let outcome = execute(ctx).expect("select-best execute");
-        let payload = outcome.payload.expect("payload present");
-        let idx = payload.get("selectedIndex").and_then(|v| v.as_u64()).expect("selectedIndex");
-        assert_eq!(idx, 1);
-        assert!(payload.get("winner").is_some());
+        let payload = json!({
+            "candidates": [
+                { "variableValue": [1,0,0,0,0] },
+                { "variableValue": [1,1,1,1,0] },
+                { "variableValue": [1,1,1,1,1] }  // infeasible: over weight
+            ]
+        });
+        let result = select_best(&p, &payload, &mut rng).unwrap();
+        assert_eq!(result["selectedIndex"], 1);
+        assert!(result["winner"].get("isFeasible").unwrap().as_bool().unwrap());
     }
 }

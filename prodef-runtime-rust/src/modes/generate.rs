@@ -1,103 +1,79 @@
-//! Mode: `generate` and `generate-population`.
-//!
-//! Input: no solution payload, only an optional `count` for population mode.
-//! Output: a single feasible result or a feasible population in JSON form.
+// modes/generate.rs
+//
+// Modes: `generate`  and  `generate-population`
+//
+// generate            → one feasible SolverResult in `result`
+// generate-population → N feasible SolverResults in `population`
+//                       payload: { "count": N }  (default 10)
 
 use anyhow::Result;
+use rand::prelude::StdRng;
 use serde_json::Value;
 
-use crate::api::parse::payload_object;
-use crate::api::response::build_solver_result;
-use crate::domain::feasible::generate_feasible;
-use crate::modes::context::{ModeContext, ModeOutcome};
+use crate::problem::Problem;
+use crate::solution::SolverResult;
 
-pub(crate) fn execute_single(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
-    let solution = generate_feasible(ctx.runtime, ctx.rng)?;
-    Ok(ModeOutcome::with_result(build_solver_result(
-        ctx.runtime,
-        &solution,
-    )?))
+pub(crate) fn generate(problem: &Problem, rng: &mut StdRng) -> Result<SolverResult> {
+    let solution = problem.random_feasible_solution(rng)?;
+    SolverResult::build(problem, &solution)
 }
 
-pub(crate) fn execute_population(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
-    let count = if ctx.payload.is_null() {
-        10
-    } else {
-        payload_object(ctx.payload)?
-            .get("count")
-            .and_then(Value::as_u64)
-            .map(|c| c.max(1) as usize)
-            .unwrap_or(10)
-    };
+pub(crate) fn generate_population(
+    problem: &Problem,
+    payload: &Value,
+    rng: &mut StdRng,
+) -> Result<Vec<SolverResult>> {
+    let count = payload
+        .get("count")
+        .and_then(Value::as_u64)
+        .map(|c| c.max(1) as usize)
+        .unwrap_or(10);
 
-    let mut population = Vec::with_capacity(count);
-    for _ in 0..count {
-        let solution = generate_feasible(ctx.runtime, ctx.rng)?;
-        population.push(build_solver_result(ctx.runtime, &solution)?);
-    }
-
-    Ok(ModeOutcome::with_population(population))
+    (0..count)
+        .map(|_| {
+            let solution = problem.random_feasible_solution(rng)?;
+            SolverResult::build(problem, &solution)
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
     use rand::prelude::StdRng;
+    use rand::SeedableRng;
     use serde_json::json;
 
-    #[test]
-    fn execute_population_respects_count() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
-        let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
-        let mut rng = StdRng::seed_from_u64(42);
-        let payload = json!({ "count": 3 });
-        let ctx = ModeContext { runtime: &runtime, payload: &payload, rng: &mut rng };
+    fn knapsack() -> Problem {
+        let v: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
+    }
 
-        let outcome = execute_population(ctx).expect("execute population");
-        let pop = outcome.population.expect("population present");
+    #[test]
+    fn generate_returns_feasible_result() {
+        let p = knapsack();
+        let mut rng = StdRng::seed_from_u64(42);
+        let result = generate(&p, &mut rng).unwrap();
+        assert!(result.is_feasible);
+    }
+
+    #[test]
+    fn generate_population_respects_count() {
+        let p = knapsack();
+        let mut rng = StdRng::seed_from_u64(42);
+        let pop = generate_population(&p, &json!({ "count": 3 }), &mut rng).unwrap();
         assert_eq!(pop.len(), 3);
-        for sol in pop {
-            assert!(sol.is_feasible, "generated SolverResult should be marked feasible");
-        }
-    }
-    
-    #[test]
-    fn execute_population_generates_feasible() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
-        let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
-        let mut rng = StdRng::seed_from_u64(42);
-        let payload = json!({ "count": 5 });
-        let ctx = ModeContext { runtime: &runtime, payload: &payload, rng: &mut rng };
-
-        let outcome = execute_population(ctx).expect("execute population");
-        let pop = outcome.population.expect("population present");
-        for sol in pop {
-            let values = sol.variable_value.as_array().expect("variableValue should be an array")
-                .iter()
-                .map(|v| v.as_f64().expect("variableValue elements should be numbers"))
-                .collect::<Vec<_>>();
-            let solution = crate::domain::Solution::Vector(values);
-            assert!(runtime.is_feasible(&solution).expect("check feasibility"), "generated SolverResult should be marked feasible");
+        for r in pop {
+            assert!(r.is_feasible);
         }
     }
 
     #[test]
-    fn execute_single_generates_feasible() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack example");
-        let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
+    fn generate_population_defaults_to_10() {
+        let p = knapsack();
         let mut rng = StdRng::seed_from_u64(42);
-        let ctx = ModeContext { runtime: &runtime, payload: &json!(null), rng: &mut rng };
-
-        let outcome = execute_single(ctx).expect("execute single");
-        let result = outcome.result.expect("result present");
-        assert!(result.is_feasible, "generated SolverResult should be marked feasible");
-
-        let values = result.variable_value.as_array().expect("variableValue should be an array")
-            .iter()
-            .map(|v| v.as_f64().expect("variableValue elements should be numbers"))
-            .collect::<Vec<_>>();
-        let solution = crate::domain::Solution::Vector(values);
-        assert!(runtime.is_feasible(&solution).expect("check feasibility"));
+        let pop = generate_population(&p, &json!(null), &mut rng).unwrap();
+        assert_eq!(pop.len(), 10);
     }
 }

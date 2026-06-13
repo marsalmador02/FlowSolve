@@ -1,89 +1,166 @@
-//! Mode: `perturbation`.
-//!
-//! Payload/response contract is documented in this module and summarized in `modes::mod`.
+// modes/perturbation.rs
+//
+// Mode: `perturbation`
+//
+// Applies k random moves to a base solution, retrying until a feasible
+// result is found (up to maxAttempts tries per step).
+//
+// Payload:
+//   {
+//     "base":        { "variableValue": [...] }
+//     "k":           int   (number of moves, default 3)
+//     "maxAttempts": int   (retries per move, default 100)
+//   }
+//
+// Response:
+//   { "perturbed": SolverResult }
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use rand::prelude::StdRng;
+use rand::Rng;
 use serde_json::{json, Value};
 
-use crate::api::parse::{
-    parse_solution_from_value, payload_object, solution_to_f64_vec, vec_to_solution,
-};
-use crate::api::response::solver_result_json;
-use crate::modes::context::{ModeContext, ModeOutcome};
+use crate::problem::Problem;
+use crate::solution::{require_object, Solution, SolverResult};
 
-/// Apply sequential perturbations to a `base` solution.
-///
-/// The mode will attempt up to `maxAttempts` candidate perturbations and
-/// perform `k` sequential perturbation steps. Returns the final `winner`.
-use crate::operators::{
-    apply_random_bitflip, apply_random_swap, variable_flags, PERTURB_INNER_MAX_TRIES,
-};
+pub(crate) fn perturbation(
+    problem: &Problem,
+    payload: &Value,
+    rng: &mut StdRng,
+) -> Result<Value> {
+    let obj = require_object(payload)?;
 
-pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
-    let obj = payload_object(ctx.payload)?;
-    let base_candidate = obj
-        .get("base")
-        .context("perturbation payload requires `base`")?;
-    let variable_value = base_candidate
-        .get("variableValue")
-        .context("perturbation base requires variableValue[]")?;
-    let base_solution = parse_solution_from_value(ctx.runtime, variable_value)?;
+    let base_val = obj.get("base").context("perturbation requires `base`")?;
+    let base = Solution::from_candidate(problem, base_val)
+        .context("perturbation `base` is missing or invalid `variableValue`")?;
 
-    let max_attempts: usize = obj
-        .get("maxAttempts")
-        .and_then(Value::as_i64)
-        .map(|v| v.max(1) as usize)
-        .unwrap_or(200);
-
-    let neighborhood_k: usize = obj
-        .get("k")
-        .and_then(Value::as_i64)
-        .map(|v| v.max(1) as usize)
-        .or_else(|| obj.get("neighborhood").and_then(Value::as_i64).map(|v| v.max(1) as usize))
-        .unwrap_or(1);
-
-    let (_, is_binary) = variable_flags(ctx.runtime);
-
-    let mut current = base_solution.clone();
-    let mut attempts_made: usize = 0;
-
-    for _step in 0..neighborhood_k {
-        let source_vec = solution_to_f64_vec(&current);
-        for _ in 0..PERTURB_INNER_MAX_TRIES {
-            if attempts_made >= max_attempts {
-                break;
-            }
-
-            let candidate_vec = if is_binary {
-                apply_random_bitflip(&source_vec, ctx.rng)
-            } else {
-                apply_random_swap(&source_vec, ctx.rng)
-            };
-
-            attempts_made += 1;
-
-            if let Some(candidate) = vec_to_solution(ctx.runtime, &candidate_vec) {
-                if ctx.runtime.is_feasible(&candidate).unwrap_or(false) {
-                    current = candidate;
-                    break;
-                }
-            }
-        }
-
-        if attempts_made >= max_attempts {
-            break;
-        }
+    if !problem.is_feasible(&base)? {
+        bail!("perturbation `base` solution is not feasible");
     }
 
-    let picked = current;
-    let attempts_used = attempts_made.min(max_attempts);
+    let k = obj
+        .get("k")
+        .and_then(Value::as_u64)
+        .map(|v| v.max(1) as usize)
+        .unwrap_or(3);
 
-    let winner = solver_result_json(ctx.runtime, &picked)?;
+    let max_attempts = obj
+        .get("maxAttempts")
+        .and_then(Value::as_u64)
+        .map(|v| v.max(1) as usize)
+        .unwrap_or(100);
 
-    Ok(ModeOutcome::with_payload(json!({
-        "winner": winner,
+    let mut current = base;
+    let mut attempts_used = 0usize;
+
+    for _ in 0..k {
+        let (next, attempts) = apply_random_move(problem, &current, max_attempts, rng)?;
+        attempts_used += attempts;
+        current = next;
+    }
+
+    let result = serde_json::to_value(SolverResult::build(problem, &current)?)?;
+    Ok(json!({
+        "winner": result,
         "attempts": attempts_used,
         "maxAttempts": max_attempts,
-        "k": neighborhood_k,
-    })))
+        "k": k
+    }))
+}
+
+/// Apply one random feasible move to `solution`.
+///
+/// For permutations: swap two random positions.
+/// For vectors: flip a random bit (binary) or nudge a random element by ±1.
+fn apply_random_move(
+    problem: &Problem,
+    solution: &Solution,
+    max_attempts: usize,
+    rng: &mut StdRng,
+) -> Result<(Solution, usize)> {
+    for attempt in 1..=max_attempts {
+        let candidate = random_neighbor(problem, solution, rng);
+        if problem.is_feasible(&candidate)? {
+            return Ok((candidate, attempt));
+        }
+    }
+    Ok((solution.clone(), max_attempts))
+}
+
+fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut StdRng) -> Solution {
+    match solution {
+        Solution::Permutation(p) => {
+            let n = p.len();
+            let i = rng.gen_range(0..n);
+            let j = (i + 1 + rng.gen_range(0..n - 1)) % n;
+            let mut next = p.clone();
+            next.swap(i, j);
+            Solution::Permutation(next)
+        }
+        Solution::Vector(v) => {
+            let n = v.len();
+            let i = rng.gen_range(0..n);
+            let mut next = v.clone();
+            let lo = problem.lower();
+            let hi = problem.upper();
+            // Binary: flip 0↔1.  Integer/continuous: nudge ±1 within bounds.
+            if (hi - lo - 1.0).abs() < 1e-9 {
+                next[i] = if next[i] == 0.0 { 1.0 } else { 0.0 };
+            } else {
+                let delta = if rng.gen::<bool>() { 1.0 } else { -1.0 };
+                next[i] = (next[i] + delta).clamp(lo, hi);
+            }
+            Solution::Vector(next)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::prelude::StdRng;
+    use rand::SeedableRng;
+    use serde_json::json;
+
+    fn knapsack() -> Problem {
+        let v: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
+    }
+
+    fn tsp() -> Problem {
+        let v: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/tsp.json")).unwrap();
+        Problem::from_json(v).unwrap()
+    }
+
+    #[test]
+    fn perturbs_vector_solution() {
+        let p = knapsack();
+        let mut rng = StdRng::seed_from_u64(42);
+        let payload = json!({
+            "base": { "variableValue": [1,1,1,1,0] },
+            "k": 2,
+            "maxAttempts": 50
+        });
+        let result = perturbation(&p, &payload, &mut rng).unwrap();
+        let perturbed = &result["perturbed"];
+        assert!(perturbed["isFeasible"].as_bool().unwrap());
+        assert_eq!(perturbed["variableValue"].as_array().unwrap().len(), 5);
+    }
+
+    #[test]
+    fn perturbs_permutation_solution() {
+        let p = tsp();
+        let mut rng = StdRng::seed_from_u64(42);
+        let payload = json!({
+            "base": { "variableValue": [1,2,3,4] },
+            "k": 2,
+            "maxAttempts": 50
+        });
+        let result = perturbation(&p, &payload, &mut rng).unwrap();
+        let perturbed = &result["perturbed"];
+        assert!(perturbed["isFeasible"].as_bool().unwrap());
+        assert_eq!(perturbed["variableValue"].as_array().unwrap().len(), 4);
+    }
 }

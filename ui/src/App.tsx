@@ -336,6 +336,28 @@ export default function App() {
         };
       }
 
+if (node.type === 'temperatureAcceptance') {
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      ...baseData,
+      temperatureCurrent: 100,
+    },
+  };
+}
+
+  if (node.type === 'reduceTemperature') {
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        ...baseData,
+        temperatureCurrent: 100,
+      },
+    };
+  }
+
       return {
         ...node,
         data: {
@@ -622,11 +644,6 @@ export default function App() {
     loadTemplateGraph(template, 'Simulated Annealing');
   }, [loadTemplateGraph, updateNodeData]);
 
-  const loadEvolutionaryTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('evolutionary', updateNodeData);
-    loadTemplateGraph(template, 'Evolutionary');
-  }, [loadTemplateGraph, updateNodeData]);
-
   const onSaveCustomTemplate = useCallback(() => {
     if (nodesRef.current.length === 0) {
       return;
@@ -845,7 +862,6 @@ export default function App() {
         onLoadVnsTemplate={loadVnsTemplate}
         onLoadTabuTemplate={loadTabuTemplate}
         onLoadSaTemplate={loadSaTemplate}
-        onLoadEvolutionaryTemplate={loadEvolutionaryTemplate}
         customTemplates={customTemplates}
         onSaveCustomTemplate={onSaveCustomTemplate}
         onLoadCustomTemplate={onLoadCustomTemplate}

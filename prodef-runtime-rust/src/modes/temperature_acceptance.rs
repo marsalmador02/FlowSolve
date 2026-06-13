@@ -1,38 +1,45 @@
-//! Mode: `temperature-acceptance`.
-//!
-//! Simulated annealing acceptance rule: accept improvements always and
-//! accept worse candidates with probability `exp(-delta / T)`.
+// modes/temperature_acceptance.rs
+//
+// Mode: `temperature-acceptance`
+//
+// Simulated annealing acceptance rule.
+// Always accepts improvements; accepts worse candidates with probability
+// exp(-delta / T) where delta > 0 means the candidate is worse.
+//
+// Payload:
+//   {
+//     "candidate":           [...] or { "variableValue": [...] }
+//     "stored":              [...] or { "variableValue": [...] }
+//     "temperatureCurrent":  float  (default 100.0)
+//   }
+//
+// Response:
+//   { "accepted": bool, "winner": SolverResult }
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use rand::prelude::StdRng;
 use rand::Rng;
 use serde_json::{json, Value};
 
-use crate::api::parse::{payload_object, parse_candidate, vec_to_solution};
-use crate::domain::Solution;
-use crate::api::response::build_solver_result;
-use crate::modes::context::{ModeContext, ModeOutcome};
+use crate::problem::{Problem, Sense};
+use crate::solution::{require_object, Solution, SolverResult};
 
-/// Simulated Annealing acceptance: decide if `candidate` replaces `stored`.
-///
-/// Payload: `{ "candidate": [v1, v2, ...], "stored": [v1, v2, ...], "temperatureCurrent": float }`
-/// Returns: `{ "accepted": bool, "winner": [best_vector] }`
-///
-/// Rule:
-/// - If candidate is better (score improves), always accept.
-/// - If candidate is worse, accept with probability `exp(-delta / T)`.
-/// - `delta` is positive when the candidate is worse.
-pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
-    let obj = payload_object(ctx.payload)?;
+pub(crate) fn temperature_acceptance(
+    problem: &Problem,
+    payload: &Value,
+    rng: &mut StdRng,
+) -> Result<Value> {
+    let obj = require_object(payload)?;
 
-    let candidate_value = obj
+    let candidate_val = obj
         .get("candidate")
-        .context("temperature-acceptance requires `candidate` value")?;
-    let stored_value = obj
+        .context("temperature-acceptance requires `candidate`")?;
+    let stored_val = obj
         .get("stored")
-        .context("temperature-acceptance requires `stored` value")?;
+        .context("temperature-acceptance requires `stored`")?;
 
-    let candidate_solution = parse_solution_like(ctx.runtime, candidate_value, "candidate")?;
-    let stored_solution = parse_solution_like(ctx.runtime, stored_value, "stored")?;
+    let candidate = parse_solution(problem, candidate_val, "candidate")?;
+    let stored = parse_solution(problem, stored_val, "stored")?;
 
     let temperature = obj
         .get("temperatureCurrent")
@@ -40,70 +47,79 @@ pub(crate) fn execute(ctx: ModeContext<'_>) -> Result<ModeOutcome> {
         .unwrap_or(100.0)
         .max(0.0);
 
-    let candidate_score = ctx.runtime.objective_score(&candidate_solution)?;
-    let stored_score = ctx.runtime.objective_score(&stored_solution)?;
+    let candidate_score = problem.score(&candidate)?;
+    let stored_score = problem.score(&stored)?;
 
-    // Compute score difference `delta` such that delta > 0 when candidate is worse
-    let is_maximize = ctx.runtime.is_maximize();
-    let delta = if is_maximize {
-        stored_score - candidate_score
-    } else {
-        candidate_score - stored_score
+    // delta > 0 means the candidate is worse than what is stored.
+    let delta = match problem.sense() {
+        Sense::Maximize => stored_score - candidate_score,
+        Sense::Minimize => candidate_score - stored_score,
     };
 
-    // Classical Simulated Annealing acceptance:
-    // - If candidate is better (delta <= 0) => accept
-    // - Otherwise accept with probability exp(-delta / T)
     let accepted = if delta <= 0.0 {
-        true
+        true // candidate is better or equal — always accept
     } else {
-        let temp = temperature.max(1e-12);
-        let prob = (-delta / temp).exp();
-        ctx.rng.gen::<f64>() < prob
+        let t = temperature.max(1e-12);
+        rng.gen::<f64>() < (-delta / t).exp()
     };
 
-    let winner_solution = if accepted { candidate_solution } else { stored_solution };
-    let winner_json = build_solver_result(ctx.runtime, &winner_solution)?;
+    let winner = if accepted { candidate } else { stored };
+    let winner_result = serde_json::to_value(SolverResult::build(problem, &winner)?)?;
 
-    Ok(ModeOutcome::with_payload(json!({
+    Ok(json!({
         "accepted": accepted,
-        "winner": winner_json,
-    })))
+        "winner": winner_result,
+    }))
 }
 
-fn parse_solution_like(runtime: &crate::domain::RuntimeProblem, value: &Value, label: &str) -> Result<Solution> {
-    if let Some(array) = value.as_array() {
-        let vec = array.iter().map(|v| v.as_f64().unwrap_or(0.0)).collect::<Vec<f64>>();
-        return vec_to_solution(runtime, &vec).context(format!("{label} vector is invalid"));
+/// Accept a solution supplied either as a bare array or as a candidate object.
+fn parse_solution(problem: &Problem, value: &Value, label: &str) -> Result<Solution> {
+    if value.is_array() {
+        return Solution::from_json(problem, value)
+            .with_context(|| format!("`{}` array is not a valid solution", label));
     }
-
-    parse_candidate(runtime, value).context(format!("{label} object is invalid or missing `variableValue`"))
+    Solution::from_candidate(problem, value)
+        .with_context(|| format!("`{}` object is missing or invalid `variableValue`", label))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
     use rand::prelude::StdRng;
+    use rand::SeedableRng;
     use serde_json::json;
 
+    fn knapsack() -> Problem {
+        let v: serde_json::Value =
+            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
+    }
+
     #[test]
-    fn temperature_acceptance_accepts_better_candidate() {
-        let raw: crate::domain::model::Problem = serde_json::from_str(include_str!("../../examples/knapsack.json")).expect("parse knapsack");
-        let runtime = crate::domain::RuntimeProblem::new(raw).expect("build runtime");
+    fn accepts_better_candidate() {
+        let p = knapsack();
         let mut rng = StdRng::seed_from_u64(42);
+        let payload = json!({
+            "candidate": [1,1,1,1,0],
+            "stored":    [0,0,0,0,0],
+            "temperatureCurrent": 1.0
+        });
+        let result = temperature_acceptance(&p, &payload, &mut rng).unwrap();
+        assert!(result["accepted"].as_bool().unwrap());
+        assert_eq!(result["winner"]["variableValue"].as_array().unwrap().len(), 5);
+    }
 
-        let payload = json!({ "candidate": [1,1,1,1,0], "stored": [0,0,0,0,0], "temperatureCurrent": 1.0 });
-        let ctx = ModeContext { runtime: &runtime, payload: &payload, rng: &mut rng };
-
-        let outcome = execute(ctx).expect("execute");
-        let p = outcome.payload.expect("payload");
-        assert!(p.get("accepted").and_then(|v| v.as_bool()).unwrap_or(false));
-        let winner = p.get("winner").expect("winner field");
-        let winner_values = winner
-            .get("variableValue")
-            .and_then(|v| v.as_array())
-            .expect("winner.variableValue array");
-        assert_eq!(winner_values.len(), 5);
+    #[test]
+    fn always_accepts_equal_score() {
+        let p = knapsack();
+        let mut rng = StdRng::seed_from_u64(42);
+        let payload = json!({
+            "candidate": [0,0,0,0,0],
+            "stored":    [0,0,0,0,0],
+            "temperatureCurrent": 0.001
+        });
+        let result = temperature_acceptance(&p, &payload, &mut rng).unwrap();
+        // delta == 0 → always accept
+        assert!(result["accepted"].as_bool().unwrap());
     }
 }

@@ -1,11 +1,16 @@
-#![allow(dead_code)]
+// main.rs
+//
+// CLI entry point. Reads a request JSON file, runs the solver, prints the
+// response JSON to stdout.
+//
+// Usage:
+//   cargo run -- --exec-request path/to/request.json
 
 mod api;
-mod domain;
-mod evaluation;
+mod eval;
 mod modes;
-mod operators;
-mod search;
+mod problem;
+mod solution;
 
 use std::fs;
 use std::path::PathBuf;
@@ -21,11 +26,10 @@ struct Cli {
     exec_request: PathBuf,
 }
 
-// CLI wrapper: read a request from disk, execute the runtime, and print JSON.
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let request_raw = fs::read_to_string(&cli.exec_request)?;
-    let request: ExecutionRequest = serde_json::from_str(&request_raw)?;
+    let raw = fs::read_to_string(&cli.exec_request)?;
+    let request: ExecutionRequest = serde_json::from_str(&raw)?;
     let response = run(request)?;
     println!("{}", serde_json::to_string_pretty(&response)?);
     Ok(())

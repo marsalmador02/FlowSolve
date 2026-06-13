@@ -10,7 +10,7 @@ import {
 
 type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
-export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulatedAnnealing' | 'evolutionary';
+export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulatedAnnealing';
 
 export function buildAlgorithmTemplate(kind: AlgorithmTemplateKey, updateNodeData: UpdateNodeData) {
   switch (kind) {
@@ -24,8 +24,6 @@ export function buildAlgorithmTemplate(kind: AlgorithmTemplateKey, updateNodeDat
       return buildTabuTemplate(updateNodeData);
     case 'simulatedAnnealing':
       return buildSimulatedAnnealingTemplate(updateNodeData);
-    case 'evolutionary':
-      return buildEvolutionaryTemplate(updateNodeData);
     default:
       return buildGraspTemplate(updateNodeData);
   }
