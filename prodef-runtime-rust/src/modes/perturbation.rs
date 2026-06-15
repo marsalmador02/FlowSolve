@@ -13,20 +13,20 @@
 //   }
 //
 // Response:
-//   { "perturbed": SolverResult }
+//   { "winner": SolverResult, "attempts": int, "maxAttempts": int }
 
 use anyhow::{bail, Context, Result};
-use rand::prelude::StdRng;
-use rand::Rng;
+use rand::rngs::ThreadRng;
 use serde_json::{json, Value};
+use rand::Rng;
 
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
-pub(crate) fn perturbation(
+pub fn perturbation(
     problem: &Problem,
     payload: &Value,
-    rng: &mut StdRng,
+    rng: &mut ThreadRng,
 ) -> Result<Value> {
     let obj = require_object(payload)?;
 
@@ -76,7 +76,7 @@ fn apply_random_move(
     problem: &Problem,
     solution: &Solution,
     max_attempts: usize,
-    rng: &mut StdRng,
+    rng: &mut ThreadRng,
 ) -> Result<(Solution, usize)> {
     for attempt in 1..=max_attempts {
         let candidate = random_neighbor(problem, solution, rng);
@@ -87,7 +87,7 @@ fn apply_random_move(
     Ok((solution.clone(), max_attempts))
 }
 
-fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut StdRng) -> Solution {
+fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut ThreadRng) -> Solution {
     match solution {
         Solution::Permutation(p) => {
             let n = p.len();
@@ -118,20 +118,20 @@ fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut StdRng) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::StdRng;
+    use rand::rngs::ThreadRng;
     use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     fn tsp() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../../examples/tsp.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     #[test]
@@ -144,7 +144,7 @@ mod tests {
             "maxAttempts": 50
         });
         let result = perturbation(&p, &payload, &mut rng).unwrap();
-        let perturbed = &result["perturbed"];
+        let perturbed = &result["winner"];
         assert!(perturbed["isFeasible"].as_bool().unwrap());
         assert_eq!(perturbed["variableValue"].as_array().unwrap().len(), 5);
     }
@@ -159,7 +159,7 @@ mod tests {
             "maxAttempts": 50
         });
         let result = perturbation(&p, &payload, &mut rng).unwrap();
-        let perturbed = &result["perturbed"];
+        let perturbed = &result["winner"];
         assert!(perturbed["isFeasible"].as_bool().unwrap());
         assert_eq!(perturbed["variableValue"].as_array().unwrap().len(), 4);
     }

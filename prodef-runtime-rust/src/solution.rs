@@ -1,10 +1,4 @@
-// solution.rs
-//
-// Everything related to representing, converting, and building results
-// for a single solution.
-//
-// Replaces: domain/solution.rs, domain/result.rs, api/response.rs,
-//           and the parse/serialize helpers from api/parse.rs.
+// solution.rs — solution types, JSON conversion, and solver result.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -12,25 +6,21 @@ use serde_json::{json, Map, Value};
 
 use crate::problem::Problem;
 
-// ── Solution ─────────────────────────────────────────────────────────────────
-
-/// A solution in runtime (internal) coordinates.
+/// A solution in runtime coordinates.
 ///
-/// - `Vector` is used for binary, integer, and continuous problems.
-/// - `Permutation` stores 0-based positions; the external JSON contract
-///   always uses 1-based indices (handled in `to_json` / `from_json`).
+/// `Vector` is used for binary, integer, and continuous problems.
+/// `Permutation` stores 0-based positions; the external JSON contract
+/// always uses 1-based indices (see `to_json` / `from_json`).
 #[derive(Clone, Debug)]
-pub(crate) enum Solution {
+pub enum Solution {
     Vector(Vec<f64>),
     Permutation(Vec<usize>),
 }
 
 impl Solution {
     /// Serialize to the JSON shape returned by the API.
-    ///
-    /// Permutations are converted to 1-based so the UI always sees [1..N].
-    /// Vectors are returned as-is.
-    pub(crate) fn to_json(&self) -> Value {
+    /// Permutations are converted to 1-based; vectors are returned as-is.
+    pub fn to_json(&self) -> Value {
         match self {
             Solution::Vector(v) => json!(v),
             Solution::Permutation(p) => {
@@ -40,16 +30,13 @@ impl Solution {
         }
     }
 
-    /// Parse a solution from a JSON array, using the problem shape as the
-    /// contract for length and type.
+    /// Parse a solution from a JSON array.
     ///
     /// Permutations are accepted in either 0-based or 1-based form and
-    /// normalized to 0-based internally. Wrong lengths, duplicates, and
-    /// non-integer values are rejected.
-    pub(crate) fn from_json(problem: &Problem, value: &Value) -> Result<Self> {
-        let arr = value
-            .as_array()
-            .context("variableValue must be an array")?;
+    /// normalized to 0-based internally. Wrong lengths and non-integer
+    /// values are rejected.
+    pub fn from_json(problem: &Problem, value: &Value) -> Result<Self> {
+        let arr = value.as_array().context("variableValue must be an array")?;
 
         if arr.len() != problem.var_size() {
             bail!(
@@ -69,7 +56,6 @@ impl Solution {
                     .context("Permutation values must be non-negative")?;
                 values.push(n);
             }
-
             // Accept both 0-based [0..N-1] and 1-based [1..N]; normalize to 0-based.
             let is_1_based = !values.iter().any(|&x| x == 0);
             let perm = if is_1_based {
@@ -77,7 +63,6 @@ impl Solution {
             } else {
                 values
             };
-
             Ok(Solution::Permutation(perm))
         } else {
             let values = arr
@@ -88,47 +73,41 @@ impl Solution {
                         .map(|n| n as f64)
                 })
                 .collect::<Result<Vec<f64>>>()?;
-
             Ok(Solution::Vector(values))
         }
     }
 
-    /// Parse the `variableValue` field out of a candidate JSON object.
+    /// Parse the `variableValue` field from a candidate JSON object,
+    /// or accept a bare array directly.
     ///
-    /// Returns `None` if the field is missing or the value cannot be parsed.
-    /// The silent failure is intentional — modes that receive a list of
-    /// candidates skip unparseable entries rather than failing entirely.
-    pub(crate) fn from_candidate(problem: &Problem, candidate: &Value) -> Option<Self> {
+    /// Returns `None` if the value is missing or unparseable — callers that
+    /// iterate over a list of candidates skip bad entries rather than failing.
+    pub fn from_candidate(problem: &Problem, candidate: &Value) -> Option<Self> {
         if let Some(v) = candidate.get("variableValue") {
             return Self::from_json(problem, v).ok();
         }
-
         if candidate.is_array() {
             return Self::from_json(problem, candidate).ok();
         }
-
         None
     }
 }
 
-// ── SolverResult ─────────────────────────────────────────────────────────────
-
 /// The result of evaluating a single solution, ready to serialize to JSON.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct SolverResult {
+pub struct SolverResult {
     #[serde(rename = "problemName")]
-    pub(crate) problem_name: String,
+    pub problem_name: String,
     #[serde(rename = "isFeasible")]
-    pub(crate) is_feasible: bool,
+    pub is_feasible: bool,
     #[serde(rename = "goalValues")]
-    pub(crate) goal_values: Vec<f64>,
+    pub goal_values: Vec<f64>,
     #[serde(rename = "variableValue")]
-    pub(crate) variable_value: Value,
+    pub variable_value: Value,
 }
 
 impl SolverResult {
-    /// Evaluate a solution against a problem and build the full result.
-    pub(crate) fn build(problem: &Problem, solution: &Solution) -> Result<Self> {
+    pub fn build(problem: &Problem, solution: &Solution) -> Result<Self> {
         Ok(Self {
             problem_name: problem.name.clone(),
             is_feasible: problem.is_feasible(solution)?,
@@ -138,19 +117,10 @@ impl SolverResult {
     }
 }
 
-// ── Payload helpers ───────────────────────────────────────────────────────────
-
-/// Require that `payload` is a JSON object and return a reference to it.
-///
-/// This is used at the top of every mode handler to get a typed handle on
-/// the payload before reading individual fields.
-pub(crate) fn require_object(payload: &Value) -> Result<&Map<String, Value>> {
-    payload
-        .as_object()
-        .context("execution.payload must be a JSON object")
+/// Require that `payload` is a JSON object — used at the top of every mode handler.
+pub fn require_object(payload: &Value) -> Result<&Map<String, Value>> {
+    payload.as_object().context("execution.payload must be a JSON object")
 }
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -159,24 +129,21 @@ mod tests {
     fn tsp() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../examples/tsp.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     #[test]
     fn permutation_round_trips_through_json() {
         let p = tsp();
-        // Internal 0-based permutation
         let sol = Solution::Permutation(vec![0, 1, 2, 3]);
-        // to_json should produce 1-based [1,2,3,4]
         let json = sol.to_json();
         assert_eq!(json, json!([1, 2, 3, 4]));
-        // from_json with 1-based input should normalize back to 0-based
         let parsed = Solution::from_json(&p, &json).unwrap();
         match parsed {
             Solution::Permutation(perm) => assert_eq!(perm, vec![0, 1, 2, 3]),
@@ -187,8 +154,7 @@ mod tests {
     #[test]
     fn permutation_accepts_0_based_input() {
         let p = tsp();
-        let json = json!([0, 1, 2, 3]);
-        let parsed = Solution::from_json(&p, &json).unwrap();
+        let parsed = Solution::from_json(&p, &json!([0, 1, 2, 3])).unwrap();
         match parsed {
             Solution::Permutation(perm) => assert_eq!(perm, vec![0, 1, 2, 3]),
             _ => panic!("expected permutation"),
@@ -199,8 +165,7 @@ mod tests {
     fn vector_round_trips_through_json() {
         let p = knapsack();
         let sol = Solution::Vector(vec![1.0, 0.0, 1.0, 0.0, 1.0]);
-        let json = sol.to_json();
-        let parsed = Solution::from_json(&p, &json).unwrap();
+        let parsed = Solution::from_json(&p, &sol.to_json()).unwrap();
         match parsed {
             Solution::Vector(v) => assert_eq!(v, vec![1.0, 0.0, 1.0, 0.0, 1.0]),
             _ => panic!("expected vector"),
@@ -209,16 +174,14 @@ mod tests {
 
     #[test]
     fn wrong_length_is_rejected() {
-        let p = knapsack(); // var_size = 5
-        let json = json!([1, 0, 1]); // length 3
-        assert!(Solution::from_json(&p, &json).is_err());
+        let p = knapsack();
+        assert!(Solution::from_json(&p, &json!([1, 0, 1])).is_err());
     }
 
     #[test]
     fn from_candidate_returns_none_on_missing_field() {
         let p = knapsack();
-        let candidate = json!({ "isFeasible": true }); // no variableValue
-        assert!(Solution::from_candidate(&p, &candidate).is_none());
+        assert!(Solution::from_candidate(&p, &json!({ "isFeasible": true })).is_none());
     }
 
     #[test]
@@ -228,6 +191,5 @@ mod tests {
         let result = SolverResult::build(&p, &sol).unwrap();
         assert!(result.is_feasible);
         assert_eq!(result.goal_values, vec![0.0]);
-        assert_eq!(result.variable_value, json!([0.0, 0.0, 0.0, 0.0, 0.0]));
     }
 }

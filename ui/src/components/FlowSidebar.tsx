@@ -78,7 +78,7 @@ export function FlowSidebar({
     <aside className="sidebar">
       <div className="sidebar-toolbar">
         <details className="sidebar-dropdown">
-          <summary className="sidebar-title">Algorithm Templates</summary>
+          <summary className="sidebar-title">ALGORITHM TEMPLATES</summary>
           <button className="toolbar-button" onClick={onLoadGraspTemplate}>
             Load GRASP Template
           </button>
@@ -106,29 +106,6 @@ export function FlowSidebar({
           <button className="toolbar-button template-icon-button" onClick={onSaveCustomTemplate} title="Save current as template" aria-label="Save current as template">
             💾
           </button>
-          <label className="toolbar-button custom-import-label template-icon-button" title="Import template" aria-label="Import template">
-            ⬇️
-            <input
-              className="custom-import-input"
-              type="file"
-              accept="application/json,.json"
-              onChange={async (event) => {
-                const input = event.currentTarget;
-                const file = input.files?.[0];
-                if (!file) {
-                  return;
-                }
-                try {
-                  const raw = await file.text();
-                  onImportCustomTemplate(raw);
-                } catch {
-                  // Ignore unreadable file.
-                } finally {
-                  input.value = '';
-                }
-              }}
-            />
-          </label>
         </div>
         {customTemplates.length > 0 ? (
           <div className="custom-template-list">
@@ -152,9 +129,11 @@ export function FlowSidebar({
         ) : null}
       </details>
 
+      <div className="sidebar-divider" aria-hidden="true" />
+
       <div className="sidebar-scroll">
         <details className="sidebar-dropdown">
-          <summary className="sidebar-title">Metaheuristic Component</summary>
+          <summary className="sidebar-title">METAHEURISTIC COMPONENT</summary>
           <div className="sidebar-section-title">Generation Component</div>
           {generationPaletteItems.map((item) => draggableItem(item))}
           {generationPaletteItems.length === 0 ? (

@@ -16,18 +16,18 @@
 // Response:
 //   { "accepted": bool, "winner": SolverResult }
 
-use anyhow::{bail, Context, Result};
-use rand::prelude::StdRng;
+use anyhow::{Context, Result};
+use rand::rngs::ThreadRng;
 use rand::Rng;
 use serde_json::{json, Value};
 
 use crate::problem::{Problem, Sense};
 use crate::solution::{require_object, Solution, SolverResult};
 
-pub(crate) fn temperature_acceptance(
+pub fn temperature_acceptance(
     problem: &Problem,
     payload: &Value,
-    rng: &mut StdRng,
+    rng: &mut ThreadRng,
 ) -> Result<Value> {
     let obj = require_object(payload)?;
 
@@ -85,14 +85,14 @@ fn parse_solution(problem: &Problem, value: &Value, label: &str) -> Result<Solut
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::StdRng;
+    use rand::rngs::ThreadRng;
     use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     #[test]

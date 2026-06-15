@@ -11,16 +11,16 @@
 // Response: { "neighbors": [ SolverResult, ... ] }
 
 use anyhow::{bail, Context, Result};
-use rand::prelude::StdRng;
+use rand::rngs::ThreadRng;
 use serde_json::{json, Value};
 
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
-pub(crate) fn neighborhood(
+pub fn neighborhood(
     problem: &Problem,
     payload: &Value,
-    _rng: &mut StdRng,
+    _rng: &mut ThreadRng,
 ) -> Result<Value> {
     let obj = require_object(payload)?;
 
@@ -95,20 +95,20 @@ fn generate_neighbors(problem: &Problem, solution: &Solution) -> Result<Vec<Solu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::StdRng;
+    use rand::rngs::ThreadRng;
     use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     fn tsp() -> Problem {
         let v: serde_json::Value =
             serde_json::from_str(include_str!("../../../examples/tsp.json")).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     #[test]

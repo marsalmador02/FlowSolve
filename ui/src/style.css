@@ -10,227 +10,208 @@
   font-style: italic;
 }
 
-html,
-body,
-#root {
-  font-family: 'Inter';
-}
-
-
-/* Global stylesheet for layout, sidebar controls, node visuals, and properties panel. */
-
-/* Color variables */
 :root {
-  --color-periwinkle: #9498c8; /* 148,152,200 */
-  --color-periwinkle-rgb: 148,152,200;
-  --color-purple: #be91c6; /* 190,145,198 */
-  --color-purple-rgb: 190,145,198;
-  --color-purple-light:  #f3e7f5;
+  --color-periwinkle: #9498c8;
+  --color-purple: #be91c6;
+  --color-purple-light: #f3e7f5;
   --color-purple-light-hover: #e3d7e5;
-  --color-turquoise: #c5f5e8; /* 197,245,232 */
-  --color-turquoise-rgb: 197,245,232;
+  --color-turquoise: #c5f5e8;
   --color-turquoise-border: rgb(0, 187, 137);
   --color-white: #ffffff;
   --color-dark-text: #333333;
   --color-gray-text: #666666;
   --color-error: #d32f2f;
-  --color-error-light: rgba(181, 84, 84, 0.1);
-  --color-success: #388e3c;
-  --color-success-light: rgba(99, 162, 102, 0.1);
 }
 
-/* ==============================
-   Left Sidebar (palette, actions)
-   - Main sidebar stays purple
-   - Action buttons (load/import/save/export/delete) are white
-   - Palette components are turquoise with black text
-   - Hover for white buttons -> light gray (no transparency)
- ============================== */
-.sidebar {
-  background: var(--color-purple);
-  color: var(--color-white);
-}
-
-.sidebar .sidebar-action,
-.sidebar .toolbar-button,
-.sidebar .custom-import-label,
-.sidebar .custom-template-load,
-.sidebar .custom-template-export,
-.sidebar .custom-template-delete,
-.sidebar .sidebar-item,
-.sidebar .template-icon-button,
-.sidebar .template-icon-button {
-  background: var(--color-purple-light);
-  color: var(--color-dark-text);
-  border: 1px solid #e6e6e6;
-  font-family: inherit;
-}
-
-.sidebar .sidebar-action:hover,
-.sidebar .toolbar-button:hover,
-.sidebar .template-icon-button:hover,
-.sidebar .custom-template-load:hover,
-.sidebar .custom-template-export:hover,
-.sidebar .custom-template-delete:hover,
-.sidebar .sidebar-item:hover {
-  background: var(--color-purple-light-hover);
-}
-
-/* Ensure text inside palette components is black */
-.sidebar .sidebar-item,
-.sidebar .sidebar-item * {
-  color: var(--color-dark-text);
-}
-
-/* ==============================
-   Right Properties / Trace panel
-   - Solid purple background (no transparency)
-   - Example/export buttons white with slight gray hover
-   - JSON textarea/editor area white
- ============================== */
-.properties {
-  background: var(--color-purple);
-  color: var(--color-white);
-}
-
-.properties .sidebar-action,
-.properties .toolbar-button,
-.properties .template-icon-button,
-.properties .custom-template-load,
-.properties .custom-template-export,
-.properties .custom-template-delete {
-  background: var(--color-white);
-  color: var(--color-dark-text);
-  border: 1px solid #e6e6e6;
-}
-
-.properties .sidebar-action:hover,
-.properties .toolbar-button:hover,
-.properties .template-icon-button:hover {
-  background: #f2f2f2;
-}
-
-.properties textarea {
-  background: var(--color-white);
-  color: var(--color-dark-text);
-  border: 1px solid var(--color-periwinkle);
-}
-
-/* Root sizing and base typography. */
 html,
 body,
 #root {
-  height: 100%;
   margin: 0;
+  height: 100%;
+  font-family: 'Inter';
 }
 
-/* Main app split between sidebar and canvas. */
 .app {
   display: flex;
   height: 100vh;
 }
 
-/* Sidebar container and toolbar controls. */
+.canvas {
+  flex: 1;
+}
+
 .sidebar {
-  width: clamp(220px, 22vw, 420px);
-  min-width: 180px;
-  max-width: 560px;
   height: 100vh;
-  padding: 16px;
+  width: 350px;
+  box-sizing: border-box;
+  padding: 20px;
   background: var(--color-purple);
-  color: var(--color-white);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 12px;
   z-index: 5;
-  filter: drop-shadow(4px 0 8px rgba(0, 0, 0, 0.5));
-  box-sizing: border-box;
-  resize: horizontal;
-  overflow: auto;
 }
 
 .sidebar-toolbar {
   display: flex;
   flex-direction: column;
-   gap: 12px;
 }
 
 .sidebar-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.35);
-  margin: 10px 0 0px;
-  flex: 0 0 auto;
+  background: rgb(255, 255, 255);
+  margin: 8px 0 26px;
 }
 
 .sidebar-scroll {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 12px;
-  min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 18px;
 }
 
-.sidebar-scroll > .sidebar-dropdown {
-  padding-top: 14px;
-  margin-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.35);
+.sidebar-dropdown summary {
+  cursor: pointer;
+  margin-bottom: 10px;
 }
 
-.toolbar-button {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--color-periwinkle);
-  background: var(--color-periwinkle);
-  color: var(--color-dark-text);
-  font-weight: 600;
-  text-align: center;
-  transition: background 120ms ease-in-out, transform 80ms ease;
-}
-
-.toolbar-button:hover {
-  background: var(--color-periwinkle);
-  transform: translateY(-1px);
-}
-
-/* Informative badges and section headings inside sidebar. */
-.sidebar-note {
-  font-size: 0.8rem;
-  opacity: 0.75;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: rgba(190, 145, 198, 0.1);
-  margin-bottom: 6px;
+.sidebar-dropdown {
+  margin-bottom: 10px;
 }
 
 .sidebar-title {
-  font-size: 14px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #333333;
+  font-weight: 700;
+  color: var(--color-white);
 }
 
-/* Right properties drawer and trace panel. */
+.sidebar-section-title {
+  margin: 20px 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.855);
+}
+
+.sidebar-item {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-purple-light);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grab;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-item:active {
+  cursor: grabbing;
+}
+
+.sidebar-item:hover {
+  background: var(--color-purple-light-hover);
+}
+
+.toolbar-button {
+  width: 100%;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-purple-light);
+  cursor: pointer;
+  margin-bottom: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.toolbar-button:hover {
+  background: var(--color-purple-light-hover);
+}
+
+.template-icon-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.template-icon-button {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-template-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.custom-template-name {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-white);
+  margin: 0 0 4px;
+}
+
+.custom-template-row {
+  display: flex;
+  gap: 8px;
+}
+
+.canvas-controls {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.canvas-icon-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--color-purple-light);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.canvas-icon-button:hover {
+  background: var(--color-purple-light-hover);
+}
+
+.app-logo {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  width: 125px;
+  pointer-events: none;
+}
+
 .properties {
   position: absolute;
   right: 0;
   top: 0;
   bottom: 0;
-  width: clamp(340px, 33vw, 760px);
-  min-width: 280px;
-  max-width: 900px;
   padding: 16px;
+  min-width: 200px;
+  max-width: 50vw;
   background: var(--color-purple);
-  color: var(--color-white);
   display: flex;
   flex-direction: column;
   gap: 8px;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.45);
   z-index: 10;
   overflow: hidden;
-  box-sizing: border-box;
   resize: horizontal;
   direction: rtl;
 }
@@ -239,32 +220,18 @@ body,
   direction: ltr;
 }
 
-.properties-global-trace {
-  right: 0;
-  width: clamp(340px, 31vw, 760px);
-}
-
 .properties-node-flags {
   top: 12px;
   right: 12px;
   bottom: auto;
-  width: 250px;
-  min-width: 220px;
-  max-width: 300px;
   resize: none;
-  direction: ltr;
   z-index: 20;
   border-radius: 12px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
   align-items: center;
 }
 
 .properties-title {
   font-weight: bold;
-  font-size: 14px;
-  letter-spacing: 0.05em;
   color: var(--color-white);
 }
 
@@ -273,109 +240,90 @@ body,
   gap: 8px;
 }
 
-.properties-actions .sidebar-action {
-  flex: 1;
-}
-
 .properties textarea {
   flex: 1;
-  width: 100%;
   resize: none;
   border-radius: 8px;
-  border: 1px solid var(--color-periwinkle);
-  background: var(--color-white);
-  color: #333333;
   padding: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow: auto;
-  min-height: 120px;
-  box-sizing: border-box;
 }
 
-/* Form controls used in acceptance/loop editors. */
+.sidebar-action {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--color-purple-light);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sidebar-action:hover {
+  background: var(--color-purple-light-hover);
+}
+
 .form-label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 0.86rem;
   color: var(--color-white);
-  align-items: center;
-  text-align: center;
-}
-
-.form-label input,
-.form-label select {
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid var(--color-periwinkle);
-  background: var(--color-white);
-  color: #333333;
-  padding: 8px 10px;
-  font-size: 0.88rem;
-}
-
-.checkbox-label {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-
-.checkbox-label input {
-  width: auto;
-  margin: 0;
 }
 
 .form-divider {
   width: 80%;
   height: 1px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255, 255, 255);
   margin: 8px 0;
 }
 
-/* Inline feedback and solution summary widgets. */
-.error-text {
-  color: var(--color-error);
-  margin-top: 8px;
-  font-size: 0.85rem;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 8px;
-  border-radius: 6px;
+.custom-node {
+  width: 250px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--color-turquoise);
+  box-shadow: 0 12px 12px rgba(0, 0, 0, 0.1);
 }
 
-.solution-text {
-  color: var(--color-dark-text);
-  margin-top: 8px;
-  font-size: 0.85rem;
-  background: var(--color-white);
-  padding: 8px;
-  border-radius: 6px;
-  white-space: pre-wrap;
+.custom-node-running {
+  box-shadow: 0 0 0 3px var(--color-purple), 0 12px 12px rgba(0, 0, 0, 0.1);
 }
 
-.solution-summary {
-  margin-top: 8px;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(148, 152, 200, 0.4);
-  background: var(--color-white);
-}
-
-
-.solution-summary-row {
+.custom-node-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 0.82rem;
-  color: var(--color-dark-text);
+  gap: 8px;
 }
 
-.solution-summary-key {
-  font-weight: 600;
-  opacity: 0.85;
+.custom-node-title {
+  font-size: 15px;
+  font-weight: 700;
 }
 
-/* Numeric stepper used by termination node settings. */
+.custom-node-subtitle {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+.node-badge-start {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--color-purple);
+  padding: 3px 7px;
+  border-radius: 10px;
+}
+
+.node-badge-end {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--color-periwinkle);
+  padding: 3px 7px;
+  border-radius: 10px;
+}
+
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -385,11 +333,9 @@ body,
 .stepper-btn {
   border: 1px solid var(--color-periwinkle);
   background: var(--color-white);
-  color: var(--color-dark-text);
   border-radius: 6px;
-  width: 24px;
-  height: 24px;
-  line-height: 1;
+  width: 21px;
+  height: 21px;
   cursor: pointer;
   font-weight: 600;
 }
@@ -401,290 +347,37 @@ body,
 .stepper-input {
   width: 56px;
   border: 1px solid var(--color-periwinkle);
-  background: var(--color-white);
-  color: var(--color-dark-text);
   border-radius: 6px;
-  text-align: right;
   padding: 2px 6px;
-  font-weight: 600;
 }
 
-/* Draggable palette items and action buttons. */
-.sidebar-item {
-  padding: 10px 16px;
-  border-radius: 8px;
-  background: rgba(190, 145, 198, 0.15);
-  cursor: grab;
-  user-select: none;
-  transition: background 120ms ease-in-out;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  width: 100%;
-  box-sizing: border-box;
-  color: #333333;
-}
-
-.sidebar-dropdown .sidebar-item {
-  margin-top: 6px;
-}
-
-.sidebar-section-title {
-  margin: 32px 0 12px;
-  padding-top: 0;
-  border-top: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-dark-text);
-  letter-spacing: 0.05em;
-}
-
-.sidebar-dropdown summary {
-  cursor: pointer;
-  padding: 6px 12px;
-  margin-top: 10px;
-}
-
-.sidebar-dropdown .toolbar-button {
+.solution-summary {
   margin-top: 8px;
-}
-
-.sidebar-dropdown .toolbar-button,
-.sidebar-dropdown .custom-import-label {
-  display: block;
-  width: 100%;
-  text-align: center;
-}
-
-.template-icon-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.template-icon-actions .template-icon-button {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  text-align: center;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.custom-template-list {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.custom-template-name {
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-align: center;
-  color: var(--color-dark-text);
-  margin: 0 0 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.custom-template-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.custom-template-load {
-  width: 100%;
-  margin-top: 0;
-}
-
-.custom-template-export {
-  width: 100%;
-  margin-top: 0;
-}
-
-.custom-template-delete {
-  width: 100%;
-  margin-top: 0;
-}
-
-.custom-import-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.custom-import-input {
-  display: none;
-}
-
-.sidebar-action {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: rgba(197, 245, 232, 0.2);
-  border: none;
-  color: #333333;
-  cursor: pointer;
-  text-align: center;
-  width: 100%;
-  font-size: 0.9rem;
-  transition: background 120ms ease-in-out;
-}
-
-.sidebar-action:hover {
-  background: rgba(197, 245, 232, 0.35);
-}
-
-.sidebar-item:active {
-  cursor: grabbing;
-}
-
-.sidebar-item:hover {
-  background: rgba(197, 245, 232, 0.3);
-}
-
-/* Canvas and custom node visual design. */
-.canvas {
-  flex: 1;
-  position: relative;
-  background: #ffffff;
-}
-
-.canvas-footer-brand {
-  position: fixed;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-.canvas-footer-brand-image {
-  display: block;
-  width: min(180px, 18vw);
-  height: auto;
-  max-width: 220px;
-}
-
-.canvas-controls {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 1;
-}
-
-.canvas-icon-button {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  border: 0px solid black;
-  background: var(--color-purple-light);
-  box-shadow: 0px 0 4px rgba(0, 0, 0, 0.45);
-  color: var(--color-dark-text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1;
-  transition: transform 100ms ease, background 130ms ease, border-color 130ms ease;
-}
-
-.canvas-icon-button:hover {
-  transform: translateY(-1px);
-  background: var(--color-purple-light-hover);
-}
-
-.canvas .react-flow__pane {
-  background: #ffffff;
-}
-
-.canvas .react-flow__background path {
-  stroke: rgba(197, 245, 232, 0.4);
-}
-
-.custom-node {
-  background: var(--color-turquoise);
-  border: 2px solid var(--color-turquoise-border);
-  border-radius: 12px;
-  padding: 12px;
-  min-width: 220px;
-  width: auto;
-  max-width: 320px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.custom-node-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.custom-node-info {
-  background: var(--color-white);
-  border-radius: 8px;
   padding: 10px;
-  margin-bottom: 8px;
+  border-radius: 8px;
+  background: var(--color-white);
 }
 
-.custom-node-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-  color: var(--color-dark-text);
+.solution-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
 }
 
-.custom-node-subtitle {
-  font-size: 0.8rem;
-  opacity: 0.85;
-  margin-bottom: 0;
-  color: var(--color-gray-text);
+.solution-summary-key {
+  font-weight: 600;
 }
 
-.custom-node:hover {
-  border-color: var(--color-violet);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+.solution-text {
+  font-size: 14px;
+  padding: 6px;
 }
 
-.custom-node-running {
-  border-color: var(--color-violet);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.5), 0 0 36px rgba(0, 0, 0, 0.3);
-}
-
-.node-badge-start {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #333333;
-  border: 1px solid rgba(0, 255, 17, 0.8);
-  background: rgba(108, 239, 104, 0.3);
-  padding: 2px 7px;
-  border-radius: 999px;
-}
-
-.node-badge-end {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #333333;
-  border: 1px solid rgba(255, 0, 0, 0.8);
-  background: rgba(255, 0, 0, 0.3);
-  padding: 2px 7px;
-  border-radius: 999px;
+.error-text {
+  color: var(--color-error);
+  margin-top: 8px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 1);
+  padding: 8px;
+  border-radius: 6px;
 }

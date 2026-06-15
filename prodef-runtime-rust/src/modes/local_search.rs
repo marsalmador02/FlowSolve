@@ -8,33 +8,25 @@
 // Payload:  { "solution": { "variableValue": [...] } }
 // Response: { "result": SolverResult, "trace": [string] }
 //
-// Replaces: modes/local_search.rs + search/local_search.rs
 
 use anyhow::{bail, Context, Result};
-use rand::prelude::StdRng;
-use serde_json::{json, Value};
+use rand::rngs::ThreadRng;
+use serde_json::{Value};
 
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
-pub(crate) fn local_search(
-    problem: &Problem,
-    payload: &Value,
-    _rng: &mut StdRng,
-) -> Result<Value> {
+pub fn local_search(problem: &Problem, payload: &Value, _rng: &mut ThreadRng) -> Result<SolverResult> {
     let obj = require_object(payload)?;
 
     let sol_val = obj.get("solution").context("local-search requires `solution`")?;
     let start = Solution::from_candidate(problem, sol_val)
         .context("local-search `solution` is missing or invalid `variableValue`")?;
 
-    let (best, trace) = run(problem, start)?;
-    let result = serde_json::to_value(SolverResult::build(problem, &best)?)?;
-
-    Ok(json!({ "result": result, "trace": trace }))
+    let (best, _trace) = run(problem, start)?;
+    SolverResult::build(problem, &best)
 }
 
-// ── Core algorithm ────────────────────────────────────────────────────────────
 
 /// Run one best-improvement local search step from `start`.
 ///
@@ -183,18 +175,17 @@ fn fmt(solution: &Solution) -> String {
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::StdRng;
+    use rand::rngs::ThreadRng;
     use rand::SeedableRng;
     use serde_json::json;
 
     fn load(path: &str) -> Problem {
         let v: serde_json::Value = serde_json::from_str(path).unwrap();
-        Problem::from_json(v).unwrap()
+        Problem::try_from(v).unwrap()
     }
 
     #[test]

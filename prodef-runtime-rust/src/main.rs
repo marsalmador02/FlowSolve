@@ -13,22 +13,19 @@ mod problem;
 mod solution;
 
 use std::fs;
-use std::path::PathBuf;
-
 use anyhow::Result;
 use clap::Parser;
-
 use api::{run, ExecutionRequest};
 
 #[derive(Parser)]
-struct Cli {
+struct Args {
     #[arg(long)]
-    exec_request: PathBuf,
+    exec_request: String,
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
-    let raw = fs::read_to_string(&cli.exec_request)?;
+    let args = Args::parse();
+    let raw = fs::read_to_string(&args.exec_request)?;
     let request: ExecutionRequest = serde_json::from_str(&raw)?;
     let response = run(request)?;
     println!("{}", serde_json::to_string_pretty(&response)?);

@@ -43,6 +43,9 @@ function runRustRequest(payload, onSuccess, res) {
 
   const args = ['--exec-request', tmpRequest];
   // Runs the Rust binary as a child process and captures stdout/stderr.
+  // example: prodef-runtime-rust.exe --exec-request C:\Users\ASUS\AppData\Local\Temp\prodef_exec_request_1697040000000.json
+  // example RUST_BIN -> C:\Users\ASUS\Desktop\TTFFGG\FlowSolve\prodef-runtime-rust\target\release\prodef-runtime-rust.exe
+  // example args -> [ '--exec-request', 'C:\\Users\\ASUS\\AppData\\Local\\Temp\\prodef_exec_request_1697040000000.json' ]
   execFile(RUST_BIN, args, { cwd: RUST_BIN_DIR, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
     try {
       // Siempre intentamos borrar el request temporal al finalizar.

@@ -10,7 +10,6 @@
 import type { NodeKind } from '../../../types/flow';
 import type { RuntimeComponent } from './base';
 import { SingleGeneratorComponent } from './nodes/singleGenerator';
-import { PopulationGeneratorComponent } from './nodes/populationGenerator';
 import { LoopComponent } from './nodes/loop';
 import { StorageComponent } from './nodes/storage';
 import { SelectionBestComponent } from './nodes/selectionBest';
@@ -19,9 +18,6 @@ import { NeighborhoodComponent } from './nodes/neighborhood';
 import { PerturbationComponent } from './nodes/perturbation';
 import { AcceptanceComponent } from './nodes/acceptance';
 import { SubtractionComponent } from './nodes/subtraction';
-import { SelectionComponent } from './nodes/selection';
-import { CrossoverComponent } from './nodes/crossover';
-import { MutationComponent } from './nodes/mutation';
 import { TemperatureAcceptanceComponent } from './nodes/temperatureAcceptance';
 import { ReduceTemperatureComponent } from './nodes/reduceTemperature';
 import { ChangeNeighbourhoodComponent } from './nodes/changeNeighborhood';
@@ -30,7 +26,6 @@ export type ComponentFactory = () => RuntimeComponent;
 
 const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
   singleSolution: () => new SingleGeneratorComponent(),
-  populationGeneration: () => new PopulationGeneratorComponent(),
   termination: () => new LoopComponent(),
   storage: () => new StorageComponent(),
   selectionBest: () => new SelectionBestComponent(),
@@ -39,9 +34,6 @@ const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
   perturbation: () => new PerturbationComponent(),
   acceptance: () => new AcceptanceComponent(),
   subtraction: () => new SubtractionComponent(),
-  selection: () => new SelectionComponent(),
-  crossover: () => new CrossoverComponent(),
-  mutation: () => new MutationComponent(),
   temperatureAcceptance: () => new TemperatureAcceptanceComponent(),
   reduceTemperature: () => new ReduceTemperatureComponent(),
   changeNeighborhood: () => new ChangeNeighbourhoodComponent(),

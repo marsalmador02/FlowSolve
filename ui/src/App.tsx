@@ -906,9 +906,7 @@ if (node.type === 'temperatureAcceptance') {
           <Background color="#aaa" gap={16} />
         </ReactFlow>
 
-        <div className="canvas-footer-brand" aria-hidden="true">
-          <img src={othimiColorImage} alt="Brand" className="canvas-footer-brand-image" />
-        </div>
+        <img className="app-logo" src={othimiColorImage} alt="Othimi" />
 
         <ExecutionPanel
           selectedNode={selectedNode}

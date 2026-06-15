@@ -1,282 +1,201 @@
-// problem.rs
+// problem.rs — optimization problem loaded from JSON.
 //
-// Single source of truth for the optimization problem.
-// Handles JSON deserialization, validation, data loading, and all
-// runtime operations (random generation, feasibility, evaluation).
+// Owns deserialization, validation, data loading, random generation,
+// feasibility checking, and objective evaluation.
 //
-// Replaces: domain/model.rs, domain/runtime.rs, domain/feasible.rs
+// Supports three problem families:
+//   - Knapsack: binary vector, class attributes (item[i].weight), weight constraint
+//   - Assignment: permutation, square cost matrix (cost[i, assignment[i]])
+//   - TSP: permutation, distance matrix with wrap-around tour
 
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Result};
 use rand::prelude::*;
 use serde::Deserialize;
+use rand::rngs::ThreadRng;
 
 use crate::eval::{eval_constraint, eval_numeric};
 use crate::solution::Solution;
 
-// ── JSON schema (replaces model.rs) ─────────────────────────────────────────
-//
-// These are the raw deserialization types. They are private to this module;
-// nothing outside needs to know about them.
-
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawProblem {
     name: String,
-    parameters: Option<Vec<RawParameter>>,
+    parameters: Vec<RawParameter>,
     variables: Vec<RawVariable>,
     goals: Vec<RawGoal>,
-    constraints: Option<Vec<RawConstraint>>,
-    classes: Option<Vec<RawClass>>,
-    objects: Option<Vec<RawInstance>>,
+    #[serde(default)]
+    constraints: Vec<RawConstraint>,
+    classes: Vec<RawClass>,
+    objects: Vec<RawInstance>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawParameter {
     symbol: String,
     value: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawVariable {
     symbol: String,
     within: String,
-    shape: RawShape,
     range: Option<RawRange>,
+    shape: RawShape,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawRange {
     #[serde(rename = "lowerBound")]
-    lower_bound: Option<serde_json::Value>,
+    lower_bound: Option<f64>,
     #[serde(rename = "upperBound")]
-    upper_bound: Option<serde_json::Value>,
+    upper_bound: Option<f64>,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
-enum RawShape {
-    #[serde(rename = "vector")]
-    Vector {
-        #[serde(rename = "isPermutation")]
-        is_permutation: Option<bool>,
-        size: RawSize,
-    },
-    // Other shapes are not supported; we reject them in Problem::from_json.
-    #[serde(other)]
-    Unsupported,
+#[derive(Deserialize)]
+struct RawShape {
+    #[serde(rename = "type")]
+    kind: String,
+    #[serde(rename = "isPermutation")]
+    is_permutation: bool,
+    size: RawSize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawSize {
-    #[allow(dead_code)]
-    fixed: bool,
+    fixed: bool, // mirar
     value: serde_json::Value,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawGoal {
-    sense: Option<String>,
+    sense: String,
     expression: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawConstraint {
-    #[allow(dead_code)]
-    name: Option<String>,
     expression: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawClass {
     symbol: String,
     attributes: Vec<RawClassAttribute>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawClassAttribute {
     symbol: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawInstance {
     class: String,
     attributes: Vec<RawInstanceAttribute>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct RawInstanceAttribute {
     attribute: String,
     value: serde_json::Value,
 }
 
-// ── Sense ────────────────────────────────────────────────────────────────────
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum Sense {
+#[derive(Clone, Copy, PartialEq)]
+pub enum Sense {
     Minimize,
     Maximize,
 }
 
-// ── Problem ──────────────────────────────────────────────────────────────────
-
-/// The runtime problem. Built once from JSON, used everywhere.
-///
-/// All fields are resolved and validated up front so the rest of the code
-/// never has to deal with `Option`s, symbolic sizes, or raw JSON values.
-pub(crate) struct Problem {
-    pub(crate) name: String,
-
-    // These are public because the expression evaluator (eval.rs) reads them.
-    pub(crate) var_name: String,
-    pub(crate) params: HashMap<String, f64>,
-    pub(crate) data: HashMap<String, Vec<f64>>,
-
+pub struct Problem {
+    pub name: String,
+    pub var_name: String,
+    pub params: HashMap<String, f64>,
+    pub data: HashMap<String, Vec<f64>>,
     var_size: usize,
     is_permutation: bool,
     lower: f64,
     upper: f64,
-
     sense: Sense,
     goal_exprs: Vec<String>,
     constraint_exprs: Vec<String>,
 }
 
 impl Problem {
-    /// Build a `Problem` from a raw JSON value.
-    ///
-    /// Returns an error if the JSON doesn't match the schema, if there is not
-    /// exactly one variable, or if the variable is not a vector.
-    pub(crate) fn from_json(value: serde_json::Value) -> Result<Self> {
-        let raw: RawProblem = serde_json::from_value(value)
-            .map_err(|e| anyhow!("Invalid problem JSON: {}", e))?;
-
-        if raw.variables.len() != 1 {
-            bail!("Only one variable is currently supported");
-        }
-
+    pub fn from_json(value: serde_json::Value) -> Result<Self> {
+        let raw: RawProblem = serde_json::from_value(value)?;
         let var = &raw.variables[0];
-        let var_name = var.symbol.clone();
-
-        let params: HashMap<String, f64> = raw
-            .parameters
-            .iter()
-            .flatten()
-            .map(|p| (p.symbol.clone(), p.value))
-            .collect();
-
-        let data = build_data_map(
-            raw.classes.as_deref(),
-            raw.objects.as_deref(),
-        )?;
-
-        let (var_size, is_permutation, lower, upper) = match &var.shape {
-            RawShape::Vector { is_permutation, size } => {
-                let n = resolve_size(&size.value, &params)?;
-
-                let lower = var
-                    .range
-                    .as_ref()
-                    .and_then(|r| r.lower_bound.as_ref())
-                    .map(parse_bound)
-                    .transpose()?
-                    .unwrap_or(0.0);
-
-                let upper = var
-                    .range
-                    .as_ref()
-                    .and_then(|r| r.upper_bound.as_ref())
-                    .map(parse_bound)
-                    .transpose()?
-                    .unwrap_or_else(|| {
-                        if var.within.eq_ignore_ascii_case("binary") { 1.0 } else { 10.0 }
-                    });
-
-                if lower > upper {
-                    bail!("Invalid variable bounds: lowerBound > upperBound");
-                }
-
-                (n, is_permutation.unwrap_or(false), lower, upper)
-            }
-            RawShape::Unsupported => bail!("Only vector variables are currently supported"),
-        };
 
         let sense = raw
             .goals
             .first()
-            .and_then(|g| g.sense.as_deref())
-            .map(|s| {
-                if s.eq_ignore_ascii_case("minimize") { Sense::Minimize } else { Sense::Maximize }
+            .map(|g| {
+                if g.sense.eq_ignore_ascii_case("minimize") {
+                    Sense::Minimize
+                } else {
+                    Sense::Maximize
+                }
             })
-            .unwrap_or(Sense::Maximize);
+            .unwrap();
 
-        let goal_exprs = raw.goals.iter().map(|g| g.expression.clone()).collect();
-        let constraint_exprs = raw
-            .constraints
-            .iter()
-            .flatten()
-            .map(|c| c.expression.clone())
-            .collect();
+        let params = raw.parameters.iter().map(|p| (p.symbol.clone(), p.value)).collect();
+        // params = {"N": 10, "MaxWeight": 40, ...}
+        let var_size = resolve_size(&var.shape.size.value, &params)?;
 
         Ok(Self {
             name: raw.name,
-            var_name,
+            var_name: var.symbol.clone(),
             params,
-            data,
+            data: build_data_map(&raw.classes, &raw.objects)?,
             var_size,
-            is_permutation,
-            lower,
-            upper,
+            is_permutation: var.shape.is_permutation,
+            lower: var.range.as_ref().and_then(|r| r.lower_bound).unwrap_or(0.0),
+            upper: var.range.as_ref().and_then(|r| r.upper_bound).unwrap_or(0.0),
             sense,
-            goal_exprs,
-            constraint_exprs,
+            goal_exprs: raw.goals.iter().map(|g| g.expression.clone()).collect(),
+            constraint_exprs: raw.constraints.iter().map(|c| c.expression.clone()).collect(),
         })
     }
 
-    // ── Shape accessors ──────────────────────────────────────────────────────
-
-    pub(crate) fn var_size(&self) -> usize {
+    pub fn var_size(&self) -> usize {
         self.var_size
     }
 
-    pub(crate) fn is_permutation(&self) -> bool {
+    pub fn is_permutation(&self) -> bool {
         self.is_permutation
     }
 
-    pub(crate) fn lower(&self) -> f64 {
+    pub fn lower(&self) -> f64 {
         self.lower
     }
 
-    pub(crate) fn upper(&self) -> f64 {
+    pub fn upper(&self) -> f64 {
         self.upper
     }
 
-    pub(crate) fn sense(&self) -> Sense {
+    pub fn sense(&self) -> Sense {
         self.sense
     }
 
-    // ── Random generation ────────────────────────────────────────────────────
-
-    /// Generate a random solution compatible with this problem's shape.
-    pub(crate) fn random_solution(&self, rng: &mut StdRng) -> Solution {
+    pub fn random_solution(&self, rng: &mut ThreadRng) -> Solution {
         if self.is_permutation {
             let mut values: Vec<usize> = (0..self.var_size).collect();
             values.shuffle(rng);
             Solution::Permutation(values)
         } else {
-            let lo = self.lower.ceil() as i64;
-            let hi = self.upper.floor() as i64;
+            let low = self.lower as i64;
+            let high = self.upper as i64;
             Solution::Vector(
                 (0..self.var_size)
-                    .map(|_| rng.gen_range(lo..=hi) as f64)
+                    .map(|_| rng.gen_range(low..=high) as f64)
                     .collect(),
             )
         }
     }
 
-    /// Try random candidates until one is feasible, up to `limit` attempts.
-    pub(crate) fn random_feasible_solution(&self, rng: &mut StdRng) -> Result<Solution> {
-        const LIMIT: usize = 100_000;
+    /// Try random candidates until one is feasible, up to 100 000 attempts.
+    pub fn random_feasible_solution(&self, rng: &mut ThreadRng) -> Result<Solution> {
+        const LIMIT: i64 = 100_000;
         for _ in 0..LIMIT {
             let candidate = self.random_solution(rng);
             if self.is_feasible(&candidate)? {
@@ -286,10 +205,7 @@ impl Problem {
         bail!("No feasible solution found after {} attempts", LIMIT)
     }
 
-    // ── Evaluation ───────────────────────────────────────────────────────────
-
-    /// Check whether `solution` satisfies every constraint.
-    pub(crate) fn is_feasible(&self, solution: &Solution) -> Result<bool> {
+    pub fn is_feasible(&self, solution: &Solution) -> Result<bool> {
         for expr in &self.constraint_exprs {
             if !eval_constraint(expr, self, solution)? {
                 return Ok(false);
@@ -298,34 +214,28 @@ impl Problem {
         Ok(true)
     }
 
-    /// Evaluate every goal expression and return the values in order.
-    pub(crate) fn eval_goals(&self, solution: &Solution) -> Result<Vec<f64>> {
+    pub fn eval_goals(&self, solution: &Solution) -> Result<Vec<f64>> {
         self.goal_exprs
             .iter()
             .map(|expr| eval_numeric(expr, self, solution))
             .collect()
     }
 
-    /// Single scalar score used by search and comparison (sum of all goals).
-    pub(crate) fn score(&self, solution: &Solution) -> Result<f64> {
+    /// Sum of all goal values — the single scalar used by search.
+    pub fn score(&self, solution: &Solution) -> Result<f64> {
         Ok(self.eval_goals(solution)?.into_iter().sum())
     }
 
-    /// Return true if `a` is strictly better than `b` under this problem's sense.
-    pub(crate) fn is_better(&self, a: f64, b: f64) -> bool {
+    /// True if score `a` is strictly better than `b` under this problem's sense.
+    pub fn is_better(&self, a: f64, b: f64) -> bool {
         match self.sense {
             Sense::Maximize => a > b,
             Sense::Minimize => a < b,
         }
     }
 
-    // ── Data access (used by eval.rs) ────────────────────────────────────────
-
     /// Read a decision variable value at a 1-based index.
-    pub(crate) fn var_at(&self, solution: &Solution, idx: usize) -> Result<f64> {
-        if idx == 0 {
-            bail!("Indices are 1-based");
-        }
+    pub fn var_at(&self, solution: &Solution, idx: usize) -> Result<f64> {
         match solution {
             Solution::Vector(v) => v
                 .get(idx - 1)
@@ -338,80 +248,70 @@ impl Problem {
         }
     }
 
-    /// Read a class attribute value at a 1-based row index.
-    pub(crate) fn class_attr_at(&self, class: &str, attr: &str, idx: usize) -> Result<f64> {
-        if idx == 0 {
-            bail!("Indices are 1-based");
-        }
+    /// Read a class attribute column at a 1-based row index.
+    /// Key format: "ClassName.attr"
+    pub fn class_attr_at(&self, class: &str, attr: &str, idx: usize) -> Result<f64> {
         let key = format!("{}.{}", class, attr);
-        let col = self
-            .data
+        self.data
             .get(&key)
-            .ok_or_else(|| anyhow!("Unknown class attribute: {}", key))?;
-        col.get(idx - 1)
+            .ok_or_else(|| anyhow!("Unknown attribute: {}", key))?
+            .get(idx - 1)
             .copied()
             .ok_or_else(|| anyhow!("Index {} out of bounds for {}", idx, key))
     }
 
-    /// Read a matrix cell at 1-based (row, col) coordinates.
-    pub(crate) fn matrix_at(&self, class: &str, row: usize, col: usize) -> Result<f64> {
-        if row == 0 || col == 0 {
-            bail!("Indices are 1-based");
-        }
+    /// Read a matrix cell at 1-based (row, col).
+    /// Key format: "ClassName.rowN"
+    pub fn matrix_at(&self, class: &str, row: usize, col: usize) -> Result<f64> {
         let key = format!("{}.row{}", class, row);
-        let r = self
-            .data
+        self.data
             .get(&key)
-            .ok_or_else(|| anyhow!("Unknown matrix row: {}", key))?;
-        r.get(col - 1)
+            .ok_or_else(|| anyhow!("Unknown matrix row: {}", key))?
+            .get(col - 1)
             .copied()
             .ok_or_else(|| anyhow!("Column {} out of bounds in {}", col, key))
     }
 }
 
-// ── Private helpers ──────────────────────────────────────────────────────────
-
-/// Build the flat data map used for class attribute and matrix access.
+/// Build the flat data map used by eval.rs for class attribute and matrix access.
 ///
-/// For every class, two kinds of keys are produced:
-/// - `"ClassName.attr"` → column vector (all values for that attribute)
-/// - `"ClassName.rowN"` → row vector (all numeric attribute values for row N)
-fn build_data_map(
-    classes: Option<&[RawClass]>,
-    objects: Option<&[RawInstance]>,
-) -> Result<HashMap<String, Vec<f64>>> {
+/// For a class `item` with numeric attributes [value, weight] and N objects, produces:
+///   "item.value" → [v1, v2, ..., vN]
+///   "item.weight" → [w1, w2, ..., wN]
+///   "item.row1"   → [v1, w1]
+///   "item.row2"   → [v2, w2]
+fn build_data_map(classes: &[RawClass], objects: &[RawInstance]) -> Result<HashMap<String, Vec<f64>>> {
     let mut out = HashMap::new();
-
-    let (Some(classes), Some(objects)) = (classes, objects) else {
-        return Ok(out);
-    };
 
     for class in classes {
         let rows: Vec<&RawInstance> = objects
             .iter()
             .filter(|o| o.class == class.symbol)
             .collect();
+        // Example:
+        // rows = [
+        //   {class: "item", attributes: [{attribute: "value", value: 10}, {attribute: "weight", value: 2}]},
+        //   {class: "item", attributes: [{attribute: "value", value: 20}, {attribute: "weight", value: 3}]},
+        //   ... ]
 
-        if rows.is_empty() {
-            continue;
-        }
-
-        // Only keep attributes whose first value is numeric.
         let numeric_attrs: Vec<&str> = class
             .attributes
             .iter()
-            .filter(|a| {
-                rows[0]
-                    .attributes
-                    .iter()
-                    .find(|ia| ia.attribute == a.symbol)
-                    .map(|ia| parse_f64(&ia.value).is_ok())
-                    .unwrap_or(false)
-            })
             .map(|a| a.symbol.as_str())
+            .filter(|attr| {
+                rows.iter().any(|row| {
+                    row.attributes
+                        .iter()
+                        .find(|ia| ia.attribute == *attr)
+                        .and_then(|ia| ia.value.as_f64())
+                        .is_some()
+                })
+            })
             .collect();
+        // Example:
+        // numeric_attrs = ["value", "weight"]
 
-        // Column vectors: "ClassName.attr" → [v1, v2, ...]
+        // Column vectors: "ClassName.attr" → [row1_val, row2_val, ...]
         for attr in &numeric_attrs {
             let column: Result<Vec<f64>> = rows
                 .iter()
@@ -419,14 +319,29 @@ fn build_data_map(
                     row.attributes
                         .iter()
                         .find(|ia| ia.attribute == *attr)
-                        .ok_or_else(|| anyhow!("Missing attribute {} in class {}", attr, class.symbol))
-                        .and_then(|ia| parse_f64(&ia.value))
+                        .and_then(|ia| ia.value.as_f64())
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "Missing numeric attribute '{}' in class '{}'",
+                                attr,
+                                class.symbol
+                            )
+                        })
                 })
                 .collect();
+
             out.insert(format!("{}.{}", class.symbol, attr), column?);
         }
+        // Example:
+        // columns = {
+        //   "item.value" → [10, 20, ...],
+        //   "item.weight" → [2, 3, ...] }
+        //
+        // out = {
+        //   "item.value" → [10, 20, ...],
+        //   "item.weight" → [2, 3, ...] }
 
-        // Row vectors: "ClassName.rowN" → [attr1_val, attr2_val, ...]
+        // Row vectors: "ClassName.rowN" → [numeric attr values only]
         for (i, row) in rows.iter().enumerate() {
             let row_values: Result<Vec<f64>> = numeric_attrs
                 .iter()
@@ -434,12 +349,27 @@ fn build_data_map(
                     row.attributes
                         .iter()
                         .find(|ia| ia.attribute == *attr)
-                        .ok_or_else(|| anyhow!("Missing attribute {} in class {}", attr, class.symbol))
-                        .and_then(|ia| parse_f64(&ia.value))
+                        .and_then(|ia| ia.value.as_f64())
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "Missing numeric attribute '{}' in class '{}'",
+                                attr,
+                                class.symbol
+                            )
+                        })
                 })
                 .collect();
+
             out.insert(format!("{}.row{}", class.symbol, i + 1), row_values?);
         }
+        // row_values = {
+        //   "item.row1" → [10, 2],
+        //   "item.row2" → [20, 3], ... }
+        // out = {
+        //   "item.value" → [10, 20, ...],
+        //   "item.weight" → [2, 3, ...],
+        //   "item.row1" → [10, 2],
+        //   "item.row2" → [20, 3], ... }
     }
 
     Ok(out)
@@ -448,8 +378,9 @@ fn build_data_map(
 fn resolve_size(value: &serde_json::Value, params: &HashMap<String, f64>) -> Result<usize> {
     match value {
         serde_json::Value::Number(n) => {
-            let n = n.as_u64().ok_or_else(|| anyhow!("Vector size must be a positive integer"))?;
-            if n == 0 { bail!("Vector size must be > 0"); }
+            let n = n
+                .as_u64()
+                .ok_or_else(|| anyhow!("Size must be a positive integer"))?;
             Ok(n as usize)
         }
         serde_json::Value::String(name) => {
@@ -457,36 +388,11 @@ fn resolve_size(value: &serde_json::Value, params: &HashMap<String, f64>) -> Res
                 .get(name)
                 .copied()
                 .ok_or_else(|| anyhow!("Unknown size parameter '{}'", name))?;
-            if n < 1.0 || n.fract().abs() > 1e-9 {
-                bail!("Size parameter '{}' must be a positive integer", name);
-            }
             Ok(n as usize)
         }
-        _ => bail!("Vector size must be a number or a parameter name"),
+        _ => bail!("Size must be a number or a parameter name"),
     }
 }
-
-fn parse_f64(value: &serde_json::Value) -> Result<f64> {
-    match value {
-        serde_json::Value::Number(n) => n.as_f64().ok_or_else(|| anyhow!("Invalid number")),
-        serde_json::Value::String(s) => s.parse().map_err(|_| anyhow!("Expected number, got '{}'", s)),
-        _ => bail!("Expected a numeric value"),
-    }
-}
-
-fn parse_bound(value: &serde_json::Value) -> Result<f64> {
-    match value {
-        serde_json::Value::Number(n) => n.as_f64().ok_or_else(|| anyhow!("Invalid bound")),
-        serde_json::Value::String(s) => match s.to_lowercase().as_str() {
-            "infinity" | "+infinity" => Ok(f64::INFINITY),
-            "-infinity" => Ok(f64::NEG_INFINITY),
-            _ => s.parse().map_err(|_| anyhow!("Invalid bound '{}': expected a number or Infinity", s)),
-        },
-        _ => bail!("Bound must be a number or a string"),
-    }
-}
-
-// ── Tests ────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -494,39 +400,98 @@ mod tests {
 
     fn load(json: &str) -> Problem {
         let v: serde_json::Value = serde_json::from_str(json).expect("parse json");
-        Problem::from_json(v).expect("build problem")
+        Problem::try_from(v).expect("build problem")
     }
+
+    // Basic examples (small, used in other test modules too)
 
     #[test]
     fn tsp_builds_and_evaluates() {
         let p = load(include_str!("../../examples/tsp.json"));
         assert_eq!(p.var_size(), 4);
         assert!(p.is_permutation());
+        assert_eq!(p.sense(), Sense::Minimize);
 
-        // Identity permutation [0,1,2,3] → 1-based [1,2,3,4]
         let sol = Solution::Permutation(vec![0, 1, 2, 3]);
-        let goals = p.eval_goals(&sol).expect("eval goals");
+        let goals = p.eval_goals(&sol).unwrap();
         assert!((goals[0] - 75.0).abs() < 1e-6, "expected 75, got {}", goals[0]);
-        assert!(p.is_feasible(&sol).expect("feasible"));
+        assert!(p.is_feasible(&sol).unwrap());
     }
 
     #[test]
     fn knapsack_builds_and_evaluates() {
         let p = load(include_str!("../../examples/knapsack.json"));
         assert!(!p.is_permutation());
+        assert_eq!(p.sense(), Sense::Maximize);
 
         let sol = Solution::Vector(vec![0.0; p.var_size()]);
-        assert!(p.is_feasible(&sol).expect("feasible"));
-        assert_eq!(p.score(&sol).expect("score"), 0.0);
+        assert!(p.is_feasible(&sol).unwrap());
+        assert_eq!(p.score(&sol).unwrap(), 0.0);
+    }
+
+    // Complex examples — the three problem families we support
+
+    #[test]
+    fn knapsack_complex_evaluates_correctly() {
+        let p = load(include_str!("../../examples/knapsack_complex.json"));
+        assert_eq!(p.var_size(), 10);
+        assert!(!p.is_permutation());
+        assert_eq!(p.sense(), Sense::Maximize);
+
+        // All zeros → feasible, score 0
+        let empty = Solution::Vector(vec![0.0; 10]);
+        assert!(p.is_feasible(&empty).unwrap());
+        assert_eq!(p.score(&empty).unwrap(), 0.0);
+
+        // Item 9 alone (value=35, weight=1) → feasible, score 35
+        let mut pick_9 = vec![0.0; 10];
+        pick_9[8] = 1.0;
+        let sol = Solution::Vector(pick_9);
+        assert!(p.is_feasible(&sol).unwrap());
+        assert_eq!(p.score(&sol).unwrap(), 35.0);
+
+        // All ones → total weight = 25 (> MaxWeight=40? let's check)
+        // weights: 2+3+4+2+3+4+3+2+1+1 = 25 <= 40, so feasible
+        let all = Solution::Vector(vec![1.0; 10]);
+        assert!(p.is_feasible(&all).unwrap());
     }
 
     #[test]
-    fn sense_parsed_correctly() {
-        let p = load(include_str!("../../examples/tsp.json"));
+    fn assignment_complex_evaluates_correctly() {
+        let p = load(include_str!("../../examples/assignment_complex.json"));
+        assert_eq!(p.var_size(), 9);
+        assert!(p.is_permutation());
         assert_eq!(p.sense(), Sense::Minimize);
 
-        let p = load(include_str!("../../examples/knapsack.json"));
-        assert_eq!(p.sense(), Sense::Maximize);
+        // Identity permutation [0..8] → each agent i gets task i+1
+        // Optimal diagonal: 6+4+20+18+17+16+15+14+23 is NOT identity
+        // Identity [1,2,3,4,5,6,7,8,9] in 1-based → [0,1,2,3,4,5,6,7,8] in 0-based
+        // cost[1,1]=14, cost[2,2]=20, cost[3,3]=20, ...
+        let identity = Solution::Permutation(vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        assert!(p.is_feasible(&identity).unwrap());
+        let score = p.score(&identity).unwrap();
+        assert!(score > 0.0);
+
+        // Best known: agent i → task i (diagonal has lowest costs)
+        // cost row1: task_2=6 is cheapest → agent 1 should go to task 2
+        // Just verify it evaluates without error
+        let best = Solution::Permutation(vec![1, 0, 2, 3, 4, 5, 6, 7, 8]);
+        let best_score = p.score(&best).unwrap();
+        assert!(p.is_better(best_score, score), "swapping agent 1 and 2 should improve cost");
+    }
+
+    #[test]
+    fn tsp_complex_evaluates_correctly() {
+        let p = load(include_str!("../../examples/tsp_complex.json"));
+        assert_eq!(p.var_size(), 7);
+        assert!(p.is_permutation());
+        assert_eq!(p.sense(), Sense::Minimize);
+
+        // Identity tour [0,1,2,3,4,5,6] → cities 1→2→3→4→5→6→7→1
+        let identity = Solution::Permutation(vec![0, 1, 2, 3, 4, 5, 6]);
+        assert!(p.is_feasible(&identity).unwrap());
+        let score = p.score(&identity).unwrap();
+        assert!(score > 0.0, "tour cost should be positive");
     }
 
     #[test]

@@ -1,159 +1,126 @@
-// eval.rs
+// eval.rs — expression evaluator for goals and constraints.
 //
-// Expression evaluator for goals and constraints.
-//
-// Supports the compact expression language used by the problem schema:
-//   - numeric literals and problem parameters         e.g. 42, N
-//   - variable access with 1-based index              e.g. x[i]
-//   - class attribute access                          e.g. item[i].weight
-//   - matrix access                                   e.g. d[i,j]
-//   - sum over a range                                e.g. sum x[i]*item[i].weight over i=(1:N)
-//   - arithmetic: +  -  *                             e.g. 3*x[1] + x[2]
-//   - comparisons: <=  >=  =   (and chained <=)       e.g. 1 <= x[1] <= N
-//
-// Replaces: evaluation/expr.rs  (logic unchanged, imports updated)
+// Expression language supported:
+//   sum x[i]*item[i].value over i=(1:N)   — weighted sum over a range
+//   item[i].weight                         — class attribute access (1-based)
+//   cost[i, assignment[i]]                 — matrix access (1-based row, col)
+//   x[i]                                  — variable access (1-based)
+//   N, MaxWeight                           — problem parameters
+//   +  -  *                               — arithmetic
+//   <=  >=  =  (and chained <=)           — comparisons
 
 use anyhow::{anyhow, bail, Result};
 
 use crate::problem::Problem;
 use crate::solution::Solution;
 
-// ── Public entry points ───────────────────────────────────────────────────────
+// The loop index context: when evaluating inside `sum ... over i=(1:N)`,
+// this carries ("i", current_value) so sub-expressions can resolve `i`.
+type IdxCtx<'a> = Option<(&'a str, usize)>;
 
 /// Evaluate a boolean constraint expression.
-pub(crate) fn eval_constraint(expr: &str, p: &Problem, s: &Solution) -> Result<bool> {
-    // Chained <=  (e.g. "0 <= x[1] <= N")
-    if expr.contains("<=") {
-        let parts: Vec<&str> = expr.split("<=").map(str::trim).collect();
-        if parts.len() == 3 {
-            let a = eval_numeric(parts[0], p, s)?;
-            let b = eval_numeric(parts[1], p, s)?;
-            let c = eval_numeric(parts[2], p, s)?;
-            return Ok(a <= b && b <= c);
+pub fn eval_constraint(expr: &str, p: &Problem, s: &Solution) -> Result<bool> {
+    // Try each operator. split() gives 2 parts for "a <= b", 3 for "a <= b <= c".
+    for op in ["<=", ">="] {
+        let parts: Vec<&str> = expr.split(op).collect();
+        match parts.len() {
+            2 => {
+                let l = eval_numeric(parts[0], p, s)?;
+                let r = eval_numeric(parts[1], p, s)?;
+                return if op == "<=" { Ok(l <= r) } else { Ok(l >= r) };
+            }
+            3 => {
+                let a = eval_numeric(parts[0], p, s)?;
+                let b = eval_numeric(parts[1], p, s)?;
+                let c = eval_numeric(parts[2], p, s)?;
+                return if op == "<=" { Ok(a <= b && b <= c) } else { Ok(a >= b && b >= c) };
+            }
+            _ => {}
         }
-    }
-
-    if let Some((lhs, rhs)) = expr.split_once("<=") {
-        return Ok(eval_numeric(lhs.trim(), p, s)? <= eval_numeric(rhs.trim(), p, s)?);
-    }
-
-    // Chained >=
-    if expr.contains(">=") {
-        let parts: Vec<&str> = expr.split(">=").map(str::trim).collect();
-        if parts.len() == 3 {
-            let a = eval_numeric(parts[0], p, s)?;
-            let b = eval_numeric(parts[1], p, s)?;
-            let c = eval_numeric(parts[2], p, s)?;
-            return Ok(a >= b && b >= c);
-        }
-    }
-
-    if let Some((lhs, rhs)) = expr.split_once(">=") {
-        return Ok(eval_numeric(lhs.trim(), p, s)? >= eval_numeric(rhs.trim(), p, s)?);
     }
 
     if let Some((lhs, rhs)) = expr.split_once('=') {
-        let l = eval_numeric(lhs.trim(), p, s)?;
-        let r = eval_numeric(rhs.trim(), p, s)?;
-        return Ok((l - r).abs() < 1e-12);
+        let l = eval_numeric(lhs, p, s)?;
+        let r = eval_numeric(rhs, p, s)?;
+        return Ok(l == r);
     }
 
     bail!("Unsupported constraint operator in '{}'", expr)
 }
 
-/// Evaluate a numeric expression.
-pub(crate) fn eval_numeric(expr: &str, p: &Problem, s: &Solution) -> Result<f64> {
-    eval_scalar(expr.trim(), p, s, None)
+/// Evaluate a numeric expression and return its value.
+pub fn eval_numeric(expr: &str, p: &Problem, s: &Solution) -> Result<f64> {
+    eval_expr(expr.trim(), p, s, None)
 }
 
-// ── Recursive scalar evaluator ────────────────────────────────────────────────
-
-// `idx_ctx` carries the current loop variable when inside a `sum` body:
-// Some(("i", 3)) means the symbol "i" currently equals 3.
-fn eval_scalar(
-    expr: &str,
-    p: &Problem,
-    s: &Solution,
-    idx_ctx: Option<(&str, usize)>,
-) -> Result<f64> {
-    let orig = expr.trim();
-
-    // `sum` must be tried first so the loop variable stays scoped to its body.
-    if let Some(result) = try_eval_sum(orig, p, s)? {
+// Core recursive evaluator.
+//
+// `idx_ctx` holds the current loop variable binding when called from inside a
+// `sum` body — e.g. Some(("i", 3)) means the symbol "i" resolves to 3.
+// It is passed through unchanged to all recursive calls.
+//
+// Two string forms are used:
+//   `expr` — original string with spaces, used for `sum` detection (spaces matter for " over ")
+//   `e`    — spaces removed, used for everything else (operators, literals, access expressions)
+fn eval_expr(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<f64> {
+    // `sum` must be detected before removing spaces because it uses " over " as a delimiter.
+    if let Some(result) = eval_sum(expr, p, s)? {
         return Ok(result);
     }
 
-    // Strip a single layer of outer parentheses.
-    let e = {
-        let e = orig.replace(' ', "");
-        if e.starts_with('(') && e.ends_with(')') && e.len() >= 2 {
-            e[1..e.len() - 1].to_string()
-        } else {
-            e
-        }
-    };
-
-    // Addition — split at top-level '+' and sum the parts.
-    if let Some(parts) = split_top_level(&e, '+') {
-        let mut total = 0.0;
-        for part in parts {
-            total += eval_scalar(part, p, s, idx_ctx)?;
-        }
-        return Ok(total);
+    // Arithmetic — evaluate left to right by splitting at top-level operators.
+    if let Some(parts) = split_at(expr, '+', false) {
+        return parts.iter().map(|part| eval_expr(part, p, s, idx_ctx)).sum();
     }
-
-    // Subtraction — split at top-level '-' (ignoring a leading unary minus).
-    if let Some(parts) = split_top_level_minus(&e) {
-        let mut iter = parts.into_iter();
-        let first = iter.next().ok_or_else(|| anyhow!("Empty subtraction"))?;
-        let mut acc = eval_scalar(&first, p, s, idx_ctx)?;
+    if let Some(parts) = split_at(expr, '-', true) {
+        let mut iter = parts.iter();
+        let first = iter.next().ok_or_else(|| anyhow!("Empty expression"))?;
+        let mut acc = eval_expr(first, p, s, idx_ctx)?;
         for part in iter {
-            acc -= eval_scalar(&part, p, s, idx_ctx)?;
+            acc -= eval_expr(part, p, s, idx_ctx)?;
         }
         return Ok(acc);
     }
-
-    // Multiplication — split at top-level '*' and multiply.
-    if let Some(parts) = split_top_level(&e, '*') {
-        let mut total = 1.0;
+    if let Some(parts) = split_at(expr, '*', false) {
+        let mut product = 1.0_f64;
         for part in parts {
-            total *= eval_scalar(part, p, s, idx_ctx)?;
+            product *= eval_expr(part, p, s, idx_ctx)?;
         }
-        return Ok(total);
+        return Ok(product);
     }
 
     // Numeric literal.
-    if let Ok(v) = e.parse::<f64>() {
+    if let Ok(v) = expr.parse::<f64>() {
         return Ok(v);
     }
 
-    // Problem parameter.
-    if let Some(&v) = p.params.get(&e) {
+    // Problem parameter (e.g. N, MaxWeight).
+    if let Some(&v) = p.params.get(expr) {
         return Ok(v);
     }
 
     // Variable access: x[i]
     let var_prefix = format!("{}[", p.var_name);
-    if e.starts_with(&var_prefix) && e.ends_with(']') {
-        let inside = &e[var_prefix.len()..e.len() - 1];
+    if expr.starts_with(var_prefix.as_str()) && expr.ends_with(']') {
+        let inside = &expr[var_prefix.len()..expr.len() - 1];
         let idx = eval_index(inside, p, s, idx_ctx)?;
         return p.var_at(s, idx);
     }
 
     // Class attribute access: item[i].weight
-    if let Some((left, attr)) = e.split_once("].") {
+    if let Some((left, attr)) = expr.split_once("].") {
         if let Some((class, idx_expr)) = left.split_once('[') {
             let idx = eval_index(idx_expr, p, s, idx_ctx)?;
             return p.class_attr_at(class, attr, idx);
         }
     }
 
-    // Matrix access: d[i,j]
-    if let Some((class, rest)) = e.split_once('[') {
+    // Matrix access: cost[i,j]  or  distance[city[i], city[i+1]]
+    if let Some((class, rest)) = expr.split_once('[') {
         if rest.ends_with(']') {
             let inside = &rest[..rest.len() - 1];
-            if let Some(parts) = split_top_level(inside, ',') {
-                if parts.len() >= 2 {
+            if let Some(parts) = split_at(inside, ',', false) {
+                if parts.len() == 2 {
                     let row = eval_index(parts[0], p, s, idx_ctx)?;
                     let col = eval_index(parts[1], p, s, idx_ctx)?;
                     return p.matrix_at(class, row, col);
@@ -162,16 +129,13 @@ fn eval_scalar(
         }
     }
 
-    bail!("Unsupported expression: '{}'", expr)
+    bail!("Cannot evaluate expression fragment: '{}'", expr)
 }
 
-// ── Sum expression ────────────────────────────────────────────────────────────
-
-/// Try to parse and evaluate a `sum <term> over <var>=(<a>:<b>)` expression.
-///
-/// Returns `Ok(None)` when the expression does not start with `sum`, so the
-/// caller can fall through to the rest of the grammar.
-fn try_eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
+// Evaluate a `sum <term> over <var>=(<lo>:<hi>)` expression.
+// Returns None if the expression does not start with "sum" (not an error).
+// Returns Some(total) on success.
+fn eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
     let Some(rest) = expr.strip_prefix("sum") else {
         return Ok(None);
     };
@@ -181,114 +145,98 @@ fn try_eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
         return Ok(None);
     };
 
-    let (idx_name, range_and_tail) = over_part
-        .split_once('=')
-        .ok_or_else(|| anyhow!("Malformed sum range in '{}'", expr))?;
+    // Parse "i=(1:N)" or "i=(1:N-1)"
+    let (var, bounds_str) = over_part.split_once('=')
+        .ok_or_else(|| anyhow!("Expected '=' in sum range, got '{}'", over_part))?;
 
-    let idx_name = idx_name.trim();
-    let after_open = range_and_tail
-        .trim()
-        .strip_prefix('(')
-        .ok_or_else(|| anyhow!("Malformed sum bounds in '{}'", expr))?;
+    let bounds_inner = bounds_str.trim()
+        .strip_prefix('(').ok_or_else(|| anyhow!("Expected '(' in sum bounds"))?
+        .split_once(')').ok_or_else(|| anyhow!("Expected ')' in sum bounds"))?;
 
-    let close = after_open
-        .find(')')
-        .ok_or_else(|| anyhow!("Malformed sum bounds in '{}'", expr))?;
+    let (range_raw, tail) = bounds_inner;
 
-    let range_raw = &after_open[..close];
-    let tail = after_open[close + 1..].trim();
+    let (lo_raw, hi_raw) = range_raw.split_once(':')
+        .ok_or_else(|| anyhow!("Expected ':' in sum range '{}'", range_raw))?;
 
-    let (a_raw, b_raw) = range_raw
-        .split_once(':')
-        .ok_or_else(|| anyhow!("Malformed sum bounds in '{}'", expr))?;
-
-    let a = eval_scalar(a_raw.trim(), p, s, None)? as i64;
-    let b = eval_scalar(b_raw.trim(), p, s, None)? as i64;
+    let lo = eval_expr(lo_raw.trim(), p, s, None)? as i64;
+    let hi = eval_expr(hi_raw.trim(), p, s, None)? as i64;
 
     let mut total = 0.0;
-    for i in a.min(b)..=a.max(b) {
-        total += eval_scalar(term.trim(), p, s, Some((idx_name, i as usize)))?;
+    let var = var.trim();
+    for i in lo.min(hi)..=lo.max(hi) {
+        total += eval_expr(term.trim(), p, s, Some((var, i as usize)))?;
     }
 
+    // Optional continuation after the closing paren: "+ distance[city[N], city[1]]"
+    let tail = tail.trim();
     if tail.is_empty() {
         return Ok(Some(total));
     }
-    if let Some(rest_tail) = tail.strip_prefix('+') {
-        return Ok(Some(total + eval_scalar(rest_tail.trim(), p, s, None)?));
+    if let Some(rest) = tail.strip_prefix('+') {
+        return Ok(Some(total + eval_expr(rest.trim(), p, s, None)?));
     }
-    if let Some(rest_tail) = tail.strip_prefix('-') {
-        return Ok(Some(total - eval_scalar(rest_tail.trim(), p, s, None)?));
+    if let Some(rest) = tail.strip_prefix('-') {
+        return Ok(Some(total - eval_expr(rest.trim(), p, s, None)?));
     }
 
-    bail!("Malformed sum tail in '{}': expected '+' or '-'", expr)
+    bail!("Unexpected continuation after sum: '{}'", tail)
 }
 
-// ── Index expression evaluator ────────────────────────────────────────────────
-
-/// Evaluate a 1-based index expression used inside `x[...]`, `item[...]`, etc.
-///
-/// Handles: integer literals, the current loop variable, loop variable ± offset,
-/// problem parameters, and nested variable reads.
-fn eval_index(
-    expr: &str,
-    p: &Problem,
-    s: &Solution,
-    idx_ctx: Option<(&str, usize)>,
-) -> Result<usize> {
+// Evaluate an index expression (always resolves to a 1-based usize).
+//
+// Handles:
+//   3          — integer literal
+//   i          — loop variable
+//   i+1, i-1  — loop variable ± offset
+//   N          — problem parameter
+//   x[k]       — variable value used as index (e.g. assignment[i] in TSP/assignment)
+fn eval_index(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<usize> {
     let e = expr.trim().replace(' ', "");
 
-    // Integer literal.
     if let Ok(v) = e.parse::<i64>() {
-        if v < 1 { bail!("Indices are 1-based; got {}", v); }
+        if v < 1 { bail!("Index must be >= 1, got {}", v); }
         return Ok(v as usize);
     }
 
-    // Loop variable and arithmetic on it (i, i+1, i-1, ...).
     if let Some((sym, i)) = idx_ctx {
         if e == sym {
             return Ok(i);
         }
-        if let Some((a, b)) = e.split_once('+') {
-            if a == sym {
-                let offset = b.parse::<i64>()?;
-                let v = i as i64 + offset;
-                if v < 1 { bail!("Index out of range: {}", v); }
-                return Ok(v as usize);
-            }
-        }
-        if let Some((a, b)) = e.split_once('-') {
-            if a == sym {
-                let offset = b.parse::<i64>()?;
-                let v = i as i64 - offset;
-                if v < 1 { bail!("Index out of range: {}", v); }
-                return Ok(v as usize);
+        // sym+offset or sym-offset
+        for (split_char, sign) in [('+', 1i64), ('-', -1i64)] {
+            if let Some((a, b)) = e.split_once(split_char) {
+                if a == sym {
+                    let offset: i64 = b.parse()?;
+                    let v = i as i64 + sign * offset;
+                    if v < 1 { bail!("Index out of range: {}", v); }
+                    return Ok(v as usize);
+                }
             }
         }
     }
 
-    // Problem parameter used as an index.
     if let Some(&v) = p.params.get(&e) {
         let v = v as i64;
         if v < 1 { bail!("Parameter '{}' used as index must be >= 1", e); }
         return Ok(v as usize);
     }
 
-    // Variable read used as an index: x[k].
+    // Variable value used as an index — e.g. assignment[i] in cost[i, assignment[i]]
     let var_prefix = format!("{}[", p.var_name);
-    if e.starts_with(&var_prefix) && e.ends_with(']') {
-        let inside = e.trim_start_matches(&var_prefix).trim_end_matches(']');
+    if e.starts_with(var_prefix.as_str()) && e.ends_with(']') {
+        let inside = e.trim_start_matches(var_prefix.as_str()).trim_end_matches(']');
         let pos = eval_index(inside, p, s, idx_ctx)?;
         return Ok(p.var_at(s, pos)? as usize);
     }
 
-    bail!("Unsupported index expression: '{}'", expr)
+    bail!("Cannot resolve index expression: '{}'", expr)
 }
 
-// ── Top-level split helpers ───────────────────────────────────────────────────
-
-/// Split `expr` by `op` only at the top level (not inside brackets).
-fn split_top_level<'a>(expr: &'a str, op: char) -> Option<Vec<&'a str>> {
-    let mut depth = 0_i32;
+// Split `expr` at every top-level occurrence of `op` (not inside brackets).
+// If `skip_leading` is true, a `-` at position 0 is left alone (unary minus).
+// Returns None if `op` does not appear at the top level.
+fn split_at<'a>(expr: &'a str, op: char, skip_leading: bool) -> Option<Vec<&'a str>> {
+    let mut depth = 0i32;
     let mut parts = Vec::new();
     let mut last = 0;
     let mut found = false;
@@ -299,7 +247,7 @@ fn split_top_level<'a>(expr: &'a str, op: char) -> Option<Vec<&'a str>> {
             ')' | ']' => depth -= 1,
             _ => {}
         }
-        if depth == 0 && c == op {
+        if depth == 0 && c == op && !(skip_leading && i == 0) {
             parts.push(&expr[last..i]);
             last = i + 1;
             found = true;
@@ -313,81 +261,43 @@ fn split_top_level<'a>(expr: &'a str, op: char) -> Option<Vec<&'a str>> {
         None
     }
 }
-
-/// Split on subtraction at the top level, preserving a leading unary minus.
-fn split_top_level_minus(expr: &str) -> Option<Vec<&str>> {
-    let mut depth = 0_i32;
-    let mut parts = Vec::new();
-    let mut last = 0;
-    let mut found = false;
-
-    for (i, c) in expr.char_indices() {
-        match c {
-            '(' | '[' => depth += 1,
-            ')' | ']' => depth -= 1,
-            _ => {}
-        }
-        // Skip i == 0 to leave a leading '-' as a unary minus.
-        if depth == 0 && c == '-' && i != 0 {
-            parts.push(&expr[last..i]);
-            last = i + 1;
-            found = true;
-        }
-    }
-
-    if found {
-        parts.push(&expr[last..]);
-        Some(parts)
-    } else {
-        None
-    }
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn tsp() -> Problem {
-        let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../examples/tsp.json")).unwrap();
-        Problem::from_json(v).unwrap()
-    }
-
-    fn knapsack() -> Problem {
-        let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
-        Problem::from_json(v).unwrap()
+    fn load(json: &str) -> Problem {
+        let v: serde_json::Value = serde_json::from_str(json).unwrap();
+        Problem::try_from(v).unwrap()
     }
 
     #[test]
-    fn knapsack_goal_evaluates() {
-        let p = knapsack();
-        // [1,1,1,1,0] — all but last item selected
-        let s = Solution::Vector(vec![1.0, 1.0, 1.0, 1.0, 0.0]);
-        let goals = p.eval_goals(&s).unwrap();
-        assert_eq!(goals.len(), 1);
+    fn knapsack_goal_and_constraint() {
+        let p = load(include_str!("../../examples/knapsack.json"));
+        let selected = Solution::Vector(vec![1.0, 1.0, 1.0, 1.0, 0.0]);
+        let goals = p.eval_goals(&selected).unwrap();
         assert!(goals[0] > 0.0);
+        assert!(p.is_feasible(&selected).unwrap());
+
+        let all = Solution::Vector(vec![1.0; p.var_size()]);
+        assert!(!p.is_feasible(&all).unwrap());
     }
 
     #[test]
     fn tsp_goal_evaluates() {
-        let p = tsp();
-        // Identity permutation [0,1,2,3]
-        let s = Solution::Permutation(vec![0, 1, 2, 3]);
-        let goals = p.eval_goals(&s).unwrap();
+        let p = load(include_str!("../../examples/tsp.json"));
+        let sol = Solution::Permutation(vec![0, 1, 2, 3]);
+        let goals = p.eval_goals(&sol).unwrap();
         assert!((goals[0] - 75.0).abs() < 1e-6, "expected 75, got {}", goals[0]);
     }
 
     #[test]
-    fn constraint_lte_passes_and_fails() {
-        let p = knapsack();
-        let feasible = Solution::Vector(vec![0.0; p.var_size()]);
-        assert!(p.is_feasible(&feasible).unwrap());
-
-        // All-ones is infeasible for the knapsack weight constraint
-        let infeasible = Solution::Vector(vec![1.0; p.var_size()]);
-        assert!(!p.is_feasible(&infeasible).unwrap());
+    fn chained_comparison() {
+        let p = load(include_str!("../../examples/knapsack.json"));
+        let sol = Solution::Vector(vec![0.0; p.var_size()]);
+        // "0 <= 0 <= 1" should pass
+        assert!(eval_constraint("0 <= 0 <= 1", &p, &sol).unwrap());
+        // "0 <= 2 <= 1" should fail
+        assert!(!eval_constraint("0 <= 2 <= 1", &p, &sol).unwrap());
     }
 }
