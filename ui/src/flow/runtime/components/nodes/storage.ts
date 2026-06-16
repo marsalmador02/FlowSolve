@@ -109,16 +109,27 @@ export class StorageComponent extends RuntimeComponent {
     }
 
     if (Array.isArray(incoming.solutionSet) && incoming.solutionSet.length > 0) {
-      const set = incoming.solutionSet;
-      
-      if (set.length > 0) {
-        const best = set[0] as SolutionLike;
+      const set = [...incoming.solutionSet] as SolutionLike[];
+
+      const response = await callRuntimeExecute({
+        problem: ctx.problem,
+        execution: {
+          mode: 'select-best',
+          payload: { candidates: set },
+        },
+      });
+
+      const best = (response.payload as { winner?: SolutionLike })?.winner;
+      if (best) {
+        const filtered = set.filter((sol) => !solutionsEqualByVars(sol, best));
+        set.splice(0, set.length, best, ...filtered);
+
         const score = solutionScore(best);
         if (Number.isFinite(score)) {
           history.push(score);
         }
       }
-      
+
       ctx.updateNodeData({
         solutionSet: toPretty(set),
         setSize: set.length,

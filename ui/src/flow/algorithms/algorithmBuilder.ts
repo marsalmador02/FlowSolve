@@ -1,7 +1,6 @@
 import type { FlowNodeData } from '../../types/flow';
 import {
   buildGraspTemplate,
-  buildEvolutionaryTemplate,
   buildIlsTemplate,
   buildSimulatedAnnealingTemplate,
   buildTabuTemplate,
@@ -12,19 +11,23 @@ type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
 export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulatedAnnealing';
 
+const ALGORITHM_LABELS: Record<AlgorithmTemplateKey, string> = {
+  grasp: 'GRASP',
+  ils: 'ILS',
+  vns: 'VNS',
+  tabu: 'TabuSearch',
+  simulatedAnnealing: 'SimulatedAnnealing',
+};
+
 export function buildAlgorithmTemplate(kind: AlgorithmTemplateKey, updateNodeData: UpdateNodeData) {
-  switch (kind) {
-    case 'grasp':
-      return buildGraspTemplate(updateNodeData);
-    case 'ils':
-      return buildIlsTemplate(updateNodeData);
-    case 'vns':
-      return buildVnsTemplate(updateNodeData);
-    case 'tabu':
-      return buildTabuTemplate(updateNodeData);
-    case 'simulatedAnnealing':
-      return buildSimulatedAnnealingTemplate(updateNodeData);
-    default:
-      return buildGraspTemplate(updateNodeData);
-  }
+  const builders = {
+    grasp: buildGraspTemplate,
+    ils: buildIlsTemplate,
+    vns: buildVnsTemplate,
+    tabu: buildTabuTemplate,
+    simulatedAnnealing: buildSimulatedAnnealingTemplate,
+  };
+
+  const graph = builders[kind](updateNodeData);
+  return { ...graph, algorithmName: ALGORITHM_LABELS[kind] };
 }

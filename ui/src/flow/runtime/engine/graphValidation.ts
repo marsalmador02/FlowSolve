@@ -9,16 +9,17 @@
  * - Exactly one loop (`termination`) node.
  * - Required arity constraints for join-like nodes.
  */
-import type { FlowEdge, FlowNode, NodeKind } from '../../../types/flow';
+import { Edge } from 'reactflow';
+import type { FlowNode, NodeKind } from '../../../types/flow';
 
-function collectIncoming(edges: FlowEdge[], nodeId: string): FlowEdge[] {
+function collectIncoming(edges: Edge[], nodeId: string): Edge[] {
   return edges.filter((edge) => edge.target === nodeId);
 }
 
 /**
  * Validate graph constraints required by the packet executor.
  */
-export function validateGraph(nodes: FlowNode[], edges: FlowEdge[]) {
+export function validateGraph(nodes: FlowNode[], edges: Edge[]) {
   const errors: string[] = [];
 
   const starts = nodes.filter((n) => n.data?.start === true && n.type !== 'problem');

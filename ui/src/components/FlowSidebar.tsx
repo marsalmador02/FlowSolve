@@ -21,7 +21,6 @@ interface SidebarPaletteItem {
 interface CustomTemplateItem {
   id: string;
   name: string;
-  createdAt: string;
 }
 
 // Props contract for sidebar actions exposed to the parent App.
@@ -30,13 +29,11 @@ interface FlowSidebarProps {
   onLoadIlsTemplate: () => void;
   onLoadVnsTemplate: () => void;
   onLoadTabuTemplate: () => void;
-  onLoadSaTemplate: () => void;
   customTemplates: CustomTemplateItem[];
   onSaveCustomTemplate: () => void;
   onLoadCustomTemplate: (templateId: string) => void;
   onDeleteCustomTemplate: (templateId: string) => void;
   onExportCustomTemplate: (templateId: string) => void;
-  onImportCustomTemplate: (rawJson: string) => void;
   generationPaletteItems: SidebarPaletteItem[];
   modificationPaletteItems: SidebarPaletteItem[];
   otherPaletteItems: SidebarPaletteItem[];
@@ -63,13 +60,11 @@ export function FlowSidebar({
   onLoadIlsTemplate,
   onLoadVnsTemplate,
   onLoadTabuTemplate,
-  onLoadSaTemplate,
   customTemplates,
   onSaveCustomTemplate,
   onLoadCustomTemplate,
   onDeleteCustomTemplate,
   onExportCustomTemplate,
-  onImportCustomTemplate,
   generationPaletteItems,
   modificationPaletteItems,
   otherPaletteItems,
@@ -90,9 +85,6 @@ export function FlowSidebar({
           </button>
           <button className="toolbar-button" onClick={onLoadTabuTemplate}>
             Load Tabu Search Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadSaTemplate}>
-            Load Simulated Annealing Template
           </button>
         </details>
 

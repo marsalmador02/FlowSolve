@@ -277,7 +277,7 @@ body,
 }
 
 .custom-node {
-  width: 250px;
+  width: 275px;
   padding: 16px;
   border-radius: 16px;
   background: var(--color-turquoise);
@@ -370,6 +370,7 @@ body,
 
 .solution-text {
   font-size: 14px;
+  white-space: pre-wrap;
   padding: 6px;
 }
 

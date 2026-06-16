@@ -96,7 +96,6 @@ export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
     }
 
     ctx.updateNodeData({
-      solution: toPretty(winner),
       decisionSummary: formatCompact(winner),
     });
     const candScore = formatScore(solutionScore(candidate));

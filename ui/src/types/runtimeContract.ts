@@ -42,13 +42,11 @@ export interface RuntimeExecutionPayload {
   mutationRate?: number;
   mutationRateExpression?: string;
   maxAttempts?: number;
-  maxAttemptsExpression?: string;
   k?: number;
   kExpression?: string;
   neighborhood?: number;
   neighborhoodExpression?: string;
   maxNeighbors?: number;
-  maxNeighborsExpression?: string;
 }
 
 export interface RuntimeSolverResult {

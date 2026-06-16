@@ -40,7 +40,6 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     const forwarded = accepted as SolutionLike;
 
     ctx.updateNodeData({
-      solution: toPretty(forwarded),
       temperatureCurrent: nextTemp,
     });
 
