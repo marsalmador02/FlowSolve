@@ -1,9 +1,3 @@
-/**
- * Pre-built flow graphs (nodes + edges) for algorithm templates.
- *
- * Each builder defines the node set, execution order, and default parameters
- * expected by the corresponding algorithmic pattern.
- */
 import { MarkerType } from 'reactflow';
 import { COMPONENT_LABELS } from '../constants/flowCatalog';
 import { KNAPSACK_TEMPLATE_JSON, TSP_TEMPLATE_JSON } from '../constants/problemTemplates';
@@ -12,12 +6,7 @@ import type { FlowEdge, FlowNode, FlowNodeData } from '../types/flow';
 export type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
 function mkEdge(id: string, source: string, target: string): FlowEdge {
-  return {
-    id,
-    source,
-    target,
-    markerEnd: { type: MarkerType.ArrowClosed },
-  };
+  return { id, source, target, markerEnd: { type: MarkerType.ArrowClosed } };
 }
 
 function mkUpdater(nodeId: string, updateNodeData: UpdateNodeData) {
@@ -492,100 +481,6 @@ export function buildSimulatedAnnealingTemplate(updateNodeData: UpdateNodeData) 
     mkEdge('e-perturbation-temp-acceptance', 'perturbation-template', 'temperature-acceptance-template'),
     mkEdge('e-temp-acceptance-reduce', 'temperature-acceptance-template', 'reduce-temperature-template'),
     mkEdge('e-reduce-loop', 'reduce-temperature-template', 'termination-template'),
-  ];
-
-  return { nodes, edges };
-}
-
-export function buildEvolutionaryTemplate(updateNodeData: UpdateNodeData) {
-  const nodes: FlowNode[] = [
-    {
-      id: 'problem',
-      type: 'problem',
-      position: { x: 80, y: 270 },
-      data: {
-        label: COMPONENT_LABELS.Problem,
-        json: KNAPSACK_TEMPLATE_JSON,
-        trace: '',
-        onUpdate: mkUpdater('problem', updateNodeData),
-      },
-    },
-    {
-      id: 'population-template',
-      type: 'populationGeneration',
-      position: { x: 420, y: 110 },
-      data: {
-        label: COMPONENT_LABELS.PopulationGenerationComponent,
-        trace: '',
-        populationSize: 10,
-        solutionSet: '[]',
-        setSize: 0,
-        start: true,
-        onUpdate: mkUpdater('population-template', updateNodeData),
-      },
-    },
-    {
-      id: 'termination-template',
-      type: 'termination',
-      position: { x: 760, y: 110 },
-      data: {
-        label: COMPONENT_LABELS.LoopComponent,
-        trace: '',
-        maxIterations: 10,
-        iteration: 0,
-        shouldStop: false,
-        end: true,
-        status: 'ready',
-        onUpdate: mkUpdater('termination-template', updateNodeData),
-      },
-    },
-    {
-      id: 'selection-template',
-      type: 'selection',
-      position: { x: 1090, y: 30 },
-      data: {
-        label: COMPONENT_LABELS.SelectionComponent,
-        trace: '',
-        tournamentSize: 3,
-        eliteSize: 1,
-        solutionSet: '[]',
-        setSize: 0,
-        onUpdate: mkUpdater('selection-template', updateNodeData),
-      },
-    },
-    {
-      id: 'crossover-template',
-      type: 'crossover',
-      position: { x: 1420, y: 110 },
-      data: {
-        label: COMPONENT_LABELS.CrossoverComponent,
-        trace: '',
-        solutionSet: '[]',
-        setSize: 0,
-        onUpdate: mkUpdater('crossover-template', updateNodeData),
-      },
-    },
-    {
-      id: 'mutation-template',
-      type: 'mutation',
-      position: { x: 1750, y: 110 },
-      data: {
-        label: COMPONENT_LABELS.MutationComponent,
-        trace: '',
-        mutationRate: 0.25,
-        solutionSet: '[]',
-        setSize: 0,
-        onUpdate: mkUpdater('mutation-template', updateNodeData),
-      },
-    },
-  ];
-
-  const edges: FlowEdge[] = [
-    mkEdge('e-population-loop', 'population-template', 'termination-template'),
-    mkEdge('e-loop-selection', 'termination-template', 'selection-template'),
-    mkEdge('e-selection-crossover', 'selection-template', 'crossover-template'),
-    mkEdge('e-crossover-mutation', 'crossover-template', 'mutation-template'),
-    mkEdge('e-mutation-loop', 'mutation-template', 'termination-template'),
   ];
 
   return { nodes, edges };

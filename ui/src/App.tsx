@@ -23,10 +23,10 @@ import ReactFlow, {
   MiniMap,
   MarkerType,
   Connection,
-  Edge,
   NodeChange,
   EdgeChange,
   ReactFlowInstance,
+  Edge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { KNAPSACK_TEMPLATE_JSON } from './constants/problemTemplates';
@@ -34,230 +34,79 @@ import { COMPONENT_LABELS } from './constants/flowCatalog';
 import { flowNodeTypes } from './components/flowNodes';
 import { FlowSidebar } from './components/FlowSidebar';
 import { ExecutionPanel } from './components/ExecutionPanel';
-import { buildAlgorithmTemplate } from './flow/algorithms/algorithmBuilder';
-import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from './types/flow';
+import { buildAlgorithmTemplate, type AlgorithmTemplateKey } from './flow/algorithms/algorithmBuilder';
+import type { FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
 import { buildExecutionCsvFromGraph, downloadCsv, getProblemInstanceName } from './utils/executionCsv';
-
-interface StoredTemplateNode {
-  id: string;
-  type: NodeKind;
-  position: { x: number; y: number };
-  data: FlowNodeData;
-}
 
 interface StoredTemplate {
   id: string;
   name: string;
-  createdAt: string;
-  nodes: StoredTemplateNode[];
-  edges: FlowEdge[];
-}
-
-interface SidebarPaletteItem {
-  kind: string;
-  label: string;
-}
-
-function downloadTextFile(filename: string, contents: string) {
-  const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' });
-  const url = window.URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  window.URL.revokeObjectURL(url);
+  nodes: Array<{ id: string; type: NodeKind; position: { x: number; y: number }; data: FlowNodeData }>;
+  edges: Edge[];
 }
 
 const CUSTOM_TEMPLATES_STORAGE_KEY = 'prodef.ui.customTemplates';
 
-const EMOJI_BY_SIDEBAR_KIND: Record<string, string> = {
-  Problem: '📄',
-  SingleSolutionGenerationComponent: '🧪',
-  PopulationGenerationComponent: '👥',
-  SelectionComponent: '🎯',
-  CrossoverComponent: '🧬',
-  MutationComponent: '🧫',
-  LocalSearchComponent: '🔍',
-  PerturbationComponent: '🌪️',
-  TemperatureAcceptanceComponent: '🌡️',
-  ReduceTemperatureComponent: '❄️',
-  ChangeNeighbourhoodComponent: '🧭',
-  NeighbourhoodComponent: '🧩',
-  SubtractionComponent: '➖',
-  SelectionOfBestComponent: '🏆',
-  StorageComponent: '📦',
-  LoopComponent: '🔁',
-  AcceptanceComponent: '✅',
-};
+function downloadFile(fileName: string, content: string, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
 
-function withLeadingEmoji(label: string, sidebarKind: string): string {
-  const emoji = EMOJI_BY_SIDEBAR_KIND[sidebarKind];
-  if (!emoji) {
-    return label;
-  }
-  const trimmed = label.trim();
-  if (!trimmed) {
-    return `${emoji} ${sidebarKind}`;
-  }
-  if (trimmed.startsWith(emoji)) {
-    return trimmed;
-  }
-  return `${emoji} ${trimmed}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 200);
 }
 
-function sanitizeNodeDataForTemplate(data: FlowNodeData): FlowNodeData {
-  const {
-    onUpdate,
-    isRunning,
-    error,
-    trace,
-    solution,
-    solutionSet,
-    decisionSummary,
-    history,
-    acceptCount,
-    bestSolution,
-    bestScore,
-    currentSolution,
-    currentScore,
-    temperatureCurrent,
-    neighborhoodValue,
-    neighborhoodInfo,
-    iteration,
-    shouldStop,
-    status,
-    ...rest
-  } = data;
-  return {
-    ...rest,
-    trace: '',
-    error: undefined,
-    isRunning: false,
-  };
-}
+function loadTemplatesFromStorage(): StoredTemplate[] {
+    let existingTemplates = JSON.parse(localStorage.getItem(CUSTOM_TEMPLATES_STORAGE_KEY) as string);
 
-function estimateNextNodeId(nodes: Array<{ id: string }>) {
-  let maxId = 0;
-  for (const node of nodes) {
-    const match = node.id.match(/-(\d+)$/);
-    if (!match) {
-      continue;
+    if (existingTemplates == null) {
+      existingTemplates = [];
     }
-    const parsed = Number(match[1]);
-    if (Number.isFinite(parsed) && parsed >= maxId) {
-      maxId = parsed + 1;
-    }
-  }
-  return Math.max(1, maxId);
+
+    return existingTemplates;
 }
 
-// Top-level React component for the interactive flow builder.
 export default function App() {
-  const othimiColorImage = '/othimi_color.png';
-
   const [nodes, setNodes] = useState<FlowNode[]>([]);
-  const [edges, setEdges] = useState<FlowEdge[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNode, setSelectedNode] = useState<FlowNode | null>(null);
   const [globalTrace, setGlobalTrace] = useState<string[]>([]);
   const [executionHistories, setExecutionHistories] = useState<number[][]>([]);
-  const [neighborhoodSize, setNeighborhoodSize] = useState(1);
-  const [customTemplates, setCustomTemplates] = useState<StoredTemplate[]>([]);
-  const [generationPaletteItems, setGenerationPaletteItems] = useState<SidebarPaletteItem[]>([]);
-  const [modificationPaletteItems, setModificationPaletteItems] = useState<SidebarPaletteItem[]>([]);
-  const [otherPaletteItems, setOtherPaletteItems] = useState<SidebarPaletteItem[]>([]);
-  const [isCustomTemplatesHydrated, setIsCustomTemplatesHydrated] = useState(false);
-  const [executionAlgorithm, setExecutionAlgorithm] = useState('Custom');
+  const [customTemplates, setCustomTemplates] = useState<StoredTemplate[]>(loadTemplatesFromStorage);
+  const algorithmNameRef = useRef('Custom');
+
   const nodeId = useRef(0);
   const rfInstance = useRef<ReactFlowInstance | null>(null);
   const nodesRef = useRef<FlowNode[]>([]);
-  const edgesRef = useRef<FlowEdge[]>([]);
+  const edgesRef = useRef<Edge[]>([]);
   const activeIterationRef = useRef<number | null>(null);
   const neighborhoodSizeRef = useRef(1);
 
-  // Keep imperative node access synchronized for async runner operations.
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { edgesRef.current = edges; }, [edges]);
   useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
+      localStorage.setItem(CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(customTemplates));
+  }, [customTemplates]);
 
-  // Keep imperative edge access synchronized for connectivity checks.
-  useEffect(() => {
-    edgesRef.current = edges;
-  }, [edges]);
+  const generationKinds = ['SingleSolutionGenerationComponent'];
+  const modificationKinds = [
+    'LocalSearchComponent', 'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
+    'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubtractionComponent', 'SelectionOfBestComponent',
+  ];
+  const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent'];
 
-  // Mirror neighborhood state into a ref consumed by callbacks.
-  useEffect(() => {
-    neighborhoodSizeRef.current = neighborhoodSize;
-  }, [neighborhoodSize]);
+  const makePaletteItems = (kinds: string[]) =>
+    kinds.map((k) => ({ kind: k, label: COMPONENT_LABELS[k as keyof typeof COMPONENT_LABELS] }));
 
-  // Load user-defined templates from local storage once on app start.
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(CUSTOM_TEMPLATES_STORAGE_KEY);
-      if (!raw) {
-        setIsCustomTemplatesHydrated(true);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        setIsCustomTemplatesHydrated(true);
-        return;
-      }
-      const normalized: StoredTemplate[] = parsed
-        .filter((item) => (
-          item
-          && typeof item.id === 'string'
-          && typeof item.name === 'string'
-          && Array.isArray(item.nodes)
-          && Array.isArray(item.edges)
-        ))
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date().toISOString(),
-          nodes: item.nodes.map((node: StoredTemplateNode) => ({
-            ...node,
-            data: sanitizeNodeDataForTemplate(node.data),
-          })),
-          edges: item.edges,
-        }));
-      setCustomTemplates(normalized);
-    } catch {
-      setCustomTemplates([]);
-    } finally {
-      setIsCustomTemplatesHydrated(true);
-    }
-  }, []);
-
-  // Persist user-defined templates whenever they change.
-  useEffect(() => {
-    if (!isCustomTemplatesHydrated) {
-      return;
-    }
-    try {
-      window.localStorage.setItem(CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(customTemplates));
-    } catch {
-      // Ignore persistence errors (quota/privacy mode) and keep in-memory state.
-    }
-  }, [customTemplates, isCustomTemplatesHydrated]);
-
-  useEffect(() => {
-    const generationKinds = ['SingleSolutionGenerationComponent', 'PopulationGenerationComponent'];
-    const modificationKinds = [
-      'SelectionComponent', 'CrossoverComponent', 'MutationComponent', 'LocalSearchComponent',
-      'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
-      'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubtractionComponent', 'SelectionOfBestComponent',
-    ];
-    const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent'];
-
-    const make = (kinds: string[]) => kinds.map((k) => ({ kind: k, label: withLeadingEmoji(COMPONENT_LABELS[k as keyof typeof COMPONENT_LABELS] ?? k, k) }));
-
-    setGenerationPaletteItems(make(generationKinds));
-    setModificationPaletteItems(make(modificationKinds));
-    setOtherPaletteItems(make(otherKinds));
-  }, []);
+  const generationPaletteItems = makePaletteItems(generationKinds);
+  const modificationPaletteItems = makePaletteItems(modificationKinds);
+  const otherPaletteItems = makePaletteItems(otherKinds);
 
   const {
     getNodeByType,
@@ -274,19 +123,40 @@ export default function App() {
     setSelectedNode,
     setGlobalTrace,
     appendExecutionHistory: (history: number[]) => {
-      if (!Array.isArray(history) || history.length === 0) {
-        return;
+      if (history.length > 0) {
+        setExecutionHistories((prev) => [...prev, [...history]]);
       }
-      setExecutionHistories((prev) => [...prev, [...history]]);
     },
-    setNeighborhoodSize,
+    setNeighborhoodSize: (size) => {
+      neighborhoodSizeRef.current = typeof size === 'function'
+        ? size(neighborhoodSizeRef.current)
+        : size;
+},
   });
 
-  const resetRuntimeState = useCallback((options: {
-    clearTrace: boolean;
-    clearExecutionHistories: boolean;
-    clearSelection: boolean;
-  }) => {
+  const createDefaultProblemNode = useCallback((): FlowNode => ({
+    id: 'problem',
+    type: 'problem',
+    position: { x: 80, y: 80 },
+    connectable: true,
+    data: {
+      label: COMPONENT_LABELS.Problem,
+      start: false,
+      end: false,
+      trace: '',
+      json: KNAPSACK_TEMPLATE_JSON,
+      onUpdate: (patch) => updateNodeData('problem', patch),
+    },
+  }), [updateNodeData]);
+
+  useEffect(() => {
+    setNodes((prev) => {
+      if (prev.some((n) => n.type === 'problem')) return prev;
+      return [createDefaultProblemNode(), ...prev];
+    });
+  }, [createDefaultProblemNode]);
+
+  const resetRuntimeState = useCallback((options: { clearTrace: boolean; clearExecutionHistories: boolean; clearSelection: boolean }) => {
     const { clearTrace, clearExecutionHistories, clearSelection } = options;
     if (clearTrace) {
       setGlobalTrace([]);
@@ -294,82 +164,86 @@ export default function App() {
     if (clearExecutionHistories) {
       setExecutionHistories([]);
     }
-    setExecutionAlgorithm('Custom');
     activeIterationRef.current = null;
     setNeighborhoodLevel(1);
-    setNodes((prev) => prev.map((node) => {
-      const baseData: Partial<typeof node.data> = {
-        trace: '',
-        error: undefined,
-        isRunning: false,
-      };
-
-      if (node.type === 'termination') {
-        const maxIterations = Math.max(1, Number(node.data.maxIterations ?? 10));
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            iteration: 0,
-            shouldStop: false,
-            status: `continue: 0/${maxIterations}`,
-            solutionSet: undefined,
-            solution: undefined,
-            history: [],
-          },
-        };
-      }
-
-      if (node.type === 'storage') {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            ...baseData,
-            acceptCount: 0,
-            solutionSet: undefined,
-            solution: undefined,
-            setSize: 0,
-            history: [],
-          },
-        };
-      }
-
-if (node.type === 'temperatureAcceptance') {
-  return {
-    ...node,
-    data: {
-      ...node.data,
-      ...baseData,
-      temperatureCurrent: 100,
-    },
-  };
-}
-
-  if (node.type === 'reduceTemperature') {
-    return {
-      ...node,
-      data: {
-        ...node.data,
-        ...baseData,
-        temperatureCurrent: 100,
-      },
-    };
-  }
-
-      return {
-        ...node,
-        data: {
+    setNodes((prev) =>
+      prev.map((node) => {
+        const baseData = {
           ...node.data,
-          ...baseData,
-        },
-      };
-    }));
+          trace: '',
+          error: undefined,
+          isRunning: false,
+          solution: undefined,
+          solutionSet: undefined,
+          decisionSummary: undefined,
+          history: [],
+        };
+
+        if (node.type === 'termination') {
+          const maxIterations = Math.max(1, Number(node.data.maxIterations ?? 10));
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              iteration: 0,
+              shouldStop: false,
+              status: `continue: 0/${maxIterations}`,
+            },
+          };
+        }
+
+        if (node.type === 'storage') {
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              acceptCount: 0,
+              setSize: 0,
+            },
+          };
+        }
+
+        if (node.type === 'temperatureAcceptance' || node.type === 'reduceTemperature') {
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              temperatureCurrent: 100,
+            },
+          };
+        }
+
+        if (node.type === 'changeNeighborhood') {
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              neighborhoodValue: 1,
+              neighborhoodInfo: undefined,
+            },
+          };
+        }
+
+        if (node.type === 'neighborhood' || node.type === 'subtraction') {
+          return {
+            ...node,
+            data: {
+              ...baseData,
+              setSize: 0,
+            },
+          };
+        }
+
+        return {
+          ...node,
+          data: baseData,
+        };
+      })
+    );
     if (clearSelection) {
       setSelectedNode(null);
     }
-  }, [setExecutionHistories, setNeighborhoodLevel, setNodes]);
+  }, [setNeighborhoodLevel]);
 
   const resetFlow = useCallback(() => {
     resetRuntimeState({
@@ -389,378 +263,150 @@ if (node.type === 'temperatureAcceptance') {
     await runFlowUntilEnd();
   }, [resetRuntimeState, runFlowUntilEnd]);
 
-  const createDefaultProblemNode = useCallback((): FlowNode => {
-    const id = 'problem';
-    return {
-      id,
-      type: 'problem',
-      position: { x: 80, y: 80 },
-      connectable: true,
-      data: {
-        label: COMPONENT_LABELS.Problem,
-        start: false,
-        end: false,
-        trace: '',
-        error: undefined,
-        json: KNAPSACK_TEMPLATE_JSON,
-        onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(id, patch),
-      },
-    };
-  }, [updateNodeData]);
-
-  const onExportCsv = useCallback(() => {
-    try {
-      const problemNode = getNodeByType('problem');
-      const instance = getProblemInstanceName(problemNode?.data.json);
-
-      const csv = buildExecutionCsvFromGraph({
-        nodes,
-        edges,
-        instance,
-        executionHistories,
-      });
-
-      if (!csv || csv.length === 0) {
-        return;
-      }
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      downloadCsv(`prodef-metrics-${timestamp}.csv`, csv);
-    } catch {
-      // Ignore export failures silently.
-    }
-  }, [edges, executionHistories, getNodeByType, nodes]);
-
-  // Ensure the editor always starts with one Problem node.
-  useEffect(() => {
-    setNodes((prev) => {
-      if (prev.some((node) => node.type === 'problem')) {
-        return prev;
-      }
-      return [createDefaultProblemNode(), ...prev];
-    });
-  }, [createDefaultProblemNode]);
-
-  // Store React Flow instance to support fitView and imperative actions.
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    rfInstance.current = instance;
-  }, []);
-
-  // Create a new graph node with defaults based on the dragged component kind.
-  const createNode = useCallback((kind: string, position: { x: number; y: number }): FlowNode => {
-    const typeMap: Record<string, NodeKind> = {
-      Problem: 'problem',
-      SingleSolutionGenerationComponent: 'singleSolution',
-      PopulationGenerationComponent: 'populationGeneration',
-      SelectionComponent: 'selection',
-      CrossoverComponent: 'crossover',
-      MutationComponent: 'mutation',
-      LocalSearchComponent: 'localSearch',
-      PerturbationComponent: 'perturbation',
-      TemperatureAcceptanceComponent: 'temperatureAcceptance',
-      ReduceTemperatureComponent: 'reduceTemperature',
-      NeighbourhoodComponent: 'neighborhood',
-      ChangeNeighbourhoodComponent: 'changeNeighborhood',
-      SubtractionComponent: 'subtraction',
-      SelectionOfBestComponent: 'selectionBest',
-      StorageComponent: 'storage',
-      LoopComponent: 'termination',
-      AcceptanceComponent: 'acceptance',
-    };
-
-    const type = typeMap[kind] ?? 'problem';
-    const id = kind === 'Problem' ? 'problem' : `${type}-${nodeId.current++}`;
-
-    const data: FlowNodeData = {
-      label: withLeadingEmoji(COMPONENT_LABELS[kind as keyof typeof COMPONENT_LABELS] ?? kind, kind),
-      start: false,
-      end: false,
-      trace: '',
-      error: undefined,
-      onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(id, patch),
-    };
-
-    if (type === 'problem') {
-      data.json = KNAPSACK_TEMPLATE_JSON;
-    }
-    if (type === 'acceptance') {
-      data.policy = 'bestOnly';
-      data.threshold = 0;
-    }
-    if (type === 'populationGeneration') {
-      data.populationSize = 10;
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-    if (type === 'selection') {
-      data.tournamentSize = 3;
-      data.eliteSize = 1;
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-    if (type === 'crossover') {
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-    if (type === 'mutation') {
-      data.mutationRate = 0.25;
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-    if (type === 'temperatureAcceptance') {
-      data.temperatureCurrent = 100;
-    }
-    if (type === 'storage') {
-      data.history = [];
-      data.acceptCount = 0;
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-    if (type === 'termination') {
-      data.maxIterations = 10;
-      data.iteration = 0;
-      data.shouldStop = false;
-      data.status = 'ready';
-    }
-    if (type === 'changeNeighborhood') {
-      data.neighborhoodValue = neighborhoodSizeRef.current;
-      data.neighborhoodInfo = `k=${neighborhoodSizeRef.current}`;
-    }
-    if (type === 'neighborhood' || type === 'subtraction') {
-      data.solutionSet = '[]';
-      data.setSize = 0;
-    }
-
-    return {
-      id,
-      type,
-      position,
-      data,
-      connectable: true,
-    };
-  }, [updateNodeData, neighborhoodSizeRef]);
-
-  // Handle dropping a component kind onto the canvas and append a new node.
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      const reactFlowBounds = (event.target as HTMLElement).getBoundingClientRect();
-      const kind = event.dataTransfer.getData('application/reactflow');
-      if (!kind) {
-        return;
-      }
-
-      if (kind === 'Problem' && nodesRef.current.some((n) => n.type === 'problem')) {
-        return;
-      }
-
-      const x = event.clientX - reactFlowBounds.left;
-      const y = event.clientY - reactFlowBounds.top;
-      const position = rfInstance.current ? rfInstance.current.project({ x, y }) : { x, y };
-
-      setNodes((nds) => nds.concat(createNode(kind, position)));
-    },
-    [createNode]
-  );
-
-  // Keep React Flow state synchronized with the local React state array.
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodes((currentNodes) => applyNodeChanges(changes, currentNodes));
-  }, []);
-
-  // Keep edge edits synchronized with local state.
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((currentEdges) => applyEdgeChanges(changes, currentEdges));
-  }, []);
-
-  // Mirror the current selection into the inspector panel.
-  const onSelectionChange = useCallback((selection: { nodes: FlowNode[] }) => {
-    setSelectedNode(selection.nodes[0] ?? null);
-  }, []);
-
-  // Add a directed edge with the default arrow marker.
-  const onConnect = useCallback((connection: Connection) => {
-    setEdges((currentEdges) => addEdge({
-      ...connection,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-      },
-    }, currentEdges));
-  }, []);
-
-  // Prevent the browser from blocking drop events over the canvas.
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
 
   const loadTemplateGraph = useCallback(
-    (template: { nodes: FlowNode[]; edges: FlowEdge[] }, algorithmName = 'Custom') => {
-      const sanitizedNodes = template.nodes.map((node) => ({
+    (template: { nodes: FlowNode[]; edges: Edge[]; algorithmName?: string }) => {
+      const nodesWithOnUpdate = template.nodes.map((node) => ({
         ...node,
         data: {
-          ...sanitizeNodeDataForTemplate(node.data),
+          ...node.data,
           onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(node.id, patch),
         },
       }));
-      const hasProblem = sanitizedNodes.some((node) => node.type === 'problem');
-      const nextNodes = hasProblem ? sanitizedNodes : [createDefaultProblemNode(), ...sanitizedNodes];
+      const hasProblem = nodesWithOnUpdate.some((n) => n.type === 'problem');
+      const nextNodes = hasProblem ? nodesWithOnUpdate : [createDefaultProblemNode(), ...nodesWithOnUpdate];
 
-      nodeId.current = estimateNextNodeId(nextNodes);
+      nodeId.current = 0;
       activeIterationRef.current = null;
+      algorithmNameRef.current = template.algorithmName ?? 'Custom';
       setNodes(nextNodes);
       setEdges(template.edges);
       setSelectedNode(null);
       setGlobalTrace([]);
-      setExecutionAlgorithm(algorithmName);
       setNeighborhoodLevel(1);
-      setTimeout(() => rfInstance.current?.fitView({ duration: 300, padding: 0.2 }), 60);
+      setTimeout(() => rfInstance.current?.fitView({ duration: 500 }), 60);
     },
     [createDefaultProblemNode, setNeighborhoodLevel, updateNodeData],
   );
 
-  const loadGraspTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('grasp', updateNodeData);
-    loadTemplateGraph(template, 'GRASP');
+  const loadTemplate = useCallback((kind: AlgorithmTemplateKey) => {
+    loadTemplateGraph(buildAlgorithmTemplate(kind, updateNodeData));
   }, [loadTemplateGraph, updateNodeData]);
 
-  const loadIlsTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('ils', updateNodeData);
-    loadTemplateGraph(template, 'ILS');
-  }, [loadTemplateGraph, updateNodeData]);
+  const KIND_TO_NODE_TYPE: Record<string, NodeKind> = {
+    Problem: 'problem',
+    SingleSolutionGenerationComponent: 'singleSolution',
+    LocalSearchComponent: 'localSearch',
+    PerturbationComponent: 'perturbation',
+    TemperatureAcceptanceComponent: 'temperatureAcceptance',
+    ReduceTemperatureComponent: 'reduceTemperature',
+    NeighbourhoodComponent: 'neighborhood',
+    ChangeNeighbourhoodComponent: 'changeNeighborhood',
+    SubtractionComponent: 'subtraction',
+    SelectionOfBestComponent: 'selectionBest',
+    StorageComponent: 'storage',
+    LoopComponent: 'termination',
+    AcceptanceComponent: 'acceptance',
+  };
 
-  const loadVnsTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('vns', updateNodeData);
-    loadTemplateGraph(template, 'VNS');
-  }, [loadTemplateGraph, updateNodeData]);
+  const createNode = useCallback((kind: string, position: { x: number; y: number }): FlowNode => {
+    const type = KIND_TO_NODE_TYPE[kind];
+    const id = kind === 'Problem' ? 'problem' : `${type}-${nodeId.current++}`;
 
-  const loadTabuTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('tabu', updateNodeData);
-    loadTemplateGraph(template, 'Tabu Search');
-  }, [loadTemplateGraph, updateNodeData]);
+    const data: FlowNodeData = {
+      label: COMPONENT_LABELS[kind as keyof typeof COMPONENT_LABELS] ?? kind,
+      start: false,
+      end: false,
+      trace: '',
+      onUpdate: (patch) => updateNodeData(id, patch),
+    };
 
-  const loadSaTemplate = useCallback(() => {
-    const template = buildAlgorithmTemplate('simulatedAnnealing', updateNodeData);
-    loadTemplateGraph(template, 'Simulated Annealing');
-  }, [loadTemplateGraph, updateNodeData]);
+    if (type === 'problem') data.json = KNAPSACK_TEMPLATE_JSON;
+    if (type === 'temperatureAcceptance') data.temperatureCurrent = 100;
+    if (type === 'storage') { data.history = []; data.solutionSet = '[]'; data.setSize = 0; }
+    if (type === 'termination') { data.maxIterations = 10; data.iteration = 0; data.shouldStop = false; data.status = 'ready'; }
+    if (type === 'changeNeighborhood') { data.neighborhoodValue = neighborhoodSizeRef.current; data.neighborhoodInfo = `k=${neighborhoodSizeRef.current}`; }
+    if (type === 'neighborhood' || type === 'subtraction') { data.solutionSet = '[]'; data.setSize = 0; }
+
+    return { id, type, position, data, connectable: true };
+  }, [updateNodeData]);
+
+  const onInit = useCallback((instance: ReactFlowInstance) => { rfInstance.current = instance; }, []);
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  }, []);
+  const onSelectionChange = useCallback((selection: { nodes: FlowNode[] }) => {
+    setSelectedNode(selection.nodes[0] ?? null);
+  }, []);
+  const onConnect = useCallback((connection: Connection) => {
+    setEdges((eds) => addEdge({ ...connection, markerEnd: { type: MarkerType.ArrowClosed } }, eds));
+  }, []);
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+  const onDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    const kind = event.dataTransfer.getData('application/reactflow');
+    if (!kind) return;
+    if (kind === 'Problem' && nodesRef.current.some((n) => n.type === 'problem')) return;
+
+    const reactFlow = rfInstance.current;
+    if (!reactFlow) return;
+
+    const position = reactFlow.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    setNodes((nds) => nds.concat(createNode(kind, position)));
+  }, [createNode]);
 
   const onSaveCustomTemplate = useCallback(() => {
-    if (nodesRef.current.length === 0) {
-      return;
-    }
-
+    if (nodesRef.current.length === 0) return;
     const name = window.prompt('Template name');
-    if (!name || name.trim().length === 0) {
-      return;
-    }
-
-    const savedNodes: StoredTemplateNode[] = nodesRef.current.map((node) => ({
-      id: node.id,
-      type: node.type as NodeKind,
-      position: node.position,
-      data: sanitizeNodeDataForTemplate(node.data),
-    }));
-    const savedEdges: FlowEdge[] = edgesRef.current.map((edge) => ({ ...edge }));
+    if (!name) return;
 
     const snapshot: StoredTemplate = {
       id: `custom-${Date.now()}`,
-      name: name.trim(),
-      createdAt: new Date().toISOString(),
-      nodes: savedNodes,
-      edges: savedEdges,
+      name: name,
+      nodes: nodesRef.current.map((n) => ({
+        id: n.id,
+        type: n.type as NodeKind,
+        position: n.position,
+        data: n.data,
+      })),
+      edges: edgesRef.current.map((e) => ({ ...e })),
     };
-
     setCustomTemplates((prev) => [snapshot, ...prev]);
   }, []);
 
   const onLoadCustomTemplate = useCallback((templateId: string) => {
-    const template = customTemplates.find((item) => item.id === templateId);
-    if (!template) {
-      return;
-    }
-
-    const reboundNodes: FlowNode[] = template.nodes.map((node) => ({
-      id: node.id,
-      type: node.type,
-      position: node.position,
-      connectable: true,
+    const template = customTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+    const nodesWithOnUpdate: FlowNode[] = template.nodes.map((n) => ({
+      id: n.id, type: n.type, position: n.position, connectable: true,
       data: {
-        ...node.data,
-        trace: '',
-        error: undefined,
-        isRunning: false,
-        onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(node.id, patch),
+        ...n.data,
+        onUpdate: (patch: Partial<FlowNodeData>) => updateNodeData(n.id, patch),
       },
     }));
-
-    const reboundEdges: FlowEdge[] = template.edges.map((edge) => ({ ...edge }));
-    loadTemplateGraph({ nodes: reboundNodes, edges: reboundEdges }, 'Custom');
+    loadTemplateGraph({ nodes: nodesWithOnUpdate, edges: template.edges });
   }, [customTemplates, loadTemplateGraph, updateNodeData]);
 
   const onDeleteCustomTemplate = useCallback((templateId: string) => {
-    setCustomTemplates((prev) => prev.filter((item) => item.id !== templateId));
+    setCustomTemplates((prev) => prev.filter((t) => t.id !== templateId));
   }, []);
 
   const onExportCustomTemplate = useCallback((templateId: string) => {
-    try {
-      const template = customTemplates.find((item) => item.id === templateId);
-      if (!template) {
-        return;
-      }
+    const template = customTemplates.find((t) => t.id === templateId);
+    if (!template) return;
 
-      const safeName = template.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      downloadTextFile(`prodef-template-${safeName || template.id}.json`, JSON.stringify(template, null, 2));
-    } catch {
-      // Ignore export failures silently.
-    }
+    downloadFile(`template-${template.id}.json`, JSON.stringify(template, null, 2));
   }, [customTemplates]);
-
-  const onExportTrace = useCallback(() => {
-    try {
-      if (globalTrace.length === 0) {
-        return;
-      }
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      downloadTextFile(`prodef-trace-${timestamp}.txt`, globalTrace.join('\n'));
-    } catch {
-      // Ignore export failures silently.
-    }
-  }, [globalTrace]);
-
-  const onImportCustomTemplate = useCallback((rawJson: string) => {
-    try {
-      const parsed = JSON.parse(rawJson);
-      if (
-        !parsed
-        || typeof parsed.id !== 'string'
-        || typeof parsed.name !== 'string'
-        || !Array.isArray(parsed.nodes)
-        || !Array.isArray(parsed.edges)
-      ) {
-        return;
-      }
-
-      const imported: StoredTemplate = {
-        id: parsed.id,
-        name: parsed.name,
-        createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
-        nodes: parsed.nodes.map((node: StoredTemplateNode) => ({
-          ...node,
-          data: sanitizeNodeDataForTemplate(node.data),
-        })),
-        edges: parsed.edges,
-      };
-
-      setCustomTemplates((prev) => {
-        const existingById = new Map(prev.map((t) => [t.id, t]));
-        existingById.set(imported.id, imported);
-        return Array.from(existingById.values());
-      });
-    } catch {
-      // Ignore malformed import content.
-    }
-  }, []);
 
   const deleteEverything = useCallback(() => {
     nodeId.current = 0;
@@ -769,105 +415,89 @@ if (node.type === 'temperatureAcceptance') {
     setEdges([]);
     setSelectedNode(null);
     setGlobalTrace([]);
-    setExecutionAlgorithm('Custom');
     setNeighborhoodLevel(1);
   }, [createDefaultProblemNode, setNeighborhoodLevel]);
 
-  // Update the JSON payload for the selected problem node.
-  const onProblemJsonChange = useCallback(
-    (newJson: string) => {
-      if (!selectedNode || selectedNode.type !== 'problem') {
-        return;
-      }
+  const onProblemJsonChange = useCallback((newJson: string) => {
+    if (selectedNode?.type === 'problem') {
       updateNodeData(selectedNode.id, { json: newJson });
-    },
-    [selectedNode, updateNodeData]
-  );
+    }
+  }, [selectedNode, updateNodeData]);
 
-  // Apply a predefined example JSON into the problem node.
   const applyProblemExample = useCallback((exampleJson: string) => {
     const problem = getNodeByType('problem');
-    if (!problem) {
-      return;
-    }
-    updateNodeData(problem.id, { json: exampleJson, error: undefined });
-    setSelectedNode((prev) => {
-      if (!prev || prev.id !== problem.id) {
-        return problem;
-      }
-      return { ...prev, data: { ...prev.data, json: exampleJson, error: undefined } };
-    });
+    if (!problem) return;
+
+    updateNodeData(problem.id, { json: exampleJson });
   }, [getNodeByType, updateNodeData]);
 
   const setNodeStart = useCallback((id: string, isStart: boolean) => {
     setNodes((prev) => prev.map((node) => {
-      if (node.type === 'problem') {
-        return { ...node, data: { ...node.data, start: false } };
-      }
-      const isValidStart = node.type === 'singleSolution' || node.type === 'populationGeneration' || node.type === 'termination';
-      if (node.id === id && isValidStart) {
-        return { ...node, data: { ...node.data, start: isStart } };
-      }
+      const isValidStart = node.type === 'singleSolution' || node.type === 'termination';
+      if (node.id === id && isValidStart) return { ...node, data: { ...node.data, start: isStart } };
       return { ...node, data: { ...node.data, start: isStart ? false : node.data.start } };
     }));
 
     setSelectedNode((prev) => {
-      if (!prev) {
-        return prev;
-      }
-      if (prev.id === id) {
-        return { ...prev, data: { ...prev.data, start: isStart } };
-      }
-      if (isStart) {
-        return { ...prev, data: { ...prev.data, start: false } };
-      }
+      if (!prev) return prev;
+      if (prev.id === id) return { ...prev, data: { ...prev.data, start: isStart } };
+      if (isStart) return { ...prev, data: { ...prev.data, start: false } };
       return prev;
     });
   }, [setNodes]);
 
   const setNodeEnd = useCallback((id: string, isEnd: boolean) => {
     setNodes((prev) => prev.map((node) => {
-      if (node.type === 'problem') {
-        return { ...node, data: { ...node.data, end: false } };
-      }
       const isValidEnd = node.type === 'storage' || node.type === 'termination';
-      if (node.id === id && isValidEnd) {
-        return { ...node, data: { ...node.data, end: isEnd } };
-      }
+      if (node.id === id && isValidEnd) return { ...node, data: { ...node.data, end: isEnd } };
       return { ...node, data: { ...node.data, end: isEnd ? false : node.data.end } };
     }));
 
     setSelectedNode((prev) => {
-      if (!prev) {
-        return prev;
-      }
-      if (prev.id === id) {
-        return { ...prev, data: { ...prev.data, end: isEnd } };
-      }
-      if (isEnd) {
-        return { ...prev, data: { ...prev.data, end: false } };
-      }
+      if (!prev) return prev;
+      if (prev.id === id) return { ...prev, data: { ...prev.data, end: isEnd } };
+      if (isEnd) return { ...prev, data: { ...prev.data, end: false } };
       return prev;
     });
   }, [setNodes]);
 
-  // Convenience alias for selected node data used by the properties panel.
-  const selectedData = selectedNode?.data;
+  const onExportTrace = useCallback(() => {
+    if (globalTrace.length === 0) return;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    downloadFile(`trace-${timestamp}.txt`, globalTrace.join('\n'));
+  }, [globalTrace]);
+
+  const onExportCsv = useCallback(() => {
+    try {
+      const problemNode = getNodeByType('problem');
+      const instance = getProblemInstanceName(problemNode?.data.json);
+      const csv = buildExecutionCsvFromGraph({
+        nodes,
+        edges,
+        instance,
+        executionHistories,
+      });
+      if (!csv) return;
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadFile(`metrics-${timestamp}.csv`, csv, 'text/csv;charset=utf-8');
+    } catch {
+    }
+  }, [edges, executionHistories, getNodeByType, nodes]);
 
   return (
     <div className="app">
       <FlowSidebar
-        onLoadGraspTemplate={loadGraspTemplate}
-        onLoadIlsTemplate={loadIlsTemplate}
-        onLoadVnsTemplate={loadVnsTemplate}
-        onLoadTabuTemplate={loadTabuTemplate}
-        onLoadSaTemplate={loadSaTemplate}
+        onLoadGraspTemplate={() => loadTemplate('grasp')}
+        onLoadIlsTemplate={() => loadTemplate('ils')}
+        onLoadVnsTemplate={() => loadTemplate('vns')}
+        onLoadTabuTemplate={() => loadTemplate('tabu')}
+        onLoadSaTemplate={() => loadTemplate('simulatedAnnealing')}
         customTemplates={customTemplates}
         onSaveCustomTemplate={onSaveCustomTemplate}
         onLoadCustomTemplate={onLoadCustomTemplate}
         onDeleteCustomTemplate={onDeleteCustomTemplate}
         onExportCustomTemplate={onExportCustomTemplate}
-        onImportCustomTemplate={onImportCustomTemplate}
         generationPaletteItems={generationPaletteItems}
         modificationPaletteItems={modificationPaletteItems}
         otherPaletteItems={otherPaletteItems}
@@ -875,19 +505,24 @@ if (node.type === 'temperatureAcceptance') {
 
       <div className="canvas">
         <div className="canvas-controls">
-          <button className="canvas-icon-button" title="Run step" aria-label="Run step" onClick={() => { void runFlowNextStep(); }}>
+          <button className="canvas-icon-button" title="Run step" aria-label="Run step"
+            onClick={() => { void runFlowNextStep(); }}>
             1x
           </button>
-          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow" onClick={() => { void runFlowAndKeepTrace(); }}>
+          <button className="canvas-icon-button" title="Run flow" aria-label="Run flow"
+            onClick={() => { void runFlowAndKeepTrace(); }}>
             ▶
           </button>
-          <button className="canvas-icon-button" title="Reset flow" aria-label="Reset flow" onClick={() => { resetFlow(); }}>
+          <button className="canvas-icon-button" title="Reset flow" aria-label="Reset flow"
+            onClick={resetFlow}>
             ↻
           </button>
-          <button className="canvas-icon-button" title="Delete everything" aria-label="Delete everything" onClick={deleteEverything}>
+          <button className="canvas-icon-button" title="Delete everything" aria-label="Delete everything"
+            onClick={deleteEverything}>
             🗑️
           </button>
         </div>
+
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -906,11 +541,11 @@ if (node.type === 'temperatureAcceptance') {
           <Background color="#aaa" gap={16} />
         </ReactFlow>
 
-        <img className="app-logo" src={othimiColorImage} alt="Othimi" />
+        <img className="app-logo" src="/othimi_color.png" alt="Othimi" />
 
         <ExecutionPanel
           selectedNode={selectedNode}
-          selectedData={selectedData}
+          selectedData={selectedNode?.data}
           globalTrace={globalTrace}
           setNodeStart={setNodeStart}
           setNodeEnd={setNodeEnd}

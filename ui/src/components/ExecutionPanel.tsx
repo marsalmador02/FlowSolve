@@ -1,11 +1,3 @@
-/*
- * File: ExecutionPanel.tsx
- *
- * Right-side execution inspector panel with:
- *  - Problem JSON editor with example buttons.
- *  - Start/End flags for the selected node.
- *  - Global execution trace view and export actions.
- */
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {
   ASSIGNMENT_TEMPLATE_JSON,
@@ -37,35 +29,31 @@ export function ExecutionPanel({
   onExportCsv,
 }: ExecutionPanelProps) {
   const canBeStart =
-    selectedNode?.type === 'singleSolution'
-    || selectedNode?.type === 'populationGeneration'
-    || selectedNode?.type === 'termination';
-  const canBeEnd = selectedNode?.type === 'storage' || selectedNode?.type === 'termination';
-  const showStartEndControls = canBeStart || canBeEnd;
+    selectedNode?.type === 'singleSolution' ||
+    selectedNode?.type === 'populationGeneration' ||
+    selectedNode?.type === 'termination';
+
+  const canBeEnd =
+    selectedNode?.type === 'storage' ||
+    selectedNode?.type === 'termination';
 
   return (
     <>
-      {selectedNode?.type === 'problem' ? (
+      {selectedNode?.type === 'problem' && (
         <aside className="properties">
           <div className="properties-title">Problem JSON</div>
           <div className="properties-actions">
-            <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_TEMPLATE_JSON)}>
-              Knapsack
-            </button>
-            <button className="sidebar-action" onClick={() => applyProblemExample(TSP_TEMPLATE_JSON)}>
-              TSP
-            </button>
-            <button className="sidebar-action" onClick={() => applyProblemExample(ASSIGNMENT_TEMPLATE_JSON)}>
-              Assignment
-            </button>
+            <button className="sidebar-action" onClick={() => applyProblemExample(KNAPSACK_TEMPLATE_JSON)}>Knapsack</button>
+            <button className="sidebar-action" onClick={() => applyProblemExample(TSP_TEMPLATE_JSON)}>TSP</button>
+            <button className="sidebar-action" onClick={() => applyProblemExample(ASSIGNMENT_TEMPLATE_JSON)}>Assignment</button>
           </div>
           <textarea value={selectedData?.json ?? ''} onChange={(e) => onProblemJsonChange(e.target.value)} />
         </aside>
-      ) : null}
+      )}
 
-      {showStartEndControls ? (
+      {(canBeStart || canBeEnd) && (
         <aside className="properties properties-node-flags">
-          {canBeStart ? (
+          {canBeStart && (
             <label className="form-label">
               <b>Start node</b>
               <input
@@ -74,9 +62,9 @@ export function ExecutionPanel({
                 onChange={(e) => setNodeStart(selectedNode.id, e.target.checked)}
               />
             </label>
-          ) : null}
-          {canBeStart && canBeEnd ? <div className="form-divider" /> : null}
-          {canBeEnd ? (
+          )}
+          {canBeStart && canBeEnd && <div className="form-divider" />}
+          {canBeEnd && (
             <label className="form-label">
               <b>End node</b>
               <input
@@ -85,24 +73,20 @@ export function ExecutionPanel({
                 onChange={(e) => setNodeEnd(selectedNode.id, e.target.checked)}
               />
             </label>
-          ) : null}
+          )}
         </aside>
-      ) : null}
+      )}
 
-      {globalTrace.length > 0 ? (
+      {globalTrace.length > 0 && (
         <aside className="properties properties-global-trace">
           <div className="properties-title">Execution Trace</div>
           <div className="properties-actions">
-            <button className="sidebar-action" onClick={onExportTrace}>
-              Export trace as .txt
-            </button>
-            <button className="sidebar-action" onClick={onExportCsv}>
-              Export CSV
-            </button>
+            <button className="sidebar-action" onClick={onExportTrace}>Export trace as .txt</button>
+            <button className="sidebar-action" onClick={onExportCsv}>Export CSV</button>
           </div>
           <textarea value={globalTrace.join('\n')} readOnly />
         </aside>
-      ) : null}
+      )}
     </>
   );
 }

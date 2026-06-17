@@ -1,7 +1,6 @@
 import type { FlowNodeData } from '../../types/flow';
 import {
   buildGraspTemplate,
-  buildEvolutionaryTemplate,
   buildIlsTemplate,
   buildSimulatedAnnealingTemplate,
   buildTabuTemplate,
@@ -14,17 +13,10 @@ export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulated
 
 export function buildAlgorithmTemplate(kind: AlgorithmTemplateKey, updateNodeData: UpdateNodeData) {
   switch (kind) {
-    case 'grasp':
-      return buildGraspTemplate(updateNodeData);
-    case 'ils':
-      return buildIlsTemplate(updateNodeData);
-    case 'vns':
-      return buildVnsTemplate(updateNodeData);
-    case 'tabu':
-      return buildTabuTemplate(updateNodeData);
-    case 'simulatedAnnealing':
-      return buildSimulatedAnnealingTemplate(updateNodeData);
-    default:
-      return buildGraspTemplate(updateNodeData);
+    case 'grasp': return buildGraspTemplate(updateNodeData);
+    case 'ils': return buildIlsTemplate(updateNodeData);
+    case 'vns': return buildVnsTemplate(updateNodeData);
+    case 'tabu': return buildTabuTemplate(updateNodeData);
+    case 'simulatedAnnealing': return buildSimulatedAnnealingTemplate(updateNodeData);
   }
 }

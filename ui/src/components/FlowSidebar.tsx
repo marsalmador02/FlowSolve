@@ -1,18 +1,3 @@
-/*
- * File: FlowSidebar.tsx
- *
- * Contains:
- * - Left-side sidebar for the editor.
- * - High-level actions: load templates, run full flow, run next step, reset,
- *   and manage custom templates.
- * - Drag-and-drop palette of components available to build the graph.
- *
- * Role in the flow (startup -> graph execution):
- * - Entry point for user interaction with the process.
- * - From here users assemble the graph (dragging nodes) and trigger execution
- *   that flows through App -> useFlowRunner -> graphExecutor.
- */
-
 interface SidebarPaletteItem {
   kind: string;
   label: string;
@@ -21,10 +6,8 @@ interface SidebarPaletteItem {
 interface CustomTemplateItem {
   id: string;
   name: string;
-  createdAt: string;
 }
 
-// Props contract for sidebar actions exposed to the parent App.
 interface FlowSidebarProps {
   onLoadGraspTemplate: () => void;
   onLoadIlsTemplate: () => void;
@@ -36,7 +19,6 @@ interface FlowSidebarProps {
   onLoadCustomTemplate: (templateId: string) => void;
   onDeleteCustomTemplate: (templateId: string) => void;
   onExportCustomTemplate: (templateId: string) => void;
-  onImportCustomTemplate: (rawJson: string) => void;
   generationPaletteItems: SidebarPaletteItem[];
   modificationPaletteItems: SidebarPaletteItem[];
   otherPaletteItems: SidebarPaletteItem[];
@@ -46,7 +28,7 @@ function draggableItem(item: SidebarPaletteItem) {
   return (
     <div
       key={item.kind}
-      className="sidebar-item sidebar-item--nested"
+      className="sidebar-item"
       draggable
       onDragStart={(event) => {
         event.dataTransfer.setData('application/reactflow', item.kind);
@@ -69,7 +51,6 @@ export function FlowSidebar({
   onLoadCustomTemplate,
   onDeleteCustomTemplate,
   onExportCustomTemplate,
-  onImportCustomTemplate,
   generationPaletteItems,
   modificationPaletteItems,
   otherPaletteItems,
@@ -79,23 +60,12 @@ export function FlowSidebar({
       <div className="sidebar-toolbar">
         <details className="sidebar-dropdown">
           <summary className="sidebar-title">ALGORITHM TEMPLATES</summary>
-          <button className="toolbar-button" onClick={onLoadGraspTemplate}>
-            Load GRASP Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadIlsTemplate}>
-            Load ILS Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadVnsTemplate}>
-            Load VNS Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadTabuTemplate}>
-            Load Tabu Search Template
-          </button>
-          <button className="toolbar-button" onClick={onLoadSaTemplate}>
-            Load Simulated Annealing Template
-          </button>
+          <button className="toolbar-button" onClick={onLoadGraspTemplate}>Load GRASP Template</button>
+          <button className="toolbar-button" onClick={onLoadIlsTemplate}>Load ILS Template</button>
+          <button className="toolbar-button" onClick={onLoadVnsTemplate}>Load VNS Template</button>
+          <button className="toolbar-button" onClick={onLoadTabuTemplate}>Load Tabu Search Template</button>
+          <button className="toolbar-button" onClick={onLoadSaTemplate}>Load Simulated Annealing Template</button>
         </details>
-
       </div>
 
       <div className="sidebar-divider" aria-hidden="true" />
@@ -103,30 +73,29 @@ export function FlowSidebar({
       <details className="sidebar-dropdown">
         <summary className="sidebar-title">PERSONALIZED TEMPLATES</summary>
         <div className="template-icon-actions">
-          <button className="toolbar-button template-icon-button" onClick={onSaveCustomTemplate} title="Save current as template" aria-label="Save current as template">
+          <button
+            className="toolbar-button template-icon-button"
+            onClick={onSaveCustomTemplate}
+            title="Save current as template"
+            aria-label="Save current as template"
+          >
             💾
           </button>
         </div>
-        {customTemplates.length > 0 ? (
+        {customTemplates.length > 0 && (
           <div className="custom-template-list">
             {customTemplates.map((template) => (
               <div key={template.id}>
                 <div className="custom-template-name" title={template.name}>{template.name}</div>
                 <div className="custom-template-row">
-                  <button className="toolbar-button custom-template-load" onClick={() => onLoadCustomTemplate(template.id)}>
-                    Load
-                  </button>
-                  <button className="toolbar-button custom-template-export" onClick={() => onExportCustomTemplate(template.id)}>
-                    Export
-                  </button>
-                  <button className="toolbar-button custom-template-delete" onClick={() => onDeleteCustomTemplate(template.id)}>
-                    Delete
-                  </button>
+                  <button className="toolbar-button custom-template-load" onClick={() => onLoadCustomTemplate(template.id)}>Load</button>
+                  <button className="toolbar-button custom-template-export" onClick={() => onExportCustomTemplate(template.id)}>Export</button>
+                  <button className="toolbar-button custom-template-delete" onClick={() => onDeleteCustomTemplate(template.id)}>Delete</button>
                 </div>
               </div>
             ))}
           </div>
-        ) : null}
+        )}
       </details>
 
       <div className="sidebar-divider" aria-hidden="true" />
@@ -135,22 +104,19 @@ export function FlowSidebar({
         <details className="sidebar-dropdown">
           <summary className="sidebar-title">METAHEURISTIC COMPONENT</summary>
           <div className="sidebar-section-title">Generation Component</div>
-          {generationPaletteItems.map((item) => draggableItem(item))}
-          {generationPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No generation components available.</div>
-          ) : null}
+          {generationPaletteItems.length > 0
+            ? generationPaletteItems.map((item) => draggableItem(item))
+            : <div className="sidebar-item">No generation components available.</div>}
 
           <div className="sidebar-section-title">Modification Component</div>
-          {modificationPaletteItems.map((item) => draggableItem(item))}
-          {modificationPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No modification components available.</div>
-          ) : null}
+          {modificationPaletteItems.length > 0
+            ? modificationPaletteItems.map((item) => draggableItem(item))
+            : <div className="sidebar-item">No modification components available.</div>}
 
           <div className="sidebar-section-title">Other Metaheuristic Components</div>
-          {otherPaletteItems.map((item) => draggableItem(item))}
-          {otherPaletteItems.length === 0 ? (
-            <div className="sidebar-item sidebar-item--nested">No additional components available.</div>
-          ) : null}
+          {otherPaletteItems.length > 0
+            ? otherPaletteItems.map((item) => draggableItem(item))
+            : <div className="sidebar-item">No additional components available.</div>}
         </details>
       </div>
     </aside>
