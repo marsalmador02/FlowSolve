@@ -1,19 +1,3 @@
-/**
- * Packet-based executor for the UI flow runtime.
- *
- * Purpose:
- * - Convert a graph into deterministic packet execution.
- *
- * Inputs:
- * - Current graph state (`nodes`, `edges`) and shared UI dependencies.
- *
- * Outputs:
- * - Node updates, execution traces, and final summary pushed to UI state.
- *
- * Limits:
- * - Uses a max packet budget to avoid infinite loops.
- * - Supports `full` and `iteration` modes with loop-aware stop behavior.
- */
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../../../types/flow';
 import { parseJson } from '../../../utils/flowHelpers';
 import { createComponent } from '../components/registry';
@@ -21,7 +5,6 @@ import type { ComponentContext, ExecuteResult, IncomingSource, Packet, SolutionL
 import { JoinRuntimeComponent, formatCompact, solutionScore, toPretty } from '../components/base';
 import { validateGraph } from '../engine/graphValidation';
 
-// External dependencies exposed by the hook to the executor.
 export interface PacketExecutorDeps {
   getNodes: () => FlowNode[];
   getEdges: () => FlowEdge[];
@@ -47,43 +30,30 @@ interface QueuedPacket {
 const MAX_PACKETS_PER_RUN = 10000;
 const COMPONENT_EXECUTION_DELAY_MS = 250;
 
-// Find the source nodes that feed packets into a given target node.
 function resolveIncomingSources(deps: PacketExecutorDeps, nodeId: string): IncomingSource[] {
-  const incoming = deps.getEdges().filter((e) => e.target === nodeId);
-  return incoming
-    .map((edge) => {
+  return deps.getEdges()
+    .filter((e) => e.target === nodeId)
+    .flatMap((edge) => {
       const node = deps.getNodeById(edge.source);
-      if (!node) {
-        return null;
-      }
-      return { id: node.id, type: node.type as NodeKind };
-    })
-    .filter((s): s is IncomingSource => s !== null);
+      return node ? [{ id: node.id, type: node.type as NodeKind }] : [];
+    });
 }
 
-// Find the target nodes that should receive packets emitted by a given source node.
 function resolveOutgoingTargets(deps: PacketExecutorDeps, nodeId: string): IncomingSource[] {
-  const outgoing = deps.getEdges().filter((e) => e.source === nodeId);
-  return outgoing
-    .map((edge) => {
+  return deps.getEdges()
+    .filter((e) => e.source === nodeId)
+    .flatMap((edge) => {
       const node = deps.getNodeById(edge.target);
-      if (!node) {
-        return null;
-      }
-      return { id: node.id, type: node.type as NodeKind };
-    })
-    .filter((s): s is IncomingSource => s !== null);
+      return node ? [{ id: node.id, type: node.type as NodeKind }] : [];
+    });
 }
 
-// Find all nodes of a specific kind in the canvas, used for join and routing logic.
 function resolveByKind(deps: PacketExecutorDeps, kind: NodeKind): IncomingSource[] {
-  return deps
-    .getNodes()
+  return deps.getNodes()
     .filter((n) => n.type === kind)
     .map((n) => ({ id: n.id, type: n.type as NodeKind }));
 }
 
-// Create the runtime context object passed to each component during execution.
 function buildContext(deps: PacketExecutorDeps, node: FlowNode, problem: unknown): ComponentContext {
   return {
     nodeId: node.id,
@@ -92,49 +62,33 @@ function buildContext(deps: PacketExecutorDeps, node: FlowNode, problem: unknown
     problem,
     updateNodeData: (patch) => deps.updateNodeData(node.id, patch),
     updateNodeDataById: (id, patch) => deps.updateNodeData(id, patch),
-    appendTrace: (message) => {
-      deps.appendTrace(node.id, message);
-    },
+    appendTrace: (message) => deps.appendTrace(node.id, message),
     getIncomingSources: () => resolveIncomingSources(deps, node.id),
     getOutgoingTargets: () => resolveOutgoingTargets(deps, node.id),
     findNodesByKind: (kind) => resolveByKind(deps, kind),
   };
 }
 
-// Choose the best solution from a set by comparing scores.
-function bestFromSet(set: SolutionLike[] | null | undefined, problem: unknown): SolutionLike | null {
-  if (!Array.isArray(set) || set.length === 0) {
-    return null;
-  }
-
-  let isMaximize = false;
-  try {
-    const rawProblem = (problem as any)?.raw || problem;
-    if (rawProblem && Array.isArray(rawProblem.goals) && rawProblem.goals.length > 0) {
-      const sense = rawProblem.goals[0].sense || '';
-      isMaximize = sense.toLowerCase().includes('maximiz');
-    }
-  } catch {
-  }
-  
-  const isBetter = isMaximize
-    ? (candidate: number, best: number) => candidate > best
-    : (candidate: number, best: number) => candidate < best;
-
-  return set.reduce(
-    (best, candidate) => (isBetter(solutionScore(candidate), solutionScore(best)) ? candidate : best),
-    set[0],
-  );
+function isMaximizeProblem(problem: unknown): boolean {
+  const raw = (problem as any).raw;
+  const sense: string = raw.goals[0].sense;
+  return sense.toLowerCase().includes('maximiz');
 }
 
-// Read a stored solution set from node data, allowing both string and array representations.
+function bestFromSet(set: SolutionLike[] | null | undefined, problem: unknown): SolutionLike | null {
+  if (!set || set.length === 0) return null;
+  const maximize = isMaximizeProblem(problem);
+  return set.reduce((best, candidate) => {
+    const better = maximize
+      ? solutionScore(candidate) > solutionScore(best)
+      : solutionScore(candidate) < solutionScore(best);
+    return better ? candidate : best;
+  }, set[0]);
+}
+
 function readStoredSet(nodeData: FlowNodeData | undefined): SolutionLike[] {
-  if (!nodeData) {
-    return [];
-  }
-  if (Array.isArray(nodeData.solutionSet)) {
-    return nodeData.solutionSet as SolutionLike[];
-  }
+  if (!nodeData) return [];
+  if (Array.isArray(nodeData.solutionSet)) return nodeData.solutionSet as SolutionLike[];
   if (typeof nodeData.solutionSet === 'string') {
     const parsed = parseJson<SolutionLike[]>(nodeData.solutionSet);
     return Array.isArray(parsed) ? parsed : [];
@@ -142,38 +96,20 @@ function readStoredSet(nodeData: FlowNodeData | undefined): SolutionLike[] {
   return [];
 }
 
-// After execution ends, summarize the final result.
-function storeFinalResult(
-  deps: PacketExecutorDeps,
-  finalNode: FlowNode | null,
-  lastPacket: Packet | null,
-) {
-  const endStorageNode = deps.getNodes().find((node) => node.type === 'storage' && node.data?.end === true) ?? null;
-  const preferredNode = endStorageNode ?? finalNode;
+function storeFinalResult(deps: PacketExecutorDeps, finalNode: FlowNode | null, lastPacket: Packet | null) {
+  const endStorageNode = deps.getNodes().find((n) => n.type === 'storage' && n.data.end === true) ?? null;
+  const node = endStorageNode ?? finalNode;
+  const storedSet = readStoredSet(node?.data);
+  const storedSolution = node ? parseJson<SolutionLike>(node.data.solution) : null;
+  const problem = deps.getProblemParsed();
 
-  const storedSolution = preferredNode ? parseJson<SolutionLike>(preferredNode.data?.solution) : null;
-  const storedSet = preferredNode ? readStoredSet(preferredNode.data) : [];
-  
-  // If final node is Storage in accumulate mode with solutions, take the first (best).
-  // Otherwise, determine best from all available options.
   let payloadText: string;
-  
-  if (preferredNode?.type === 'storage' && storedSet.length > 0) {
-    // Storage with accumulate: first solution is the best (ordered by Rust)
+  if (node?.type === 'storage' && storedSet.length > 0) {
     payloadText = formatCompact(storedSet[0]);
   } else if (storedSolution) {
     payloadText = formatCompact(storedSolution);
-  } else if (storedSet.length > 0) {
-    // Fallback: use first from set or determine best
-    const best = storedSet.length > 1 
-      ? bestFromSet(storedSet, deps.getProblemParsed?.() || {})
-      : storedSet[0];
-    payloadText = best ? formatCompact(best) : 'no result';
   } else if (lastPacket?.solution) {
     payloadText = formatCompact(lastPacket.solution);
-  } else if (lastPacket?.solutionSet && lastPacket.solutionSet.length > 0) {
-    const best = bestFromSet(lastPacket.solutionSet, deps.getProblemParsed?.() || {});
-    payloadText = best ? formatCompact(best) : 'no result';
   } else {
     payloadText = 'no result';
   }
@@ -181,19 +117,7 @@ function storeFinalResult(
   deps.appendGlobalTrace(`🏁 FINAL: ${payloadText}`);
 }
 
-/**
- * Execute the flow graph using a FIFO packet queue.
- *
- * Side effects:
- * - Validates graph topology.
- * - Dispatches packets to runtime components.
- * - Synchronizes join nodes by `idIteration` and source id.
- * - Appends node/global trace entries and updates node data.
- */
-export async function runPacketExecutor(
-  deps: PacketExecutorDeps,
-  options: { mode: 'full' | 'iteration' },
-): Promise<void> {
+export async function runPacketExecutor(deps: PacketExecutorDeps, options: { mode: 'full' | 'iteration' }): Promise<void> {
   const separator = options.mode === 'iteration' ? '=== FLOW RUN (NEXT STEP) ===' : '=== FLOW RUN ===';
   deps.appendGlobalSeparator(separator);
 
@@ -220,30 +144,18 @@ export async function runPacketExecutor(
   if (options.mode === 'iteration' && loopNode && currentIteration > 0) {
     const storedSolution = parseJson<SolutionLike>(loopNode.data?.solution);
     const storedSet = readStoredSet(loopNode.data);
-    const packet: Packet = {
-      idIteration: currentIteration,
-      fromId: 'prev-close',
-      solution: null,
-      solutionSet: undefined,
-    };
+    const packet: Packet = { idIteration: currentIteration, fromId: 'prev-close', solution: null };
     if (storedSet.length > 0) {
       packet.solutionSet = storedSet;
     } else if (storedSolution) {
       packet.solution = storedSolution;
     }
-    seed = {
-      target: loopNode.id,
-      packet,
-    };
+    seed = { target: loopNode.id, packet };
   } else {
-    seed = {
-      target: startNode.id,
-      packet: { idIteration: 0, fromId: '__boot__' },
-    };
+    seed = { target: startNode.id, packet: { idIteration: 0, fromId: '__boot__' } };
   }
 
   const queue: QueuedPacket[] = [seed];
-  // nodeId, idIteration, fromId, Packet
   const joinBuffers = new Map<string, Map<number, Map<string, Packet>>>();
 
   let loopVisits = 0;
@@ -270,24 +182,18 @@ export async function runPacketExecutor(
         loopVisits += 1;
         deps.activeIterationRef.current = Number(node.data?.iteration ?? currentIteration);
 
-        // When running the full flow, add a visual blank line between iterations
-        // so the global trace separates iteration outputs (mirrors iteration mode).
         if (options.mode === 'full' && loopVisits >= 2) {
           deps.appendGlobalTrace('');
         }
 
         if (options.mode === 'iteration' && loopVisits >= 2) {
           const patch: Partial<FlowNodeData> = {};
-          if (current.packet.solution) {
-            patch.solution = toPretty(current.packet.solution);
-          }
+          if (current.packet.solution) patch.solution = toPretty(current.packet.solution);
           if (Array.isArray(current.packet.solutionSet)) {
             patch.solutionSet = toPretty(current.packet.solutionSet);
             patch.setSize = current.packet.solutionSet.length;
           }
-          if (Object.keys(patch).length > 0) {
-            deps.updateNodeData(node.id, patch);
-          }
+          if (Object.keys(patch).length > 0) deps.updateNodeData(node.id, patch);
           lastPacket = current.packet;
           break;
         }
@@ -310,23 +216,10 @@ export async function runPacketExecutor(
       let result: ExecuteResult;
       try {
         if (component instanceof JoinRuntimeComponent) {
-          // bufferByIter:   necesario para separar las cosas por iteración.
-          // bufferBySource: necesario para separar las cosas por origen dentro de una iteración.
-
-          // Busca si ya hay un buffer para este nodo de join.
-          // Si no existe, crea uno nuevo.
           const bufferByIter = joinBuffers.get(node.id) ?? new Map<number, Map<string, Packet>>();
-          // Guarda ese buffer en joinBuffers usando el id del nodo.
-          // Así queda disponible para la próxima vez que llegue un paquete a este join.
           joinBuffers.set(node.id, bufferByIter);
-          // Dentro del buffer del nodo, busca el sub-buffer para esta iteración.
-          // Si no existe, crea uno nuevo.
           const bufferBySource = bufferByIter.get(current.packet.idIteration) ?? new Map<string, Packet>();
-          // Guarda el sub-buffer de esta iteración dentro del buffer del nodo.
-          // Así queda registrado que ya hay paquetes para esa iteración.
           bufferByIter.set(current.packet.idIteration, bufferBySource);
-          // Guarda el paquete actual dentro del sub-buffer.
-          // Usa fromId para identificar quién envió ese paquete.
           bufferBySource.set(current.packet.fromId, current.packet);
 
           const expectedArity = Math.max(2, resolveIncomingSources(deps, node.id).length);
@@ -354,9 +247,7 @@ export async function runPacketExecutor(
         break;
       }
 
-      if (result.kind === 'wait') {
-        continue;
-      }
+      if (result.kind === 'wait') continue;
 
       if (result.kind === 'stop') {
         lastPacket = {
@@ -379,11 +270,10 @@ export async function runPacketExecutor(
       };
       lastPacket = emitted;
 
-      const outgoing = deps.getEdges().filter((e) => e.source === node.id);
-      for (const edge of outgoing) {
+      for (const edge of deps.getEdges().filter((e) => e.source === node.id)) {
         queue.push({ target: edge.target, packet: emitted });
       }
-    }  
+    }
 
     const finalNode: FlowNode = endNode ?? loopNode;
     if (options.mode === 'full' || stopped) {

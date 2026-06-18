@@ -31,7 +31,7 @@ export class SelectionBestComponent extends RuntimeComponent {
       },
     });
 
-    const winner = (response.payload as { winner?: SolutionLike })?.winner ?? candidates[0];
+    const winner = (response.payload as { winner?: SolutionLike }).winner ?? candidates[0];
     ctx.updateNodeData({ solution: toPretty(winner) });
     ctx.appendTrace(`🏆 Selection Best: ${formatCompact(winner)}`);
 

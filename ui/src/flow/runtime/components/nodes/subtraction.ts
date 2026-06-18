@@ -1,39 +1,21 @@
-
-/*
- * File: subtraction.ts
- *
- * Contains:
- * - Two-input subtraction component: expects one packet from storage and another
- *   from a different component with the same idIteration.
- * - Performs set difference (by variable vector) removing storage elements from the other set.
- *
- * Role in the flow (startup -> graph execution):
- * - Synchronizes two paths; one input MUST come from a storage node. Emits the resulting set.
- */
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, toPretty } from '../base';
 
-// Crea una clave string unica para cada solucion basada en su vector de variables.
+// Produces a stable string key from a solution's variable vector.
 function vectorKey(solution: SolutionLike): string {
   return JSON.stringify(solution.variableValue);
 }
 
-// Convierte un paquete en un array de soluciones, ya sea a partir de solutionSet o solution unica.
+// Extracts all solutions from a packet, whether it carries a set or a single item.
 function packetToSet(packet: Packet): SolutionLike[] {
-  if (Array.isArray(packet.solutionSet)) {
-    return packet.solutionSet.filter(Boolean) as SolutionLike[];
-  }
-  if (packet.solution) {
-    return [packet.solution];
-  }
+  if (packet.solutionSet) return packet.solutionSet.filter(Boolean) as SolutionLike[];
+  if (packet.solution) return [packet.solution];
   return [];
 }
 
 export class SubtractionComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
-    if (packets.length < 2) {
-      return { kind: 'wait' };
-    }
+    if (packets.length < 2) return { kind: 'wait' };
 
     const sources = ctx.getIncomingSources();
     const storageIds = new Set(sources.filter((s) => s.type === 'storage').map((s) => s.id));
@@ -42,32 +24,15 @@ export class SubtractionComponent extends JoinRuntimeComponent {
     const otherPacket = packets.find((p) => p !== storagePacket);
 
     if (!storagePacket || !otherPacket) {
-      return {
-        kind: 'error',
-        message: 'subtraction requires one input from a storage node.',
-      };
+      return { kind: 'error', message: 'subtraction requires one input from a storage node.' };
     }
 
-    const toRemove = new Set(
-      packetToSet(storagePacket)
-        .map(vectorKey) // Convertir cada solucion del storage en su clave string unica
-        .filter((k): k is string => Boolean(k)), // Filtrar claves no validas
-    );
-    const source = packetToSet(otherPacket);
-
-    const remaining = source.filter((solution) => {
-      const key = vectorKey(solution);
-      return key !== null && !toRemove.has(key);
-    });
+    const toRemove = new Set(packetToSet(storagePacket).map(vectorKey));
+    const remaining = packetToSet(otherPacket).filter((sol) => !toRemove.has(vectorKey(sol)));
 
     ctx.updateNodeData({ solutionSet: toPretty(remaining), setSize: remaining.length });
-    const filteredOut = Math.max(0, source.length - remaining.length);
-    ctx.appendTrace(`➖ Subtraction: ${remaining.length} solutions remaining (${filteredOut} filtered out)`);
+    ctx.appendTrace(`➖ Subtraction: ${remaining.length} remaining (${packetToSet(otherPacket).length - remaining.length} filtered out)`);
 
-    return {
-      kind: 'emit',
-      idIteration: packets[0].idIteration,
-      solutionSet: remaining,
-    };
+    return { kind: 'emit', idIteration: packets[0].idIteration, solutionSet: remaining };
   }
 }
