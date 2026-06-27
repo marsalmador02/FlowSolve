@@ -128,9 +128,7 @@ export default function App() {
       }
     },
     setNeighborhoodSize: (size) => {
-      neighborhoodSizeRef.current = typeof size === 'function'
-        ? size(neighborhoodSizeRef.current)
-        : size;
+      neighborhoodSizeRef.current = size;
 },
   });
 

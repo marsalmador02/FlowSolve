@@ -39,7 +39,6 @@ struct RawParameter {
 #[derive(Deserialize)]
 struct RawVariable {
     symbol: String,
-    within: String,
     range: Option<RawRange>,
     shape: RawShape,
 }
@@ -54,8 +53,6 @@ struct RawRange {
 
 #[derive(Deserialize)]
 struct RawShape {
-    #[serde(rename = "type")]
-    kind: String,
     #[serde(rename = "isPermutation")]
     is_permutation: bool,
     size: RawSize,
@@ -63,7 +60,6 @@ struct RawShape {
 
 #[derive(Deserialize)]
 struct RawSize {
-    fixed: bool, // mirar
     value: serde_json::Value,
 }
 
