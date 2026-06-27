@@ -1,14 +1,10 @@
 /**
- * Structural validations for packet-runtime graphs.
+ * Graph Validation
  *
- * Purpose:
- * - Enforce preconditions before enqueuing the first packet.
- *
- * Guarantees when valid:
- * - Exactly one valid start node.
- * - Exactly one loop (`termination`) node.
- * - Required arity constraints for join-like nodes.
+ * Validates the workflow structure before execution. It ensures that required
+ * nodes, connections and execution constraints are correctly defined.
  */
+
 import type { FlowEdge, FlowNode, NodeKind } from '../../../types/flow';
 
 function collectIncoming(edges: FlowEdge[], nodeId: string): FlowEdge[] {
@@ -39,7 +35,9 @@ export function validateGraph(nodes: FlowNode[], edges: FlowEdge[]) {
   }
 
   const ends = nodes.filter((n) => n.data?.end === true && n.type !== 'problem');
-  if (ends.length > 1) {
+  if (ends.length === 0) {
+    errors.push('Graph must contain at least one end node.');
+  } else if (ends.length > 1) {
     errors.push(`At most one end node is allowed (found ${ends.length}).`);
   }
   let endNode: FlowNode | null = ends[0] ?? null;

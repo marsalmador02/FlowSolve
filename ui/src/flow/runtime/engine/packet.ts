@@ -1,13 +1,10 @@
 /**
- * Core packet-runtime type contracts.
+ * Runtime Types
  *
- * Purpose:
- * - Define packet shape, component context, and execution outcomes shared by
- *   executor and components.
- *
- * Guarantee:
- * - Every component consumes `Packet` and returns one `ExecuteResult` variant.
+ * Defines the core data structures exchanged during execution, including packets,
+ * solutions and execution results.
  */
+
 import type { FlowNodeData, NodeKind } from '../../../types/flow';
 
 // Wrap a single solver result coming from Rust (includes score/vars/feasibility).

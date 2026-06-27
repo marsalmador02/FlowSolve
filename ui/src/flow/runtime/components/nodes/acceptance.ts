@@ -1,13 +1,11 @@
-/*
- * File: acceptance.ts
+/**
+ * Acceptance Component
  *
- * Contains:
- * - Acceptance component with 2 inputs: waits for two packets sharing the same
- *   idIteration and delegates the best-solution decision to Rust.
- *
- * Role in the flow (startup -> graph execution):
- * - Synchronizes two graph paths and selects the best candidate solution.
+ * Synchronizes two incoming solutions and selects the best one. This component is
+ * commonly used to compare alternative search paths and continue execution with
+ * the best solution.
  */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import { JoinRuntimeComponent, formatCompact, formatScore, toPretty } from '../base';

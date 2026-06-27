@@ -1,19 +1,28 @@
-// modes/perturbation.rs
-//
-// Mode: `perturbation`
-//
-// Applies k random moves to a base solution, retrying until a feasible
-// result is found (up to maxAttempts tries per step).
-//
-// Payload:
-//   {
-//     "base":        { "variableValue": [...] }
-//     "k":           int   (number of moves, default 3)
-//     "maxAttempts": int   (retries per move, default 100)
-//   }
-//
-// Response:
-//   { "winner": SolverResult, "attempts": int, "maxAttempts": int }
+//! # Mode: `perturbation`
+//!
+//! Applies k random moves to a base solution, retrying each move until a feasible result
+//! is found.
+//!
+//! ## Request payload
+//!
+//! ```json
+//! {
+//!   "base":        { "variableValue": [1, 0, 1, 0, 0] },
+//!   "k":           3,
+//!   "maxAttempts": 100
+//! }
+//! ```
+//!
+//! ## Response
+//!
+//! ```json
+//! {
+//!   "winner":      { "isFeasible": true, … },
+//!   "attempts":    6,
+//!   "maxAttempts": 100,
+//!   "k":           3
+//! }
+//! ```
 
 use anyhow::{bail, Context, Result};
 use rand::rngs::ThreadRng;
@@ -23,6 +32,10 @@ use rand::Rng;
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
+/// Entry point called by the mode dispatcher in [`crate::api`].
+///
+/// Parses `base`, `k` and `maxAttempts` from `payload`. Applies `k` random moves and
+/// returns the perturbed solution.
 pub fn perturbation(
     problem: &Problem,
     payload: &Value,
@@ -70,8 +83,8 @@ pub fn perturbation(
 
 /// Apply one random feasible move to `solution`.
 ///
-/// For permutations: swap two random positions.
-/// For vectors: flip a random bit (binary) or nudge a random element by ±1.
+/// Retries up to `max_attempts` times until the resulting candidate is feasible. If no
+/// feasible candidate is found, returns the original solution unchanged.
 fn apply_random_move(
     problem: &Problem,
     solution: &Solution,
@@ -87,6 +100,7 @@ fn apply_random_move(
     Ok((solution.clone(), max_attempts))
 }
 
+/// Generate a single random neighbor of `solution` without checking feasibility.
 fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut ThreadRng) -> Solution {
     match solution {
         Solution::Permutation(p) => {
@@ -103,7 +117,6 @@ fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut ThreadRng) 
             let mut next = v.clone();
             let lo = problem.lower();
             let hi = problem.upper();
-            // Binary: flip 0↔1.  Integer/continuous: nudge ±1 within bounds.
             if (hi - lo - 1.0).abs() < 1e-9 {
                 next[i] = if next[i] == 0.0 { 1.0 } else { 0.0 };
             } else {
@@ -118,26 +131,24 @@ fn random_neighbor(problem: &Problem, solution: &Solution, rng: &mut ThreadRng) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     fn tsp() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/tsp.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/tsp.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn perturbs_vector_solution() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let payload = json!({
             "base": { "variableValue": [1,1,1,1,0] },
             "k": 2,
@@ -152,7 +163,7 @@ mod tests {
     #[test]
     fn perturbs_permutation_solution() {
         let p = tsp();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let payload = json!({
             "base": { "variableValue": [1,2,3,4] },
             "k": 2,

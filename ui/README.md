@@ -1,224 +1,160 @@
-# FlowSolve UI — Summary
+# UI and Graph Editor
 
-This README gives a concise overview of the `ui/` folder: architecture, graph execution, packet-based runtime, main components and file structure.
+## Overview
 
-## 1. What this UI is
+This part of the UI provides a visual environment for building, configurin and executing metaheuristic algorithms. Users can create workflows by connecting components in a graph-based editor and observe how solutions evolve during execution.
 
-`ui/` is a React + React Flow application for:
+The system is built around **React Flow**, where each node represents a metaheuristic operation and edges define the execution flow between them.
 
-1. Building metaheuristic graphs.
-2. Configuring node parameters.
-3. Running the flow step by step or in full.
-4. Viewing execution traces.
-5. Loading templates such as GRASP, ILS, VNS, Tabu Search, SA, and EA.
+## Main Features
 
-Graph execution in the UI is handled by an internal packet-based runtime. For solver operations or specific modes, the UI can call the backend through `prodefApi` (`/execute`).
+### Graph Editor
 
-## 2. How graphs work in this UI
+Users can create algorithms visually by:
 
-### 2.1 Graph model
+* Dragging components from the sidebar.
+* Connecting nodes through input/output handles.
+* Configuring node parameters.
+* Defining start and end nodes.
 
-- A graph is made of `FlowNode[]` and `FlowEdge[]`.
-- Nodes use a canonical `NodeKind` type (for example: `singleSolution`, `localSearch`, `acceptance`, `termination`, etc.).
-- Edges define the directional flow of `Packet` objects between nodes.
-- A node can be marked as `start` and/or `end`.
+The resulting graph represents the execution logic of the algorithm.
 
-### 2.2 Pre-execution validation
+### Algorithm Templates
 
-Before running, `graphValidation.ts` checks rules such as:
+The editor includes predefined templates for common metaheuristics:
 
-1. There must be exactly one `start` node.
-2. There must be exactly one `termination` node.
-3. Some join nodes require two inputs:
-   - `acceptance` / `temperatureAcceptance`
-   - `subtraction`
-   - `changeNeighborhood`
-4. If the flow does not start at the loop, it must connect correctly to it.
+* GRASP
+* Iterated Local Search (ILS)
+* Variable Neighborhood Search (VNS)
+* Tabu Search
+* Simulated Annealing
 
-If validation fails, execution stops and the error is written to the trace.
+Templates automatically generate the required nodes and connections, providing a quick starting point for experimentation.
 
-### 2.3 Packet-based runtime
+### Runtime Execution
 
-The runtime works with `Packet` objects containing:
+Workflows can be executed directly from the UI.
 
-- `idIteration`: current iteration.
-- `fromId`: sender node.
-- `solution` or `solutionSet`.
+The execution engine:
 
-`packetExecutor.ts` is responsible for:
+1. Validates the graph structure.
+2. Creates runtime component instances.
+3. Routes packets between connected nodes.
+4. Updates node state and execution traces.
+5. Displays intermediate and final solutions.
 
-1. Validating the graph.
-2. Creating the seed packet.
-3. Processing a FIFO queue of packets.
-4. Resolving the component for each `NodeKind` through `registry.ts`.
-5. Executing the component and routing the result through outgoing edges.
-6. Handling joins by iteration and sender node.
-7. Recording traces.
-8. Stopping on `stop` or when the packet budget is exceeded.
+### Execution Monitoring
 
-### 2.4 Component contract
+During execution, users can inspect:
 
-Each runtime component follows a shared contract defined in `components/base.ts`:
+* Current node being executed.
+* Generated solutions.
+* Objective values.
+* Iteration counters.
+* Acceptance decisions.
+* Error messages.
 
-- Input: `ComponentContext` + `Packet` (or several `Packet` objects in joins).
-- Output: `ExecuteResult` (`emit`, `wait`, `stop`, `error`).
-- Side effects: update `FlowNodeData`, write traces.
+Execution traces are displayed in real time to help understand the behavior of the algorithm.
 
-## 3. Component taxonomy (`NodeKind`)
+### Problem Configuration
 
-Supported node types in the UI:
+The UI supports loading optimization problems through JSON definitions.
 
-- `problem`: JSON definition of the problem.
-- `singleSolution`: single-solution generation.
-- `populationGeneration`: population generation.
-- `selection`: parent selection.
-- `crossover`: recombination.
-- `mutation`: mutation.
-- `localSearch`: local improvement.
-- `perturbation`: solution perturbation.
-- `acceptance`: acceptance rule.
-- `temperatureAcceptance`: temperature-based acceptance.
-- `reduceTemperature`: cooling step.
-- `storage`: solution / history memory.
-- `termination`: iteration control and stopping.
-- `changeNeighborhood`: neighborhood-size adjustment.
-- `neighborhood`: neighborhood generation.
-- `subtraction`: set / candidate difference.
-- `selectionBest`: best-candidate selection.
+Available examples include:
 
-UI rendering for these nodes is defined in `src/components/flowNodes.tsx`.  
-Components are implemented in `src/flow/runtime/components/nodes/*.ts`.
+* Knapsack Problem
+* Traveling Salesman Problem (TSP)
+* Assignment Problem
 
-## 4. Folder structure
+Users can edit the JSON directly before executing a workflow.
 
-### Generated or environment folders
+### Result Export
 
-- `node_modules/`: installed dependencies.
-- `dist/`: production build generated by Vite.
-- `docs/`: HTML documentation generated by TypeDoc.
+Execution results can be exported as:
 
+* TXT execution traces
+* CSV metric histories
 
-## 5. File-by-file catalog (UI)
+CSV exports are designed for later analysis and comparison of algorithm performance.
 
-The following list covers the current files, excluding `node_modules`, `dist` and `docs`.
+# Architecture
 
-### 5.1 Root of `ui/`
+The UI is organized into four main areas:
 
-- `index.html`: main HTML shell where React mounts.
-- `package.json`: scripts and dependencies.
-- `package-lock.json`: npm lockfile.
-- `README.md`: this document.
-- `server.cjs`: Node/Express bridge to the Rust runtime and auxiliary endpoints.
-- `tsconfig.json`: TypeScript configuration.
-- `typedoc.json`: TypeDoc configuration.
-- `vite.config.ts`: Vite and Vitest configuration.
+## Flow Editor
 
-### 5.2 `src/`
+Responsible for workflow construction and visualization.
 
-- `src/main.tsx`: React entry point.
-- `src/App.tsx`: main container. Canvas state, templates, execution and general wiring.
-- `src/App.test.tsx`: App wiring tests for templates, selection, flags and exports.
-- `src/style.css`: global styles (sidebar, canvas, nodes, panels, controls).
+### Main Files
 
-### 5.3 `src/components/`
+| File                 | Responsibility                              |
+| -------------------- | ------------------------------------------- |
+| `FlowSidebar.tsx`    | Component toolbox and algorithm templates   |
+| `flowNodes.tsx`      | Custom React Flow node definitions          |
+| `ExecutionPanel.tsx` | Problem configuration and execution traces  |
+| `flow.ts`            | Shared flow types and node data definitions |
+| `flowHelpers.ts`     | Shared utility functions                    |
 
-- `src/components/FlowSidebar.tsx`: sidebar with palette and template actions.
-- `src/components/flowNodes.tsx`: React Flow renderers.
-- `src/components/FlowSidebar.test.tsx`: sidebar behavior tests.
-- `src/components/ExecutionPanel.tsx`: right panel for problem editing and global trace.
-- `src/components/ExecutionPanel.test.tsx`: inspector / trace panel tests.
+## Templates
 
-### 5.4 `src/constants/`
+Responsible for generating predefined algorithm graphs.
 
-- `src/constants/flowCatalog.ts`: UI labels and component names.
-- `src/constants/problemTemplates.ts`: JSON problem templates (knapsack, tsp, assignment).
+### Main Files
 
-### 5.5 `src/flow/`
+| File                  | Responsibility                         |
+| --------------------- | -------------------------------------- |
+| `flowTemplates.ts`    | Defines predefined algorithm templates |
+| `algorithmBuilder.ts` | Template selection and creation logic  |
 
-- `src/flow/algorithms/algorithmBuilder.ts`: template selector by algorithm (`grasp`, `ils`, etc.).
+## Runtime Engine
 
-#### `src/flow/runtime/`
+Responsible for workflow execution.
 
-##### `src/flow/runtime/components/`
+### Main Files
 
-- `src/flow/runtime/components/base.ts`: shared base classes and helpers.
-- `src/flow/runtime/components/registry.ts`: `NodeKind -> ComponentFactory` registry.
+| File                 | Responsibility                   |
+| -------------------- | -------------------------------- |
+| `packetExecutor.ts`  | Executes workflow graphs         |
+| `packet.ts`          | Runtime packet definitions       |
+| `registry.ts`        | Runtime component registry       |
+| `graphValidation.ts` | Workflow validation              |
+| `base.ts`            | Runtime component abstractions   |
+| `useFlowRunner.ts`   | React hook for execution control |
 
-###### `src/flow/runtime/components/nodes/`
+## Runtime Components
 
-- `src/flow/runtime/components/nodes/singleGenerator.ts`: single-solution generator.
-- `src/flow/runtime/components/nodes/populationGenerator.ts`: population generator.
-- `src/flow/runtime/components/nodes/selection.ts`: individual / parent selection.
-- `src/flow/runtime/components/nodes/crossover.ts`: crossover / recombination.
-- `src/flow/runtime/components/nodes/mutation.ts`: mutation of individuals.
-- `src/flow/runtime/components/nodes/localSearch.ts`: local search.
-- `src/flow/runtime/components/nodes/perturbation.ts`: perturbation to escape local optima.
-- `src/flow/runtime/components/nodes/acceptance.ts`: policy-based acceptance rule.
-- `src/flow/runtime/components/nodes/temperatureAcceptance.ts`: probabilistic temperature acceptance.
-- `src/flow/runtime/components/nodes/reduceTemperature.ts`: temperature update / cooling.
-- `src/flow/runtime/components/nodes/storage.ts`: storage of best/current/history solutions.
-- `src/flow/runtime/components/nodes/loop.ts`: iteration control.
-- `src/flow/runtime/components/nodes/neighborhood.ts`: neighborhood generation / evaluation.
-- `src/flow/runtime/components/nodes/changeNeighborhood.ts`: neighborhood parameter adjustment.
-- `src/flow/runtime/components/nodes/subtraction.ts`: subtraction between flows.
-- `src/flow/runtime/components/nodes/selectionBest.ts`: deterministic best-candidate selection.
+Each executable node has its own runtime implementation.
 
-##### `src/flow/runtime/engine/`
+Examples include:
 
-- `src/flow/runtime/engine/packet.ts`: base runtime types.
-- `src/flow/runtime/engine/graphValidation.ts`: structural graph validation.
+* Single Solution Generator
+* Local Search
+* Perturbation
+* Acceptance
+* Storage
+* Loop
+* Neighborhood
+* Selection Best
+* Subtraction
+* Temperature Acceptance
+* Reduce Temperature
+* Change Neighborhood
 
-##### `src/flow/runtime/executor/`
+## Backend Integration
 
-- `src/flow/runtime/executor/packetExecutor.ts`: main FIFO packet-based executor.
+The UI communicates with the execution backend.
 
-### 5.6 `src/hooks/`
+### Main Files
 
-- `src/hooks/useFlowRunner.ts`: bridge between React state and the runtime executor.
-- `src/hooks/useFlowRunner.test.tsx`: hook tests for trace, error and execution orchestration.
+| File                 | Responsibility                   |
+| -------------------- | -------------------------------- |
+| `prodefApi.ts`       | API communication layer          |
+| `runtimeContract.ts` | Request and response definitions |
 
-### 5.7 `src/services/`
+## Data Export
 
-- `src/services/prodefApi.ts`: HTTP client for `/execute`.
-- `src/services/prodefApi.test.ts`: HTTP contract tests for execute requests and fallback endpoints.
+### Main Files
 
-### 5.8 `src/templates/`
-
-- `src/templates/flowTemplates.ts`: node and edge definitions for GRASP, ILS, VNS, Tabu, SA, and EA.
-
-### 5.9 `src/test/`
-
-- `src/test/setup.ts`: global test setup.
-
-### 5.10 `src/types/`
-
-- `src/types/flow.ts`: UI graph types.
-- `src/types/runtimeContract.ts`: typed contract between UI and backend.
-
-### 5.11 `src/utils/`
-
-- `src/utils/executionCsv.ts`: CSV export helpers for execution metrics.
-- `src/utils/flowHelpers.ts`: pure helpers and data utilities.
-
-## 6. End-to-end execution flow
-
-1. The user drags nodes onto the canvas from `FlowSidebar`.
-2. `flowNodes.tsx` renders each node.
-3. The user marks `start` / `end` and configures parameters.
-4. `useFlowRunner` prepares the runtime dependencies.
-5. `packetExecutor` validates the graph.
-6. Packets are created and processed in a queue.
-7. Each component emits an `ExecuteResult`.
-8. Traces are written.
-9. At the end of the flow, the final solution summary is published.
-
-## 7. Maintenance note
-
-If you add a new node type, you should update at least:
-
-1. `src/types/flow.ts` for the new `NodeKind`.
-2. `src/components/flowNodes.tsx` for the visual rendering.
-3. `src/flow/runtime/components/nodes/*.ts` for runtime logic.
-4. `src/flow/runtime/components/registry.ts` to register it.
-5. `src/templates/flowTemplates.ts` if it should appear in templates.
-6. `src/constants/flowCatalog.ts` if it needs a human-readable UI label.
+| File              | Responsibility                        |
+| ----------------- | ------------------------------------- |
+| `executionCsv.ts` | CSV generation and download utilities |

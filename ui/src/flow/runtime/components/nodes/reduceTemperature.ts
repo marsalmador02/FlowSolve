@@ -1,14 +1,10 @@
-/*
- * File: reduceTemperature.ts
+/**
+ * Reduce Temperature Component
  *
- * Contains:
- * - SA node that reduces temperature using a geometric schedule.
- *   It interpolates between T0 = 100 and Tf = 0.1 across maxIterations steps.
- *
- * Role in the flow (startup -> graph execution):
- * - Forwards the accepted solution and reduces the temperature value.
- * - Uses the loop budget forwarded in the packet when available.
+ * Updates the temperature value used by Simulated Annealing. The temperature is
+ * progressively reduced according to the configured cooling schedule.
  */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
 

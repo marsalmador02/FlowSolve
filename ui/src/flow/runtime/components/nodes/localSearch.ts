@@ -1,16 +1,20 @@
-/*
- * File: localSearch.ts
+/**
+ * Local Search Component
  *
- * Contains:
- * - Node that runs a local search on a given solution using neighborhood operators.
- *
- * Role in the flow (startup -> graph execution):
- * - Consumes a solution and returns an improved solution or the same if no improvement.
+ * Applies a local search procedure to an incoming solution. The resulting solution
+ * is expected to be equal to or better than the original candidate.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, solutionScore, toPretty } from '../base';
 
+/**
+ * Runtime implementation of the Local Search node.
+ *
+ * Receives a candidate solution, executes a local search procedure and forwards
+ * the improved solution.
+ */
 export class LocalSearchComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const base = incoming.solution as SolutionLike;

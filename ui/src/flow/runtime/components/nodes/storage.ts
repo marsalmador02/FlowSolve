@@ -1,3 +1,10 @@
+/**
+ * Storage Component
+ *
+ * Stores solutions generated during execution and makes them available to other
+ * components. It can be used as memory and final result storage.
+ */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import { parseJson } from '../../../../utils/flowHelpers';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';

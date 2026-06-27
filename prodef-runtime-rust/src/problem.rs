@@ -101,7 +101,7 @@ struct RawInstanceAttribute {
     value: serde_json::Value,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Sense {
     Minimize,
     Maximize,
@@ -400,14 +400,12 @@ mod tests {
 
     fn load(json: &str) -> Problem {
         let v: serde_json::Value = serde_json::from_str(json).expect("parse json");
-        Problem::try_from(v).expect("build problem")
+        Problem::from_json(v).expect("build problem")
     }
-
-    // Basic examples (small, used in other test modules too)
 
     #[test]
     fn tsp_builds_and_evaluates() {
-        let p = load(include_str!("../../examples/tsp.json"));
+        let p = load(include_str!("../examples/tsp.json"));
         assert_eq!(p.var_size(), 4);
         assert!(p.is_permutation());
         assert_eq!(p.sense(), Sense::Minimize);
@@ -420,7 +418,7 @@ mod tests {
 
     #[test]
     fn knapsack_builds_and_evaluates() {
-        let p = load(include_str!("../../examples/knapsack.json"));
+        let p = load(include_str!("../examples/knapsack.json"));
         assert!(!p.is_permutation());
         assert_eq!(p.sense(), Sense::Maximize);
 
@@ -429,52 +427,39 @@ mod tests {
         assert_eq!(p.score(&sol).unwrap(), 0.0);
     }
 
-    // Complex examples — the three problem families we support
-
     #[test]
     fn knapsack_complex_evaluates_correctly() {
-        let p = load(include_str!("../../examples/knapsack_complex.json"));
+        let p = load(include_str!("../examples/knapsack_complex.json"));
         assert_eq!(p.var_size(), 10);
         assert!(!p.is_permutation());
         assert_eq!(p.sense(), Sense::Maximize);
 
-        // All zeros → feasible, score 0
         let empty = Solution::Vector(vec![0.0; 10]);
         assert!(p.is_feasible(&empty).unwrap());
         assert_eq!(p.score(&empty).unwrap(), 0.0);
 
-        // Item 9 alone (value=35, weight=1) → feasible, score 35
         let mut pick_9 = vec![0.0; 10];
         pick_9[8] = 1.0;
         let sol = Solution::Vector(pick_9);
         assert!(p.is_feasible(&sol).unwrap());
         assert_eq!(p.score(&sol).unwrap(), 35.0);
 
-        // All ones → total weight = 25 (> MaxWeight=40? let's check)
-        // weights: 2+3+4+2+3+4+3+2+1+1 = 25 <= 40, so feasible
         let all = Solution::Vector(vec![1.0; 10]);
         assert!(p.is_feasible(&all).unwrap());
     }
 
     #[test]
     fn assignment_complex_evaluates_correctly() {
-        let p = load(include_str!("../../examples/assignment_complex.json"));
+        let p = load(include_str!("../examples/assignment_complex.json"));
         assert_eq!(p.var_size(), 9);
         assert!(p.is_permutation());
         assert_eq!(p.sense(), Sense::Minimize);
 
-        // Identity permutation [0..8] → each agent i gets task i+1
-        // Optimal diagonal: 6+4+20+18+17+16+15+14+23 is NOT identity
-        // Identity [1,2,3,4,5,6,7,8,9] in 1-based → [0,1,2,3,4,5,6,7,8] in 0-based
-        // cost[1,1]=14, cost[2,2]=20, cost[3,3]=20, ...
         let identity = Solution::Permutation(vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
         assert!(p.is_feasible(&identity).unwrap());
         let score = p.score(&identity).unwrap();
         assert!(score > 0.0);
 
-        // Best known: agent i → task i (diagonal has lowest costs)
-        // cost row1: task_2=6 is cheapest → agent 1 should go to task 2
-        // Just verify it evaluates without error
         let best = Solution::Permutation(vec![1, 0, 2, 3, 4, 5, 6, 7, 8]);
         let best_score = p.score(&best).unwrap();
         assert!(p.is_better(best_score, score), "swapping agent 1 and 2 should improve cost");
@@ -482,12 +467,11 @@ mod tests {
 
     #[test]
     fn tsp_complex_evaluates_correctly() {
-        let p = load(include_str!("../../examples/tsp_complex.json"));
+        let p = load(include_str!("../examples/tsp_complex.json"));
         assert_eq!(p.var_size(), 7);
         assert!(p.is_permutation());
         assert_eq!(p.sense(), Sense::Minimize);
 
-        // Identity tour [0,1,2,3,4,5,6] → cities 1→2→3→4→5→6→7→1
         let identity = Solution::Permutation(vec![0, 1, 2, 3, 4, 5, 6]);
         assert!(p.is_feasible(&identity).unwrap());
         let score = p.score(&identity).unwrap();
@@ -496,11 +480,11 @@ mod tests {
 
     #[test]
     fn is_better_respects_sense() {
-        let p = load(include_str!("../../examples/tsp.json")); // minimize
+        let p = load(include_str!("../examples/tsp.json"));
         assert!(p.is_better(10.0, 20.0));
         assert!(!p.is_better(20.0, 10.0));
 
-        let p = load(include_str!("../../examples/knapsack.json")); // maximize
+        let p = load(include_str!("../examples/knapsack.json"));
         assert!(p.is_better(20.0, 10.0));
         assert!(!p.is_better(10.0, 20.0));
     }

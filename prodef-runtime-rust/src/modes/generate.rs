@@ -1,17 +1,23 @@
-// modes/generate.rs
-//
-// Modes: `generate`  and  `generate-population`
-//
-// generate            → one feasible SolverResult in `result`
-// generate-population → N feasible SolverResults in `population`
-//                       payload: { "count": N }  (default 10)
+//! # Mode: `generate`
+//!
+//! Generates a single random feasible solution for the problem.
+//!
+//! ## Response
+//!
+//! ```json
+//! { "result": { "isFeasible": true, "goalValues": […], "variableValue": […] } }
+//! ```
 
 use anyhow::Result;
 use rand::rngs::ThreadRng;
-
+ 
 use crate::problem::Problem;
 use crate::solution::SolverResult;
 
+/// Generate one random feasible solution and return it as a [`SolverResult`].
+///
+/// Internally calls [`Problem::random_feasible_solution`], which retries until it finds
+/// a solution that satisfies all constraints.
 pub fn generate(problem: &Problem, rng: &mut ThreadRng) -> Result<SolverResult> {
     let solution = problem.random_feasible_solution(rng)?;
     SolverResult::build(problem, &solution)
@@ -20,40 +26,35 @@ pub fn generate(problem: &Problem, rng: &mut ThreadRng) -> Result<SolverResult> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
-    use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn generate_returns_feasible_result() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let result = generate(&p, &mut rng).unwrap();
         assert!(result.is_feasible);
     }
 
     #[test]
-    fn generate_population_respects_count() {
+    fn generated_solution_has_correct_variable_count() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
-        let pop = generate_population(&p, &json!({ "count": 3 }), &mut rng).unwrap();
-        assert_eq!(pop.len(), 3);
-        for r in pop {
-            assert!(r.is_feasible);
-        }
+        let mut rng = rand::thread_rng();
+        let result = generate(&p, &mut rng).unwrap();
+        let arr = result.variable_value.as_array().unwrap();
+        assert_eq!(arr.len(), p.var_size());
     }
 
     #[test]
-    fn generate_population_defaults_to_10() {
+    fn generate_result_has_goal_values() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
-        let pop = generate_population(&p, &json!(null), &mut rng).unwrap();
-        assert_eq!(pop.len(), 10);
+        let mut rng = rand::thread_rng();
+        let result = generate(&p, &mut rng).unwrap();
+        assert!(!result.goal_values.is_empty());
     }
 }

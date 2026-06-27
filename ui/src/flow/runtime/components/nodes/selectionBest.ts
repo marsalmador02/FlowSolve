@@ -1,12 +1,10 @@
-/*
- * File: selectionBest.ts
+/**
+ * Selection Best Component
  *
- * Contains:
- * - Component that receives a set and returns the best solution (delegates to Rust 'select-best').
- *
- * Role in the flow (startup -> graph execution):
- * - Converts a packet with a solutionSet into a packet with a single solution.
+ * Receives a set of candidate solutions and selects the best one according to the
+ * objective value defined by the problem.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';

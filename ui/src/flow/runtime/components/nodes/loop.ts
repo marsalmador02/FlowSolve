@@ -1,17 +1,18 @@
-/*
- * File: loop.ts
+/**
+ * Loop Component
  *
- * Contains:
- * - Loop (termination) component: flow clock. Keeps iteration counter and decides when to stop.
- *
- * Role in the flow (startup -> graph execution):
- * - Emits idIteration=1 on first trigger and increments iteration on subsequent closures.
- * - When maxIterations is exceeded, emits stop and marks flow end.
- * - Maintains `history` array storing objective values for CSV export.
+ * Acts as the execution controller of the workflow. It manages iteration counters
+ * and the stopping condition.
  */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, solutionScore, toPretty } from '../base';
 
+/**
+ * Runtime implementation of the Loop node.
+ *
+ * Controls iteration count and determines when workflow execution should terminate.
+ */
 export class LoopComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const maxIterations = ctx.nodeData.maxIterations ?? 10;

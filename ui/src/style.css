@@ -42,14 +42,18 @@ body,
 
 .sidebar {
   height: 100vh;
-  width: 350px;
+  width: 280px;
   box-sizing: border-box;
   padding: 20px;
+  min-width: 210px;
+  max-width: 450px;
   background: var(--color-purple);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   z-index: 5;
+  resize: horizontal;
+  overflow: hidden;
 }
 
 .sidebar-toolbar {
@@ -169,18 +173,18 @@ body,
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 5;
+  z-index: 1;
 }
 
 .canvas-icon-button {
-  width: 50px;
-  height: 50px;
+  width: 35px;
+  height: 35px;
   border-radius: 10px;
   border: 0;
   background: var(--color-purple-light);
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
 }
 

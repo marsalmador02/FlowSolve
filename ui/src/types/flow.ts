@@ -1,10 +1,13 @@
-// Shared type contracts for flow nodes, edges, and algorithm metadata.
+/**
+ * Flow Types
+ *
+ * Contains the shared type definitions used by React Flow, including node types,
+ * edge types, execution metadata and algorithm-specific configuration data.
+ */
+
 import type { Edge, Node } from 'reactflow';
 
-// Acceptance strategies supported by the acceptance component.
-export type AcceptancePolicy = 'bestOnly' | 'improveCurrent' | 'threshold' | 'always';
-
-// Canonical node kinds available in the flow graph.
+// Node kinds available in the flow graph.
 export type NodeKind =
   | 'problem'
   | 'singleSolution'
@@ -24,7 +27,12 @@ export type NodeKind =
   | 'subtraction'
   | 'selectionBest';
 
-// Runtime payload attached to each node in React Flow.
+/**
+ * Runtime data associated with a React Flow node.
+ *
+ * Stores both execution state and algorithm-specific configuration used by the
+ * workflow editor.
+ */
 export interface FlowNodeData {
   label: string;
   start?: boolean;
@@ -35,7 +43,6 @@ export interface FlowNodeData {
   trace?: string;
   error?: string;
 
-  policy?: AcceptancePolicy;
   threshold?: number;
   temperatureCurrent?: number;
   coolingMode?: 'normal' | 'slow' | 'hold';
@@ -73,6 +80,6 @@ export interface FlowNodeData {
   onUpdate?: (patch: Partial<FlowNodeData>) => void;
 }
 
-// Typed aliases for React Flow primitives used across the project.
+// The React Flow node and edge types used in the flow graph.
 export type FlowNode = Node<FlowNodeData>;
 export type FlowEdge = Edge;

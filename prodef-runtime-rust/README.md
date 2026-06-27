@@ -1,214 +1,88 @@
-﻿# FlowSolve Runtime (Rust) - Summary
+﻿# Rust Execution Backend
 
-This README gives a concise overview of the `prodef-runtime-rust/` crate, what it does, how it is organized and how it fits with the UI.
+## Overview
 
-## 1. What this runtime is
+This part of the system is the execution backend for metaheuristic algorithms. It receives a JSON request describing an optimization problem and an operation to perform, runs that operation, and returns a JSON response.
 
-`prodef-runtime-rust/` is the Rust execution engine for FlowSolve's optimization semantics. It receives a JSON request, validates and normalizes the problem, dispatches the selected execution mode, and returns a JSON response for the UI.
+## Main Features
 
-In practice it:
+### Problem Loading
 
-1. Reads an `ExecutionRequest` from JSON.
-2. Builds a runtime-ready `RuntimeProblem` from `execution.problem`.
-3. Dispatches the request through `execution.mode`.
-4. Runs the corresponding generation, selection, crossover, mutation, local-search, perturbation, neighborhood, or acceptance logic.
-5. Serializes an `ExecutionResponse` back to JSON.
+Problems are defined in JSON and loaded at runtime. The backend supports:
 
-## 2. How the runtime works
+* **Binary vector problems.**
+* **Permutation problems.**
 
-### 2.1 Execution flow
+### Expression Evaluator
 
-```
-CLI / UI bridge
-  ↓
-src/main.rs
-  ↓
-api::run
-  ↓
-domain::RuntimeProblem
-  ↓
-modes::dispatch
-  ↓
-operators / search / evaluation
-  ↓
-ExecutionResponse
-```
+Supported syntax includes:
 
-### 2.2 Request contract
+* Weighted sums over index ranges: `sum x[i]*item[i].value over i=(1:N)`
+* Class attribute access: `item[i].weight`
+* Matrix access: `distance[city[i], city[i+1]]`
+* Variable access: `x[i]`
+* Problem parameters: `N`, `MaxWeight`
+* Arithmetic operators: `+`, `-`, `*`
+* Comparisons, including chained: `0 <= sum x[i]*item[i].weight over i=(1:N) <= MaxWeight`
 
-`execution.problem` is required for the supported modes.
+### Execution Modes
 
-```json
-{
-  "problem": { ... },
-  "execution": {
-    "mode": "generate",
-    "payload": { ... }
-  }
-}
-```
+Each request specifies a mode that determines what operation to run. Available modes:
 
-### 2.3 Response contract
+* `generate`: generates one random feasible solution.
+* `perturbation`: applies k random moves to a base solution to escape local optima.
+* `neighborhood`: enumerates all neighbors reachable by a single move from a base solution.
+* `local-search`: runs one best-improvement step from a starting solution.
+* `select-best`: picks the best feasible candidate from a list.
+* `temperature-acceptance`: applies the simulated annealing acceptance rule.
 
-`ExecutionResponse` can contain one or more of:
+## Architecture
 
-- `result`: a single `SolverResult`.
-- `population`: a list of `SolverResult`.
-- `payload`: free JSON with mode metadata.
+The backend is organized into four main areas:
 
-## 3. Folder structure
+## Entry Point
 
-### Root files
+Reads the request file, parses it, calls the dispatcher and prints the response.
 
-- `Cargo.toml`: crate manifest and dependencies.
-- `README.md`: this document.
+### Main Files
 
-### `src/`
+| File      | Responsibility                            |
+| --------- | ----------------------------------------- |
+| `main.rs` | CLI argument parsing and request dispatch |
+| `api.rs`  | Request/response types and mode router    |
 
-- `src/main.rs`: CLI entry point.
-- `src/lib.rs`: module wiring for the crate.
+## Problem and Evaluation
 
-#### `src/api/`
+Responsible for loading the problem definition and evaluating goals and constraints.
 
-- `src/api/mod.rs`: request/response boundary and `run` entry point.
-- `src/api/parse.rs`: `variableValue` parsing and normalization helpers.
-- `src/api/response.rs`: conversion from runtime solutions to JSON responses.
-- `src/api/validation.rs`: shared payload validation helpers.
+### Main Files
 
-#### `src/domain/`
+| File         | Responsibility                                          |
+| ------------ | ------------------------------------------------------- |
+| `problem.rs` | Problem struct, JSON loading, feasibility, scoring      |
+| `eval.rs`    | Expression evaluator for goal and constraint expressions |
 
-- `src/domain/model.rs`: external problem schema.
-- `src/domain/runtime.rs`: runtime-ready problem representation.
-- `src/domain/solution.rs`: internal solution types.
-- `src/domain/result.rs`: solver result type.
-- `src/domain/feasible.rs`: feasible solution generation helpers.
+## Solution
 
-#### `src/evaluation/`
+Responsible for representing and serializing solutions.
 
-- `src/evaluation/expr.rs`: expression evaluator for goals and constraints.
-- `src/evaluation/mod.rs`: evaluation module wiring.
+### Main Files
 
-#### `src/modes/`
+| File          | Responsibility                                              |
+| ------------- | ----------------------------------------------------------- |
+| `solution.rs` | `Solution` enum, JSON conversion, `SolverResult` builder   |
 
-- `src/modes/mod.rs`: mode dispatcher.
-- `src/modes/context.rs`: shared execution context and outcome types.
-- `src/modes/common.rs`: shared helpers for modes.
-- `src/modes/generate.rs`: single and population generation.
-- `src/modes/selection.rs`: selection logic.
-- `src/modes/crossover.rs`: crossover logic.
-- `src/modes/mutation.rs`: mutation logic.
-- `src/modes/perturbation.rs`: perturbation logic.
-- `src/modes/neighborhood.rs`: neighborhood generation.
-- `src/modes/local_search.rs`: local-search execution mode.
-- `src/modes/select_best.rs`: best-candidate selection.
-- `src/modes/temperature_acceptance.rs`: simulated-annealing-style acceptance.
+## Execution Modes
 
-#### `src/operators/`
+Each mode is its own submodule under `src/modes/`. All modes share the same signature: they receive the problem, a JSON payload, and a random number generator, and return either a `SolverResult` or a JSON value.
 
-- `src/operators/mod.rs`: low-level operators and defaults by problem family.
+### Main Files
 
-#### `src/search/`
-
-- `src/search/local_search.rs`: search helpers.
-
-## 4. Core runtime model
-
-### 4.1 Problem schema (`domain/model.rs`)
-
-The runtime accepts problems with:
-
-- `name`
-- `parameters`
-- `variables`
-- `goals`
-- `constraints`
-- `classes`
-- `objects`
-
-### 4.2 Current runtime limitations
-
-`RuntimeProblem::new` enforces the current executable subset:
-
-- only one decision variable per problem,
-- only `shape.type == "vector"`,
-- the vector can be permutation-encoded or numeric,
-- indexing is 1-based in the evaluation layer,
-- binary variables default to `[0, 1]` when no range is provided,
-- non-binary variables default to `[0, 10]` when no range is provided.
-
-### 4.3 `RuntimeProblem`
-
-`RuntimeProblem` adapts the JSON problem into an executable form. It is responsible for:
-
-- building the parameter map,
-- loading class and instance data,
-- validating solution shape and size,
-- generating random solutions,
-- checking feasibility,
-- evaluating goals,
-- comparing scores for maximize/minimize problems.
-
-Key methods include:
-
-- `generate_random_solution`
-- `evaluate_goals`
-- `is_feasible`
-- `objective_score`
-- `is_better_score`
-- `solution_size`
-- `solution_is_permutation`
-
-### 4.4 Solution types
-
-```rust
-pub enum Solution {
-    Vector(Vec<f64>),
-    Permutation(Vec<usize>),
-}
-```
-
-- `Vector` is used for binary, integer, and continuous problems.
-- `Permutation` is used for TSP, assignment, ordering, and similar problems.
-
-### 4.5 Expression evaluation (`evaluation/expr.rs`)
-
-The evaluator supports:
-
-- numeric literals and problem parameters,
-- `x[i]` variable access,
-- class attributes like `item[i].weight`,
-- matrix access like `d[i,j]`,
-- sum notation such as `sum ... over i=(1:N)`,
-- comparisons `<=`, `>=`, and `=`,
-- additive chaining with `+`.
-
-## 5. Supported modes
-
-`modes::dispatch` currently recognizes:
-
-| Mode | Handler | Description | Main payload fields |
-|------|---------|-------------|---------------------|
-| `generate` | `generate::execute_single` | Generate one feasible solution | none or empty |
-| `generate-population` | `generate::execute_population` | Generate a feasible population | `count` |
-| `selection` | `selection::execute` | Elitist plus tournament selection | `candidates`, `targetSize`, `tournamentSize`, `eliteSize` |
-| `crossover` | `crossover::execute` | Crossover between parents | `parents`, `targetSize`, `crossoverOperator` |
-| `mutation` | `mutation::execute` | Mutate an input set | `incomingSet`, `mutationRate` |
-| `perturbation` | `perturbation::execute` | Sequential perturbation | `base`, `k`, `maxAttempts` |
-| `neighborhood` | `neighborhood::execute` | Generate neighbors from a base solution | `base` |
-| `local-search` | `local_search::execute` | Hill-climbing local search | `solution` |
-| `select-best` | `select_best::execute` | Pick the best feasible candidate | `candidates` |
-| `temperature-acceptance` | `temperature_acceptance::execute` | Simulated-annealing-style acceptance rule | `candidate`, `stored`, `temperatureCurrent` |
-
-## 6. Parsing and response helpers
-
-### `src/api/parse.rs`
-
-This module converts JSON payloads to internal solutions and back. It accepts permutation arrays in either 0-based or 1-based form, rejects duplicates and wrong lengths, and normalizes everything to the runtime representation.
-
-### `src/api/response.rs`
-
-This module converts runtime solutions back to JSON. It also computes `SolverResult` values with feasibility and objective metadata.
-
-### `src/api/validation.rs`
-
-This module centralizes payload validation so mode handlers return consistent errors.
+| File                      | Mode                    | Returns        |
+| ------------------------- | ----------------------- | -------------- |
+| `modes/generate.rs`       | `generate`              | `SolverResult` |
+| `modes/local_search.rs`   | `local-search`          | `SolverResult` |
+| `modes/perturbation.rs`   | `perturbation`          | JSON payload   |
+| `modes/neighborhood.rs`   | `neighborhood`          | JSON payload   |
+| `modes/select_best.rs`    | `select-best`           | JSON payload   |
+| `modes/temperature_acceptance.rs` | `temperature-acceptance` | JSON payload |

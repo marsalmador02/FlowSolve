@@ -1,14 +1,18 @@
-// modes/neighborhood.rs
-//
-// Mode: `neighborhood`
-//
-// Generates all neighbors of a base solution using exhaustive moves:
-//   - Permutation: all pairwise swaps
-//   - Binary vector: all single-bit flips
-//   - Integer/continuous vector: ±1 at every position (within bounds)
-//
-// Payload:  { "base": { "variableValue": [...] } }
-// Response: { "neighbors": [ SolverResult, ... ] }
+//! # Mode: `neighborhood`
+//!
+//! Generates all neighbors of a base solution reachable by a single move.
+//!
+//! ## Request payload
+//!
+//! ```json
+//! { "base": { "variableValue": [1, 0, 1, 0, 0] } }
+//! ```
+//!
+//! ## Response
+//!
+//! ```json
+//! { "neighbors": [ { "isFeasible": true, … }, … ] }
+//! ```
 
 use anyhow::{bail, Context, Result};
 use rand::rngs::ThreadRng;
@@ -17,6 +21,11 @@ use serde_json::{json, Value};
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
+/// Entry point called by the mode dispatcher in [`crate::api`].
+///
+/// Parses `base` from `payload`, enumerates every single-move neighbor and returns a
+/// JSON object with three arrays (all aliases of each other): `generated`, `feasible`
+/// and `neighbors`.
 pub fn neighborhood(
     problem: &Problem,
     payload: &Value,
@@ -46,7 +55,7 @@ pub fn neighborhood(
     }))
 }
 
-/// Enumerate every neighbor reachable by a single move from `solution`.
+/// Enumerate every solution reachable from `solution` by exactly one move.
 fn generate_neighbors(problem: &Problem, solution: &Solution) -> Result<Vec<Solution>> {
     match solution {
         Solution::Permutation(p) => {
@@ -95,41 +104,37 @@ fn generate_neighbors(problem: &Problem, solution: &Solution) -> Result<Vec<Solu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     fn tsp() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/tsp.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/tsp.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn binary_vector_neighborhood_has_n_neighbors() {
-        let p = knapsack(); // var_size = 5, binary
-        let mut rng = StdRng::seed_from_u64(42);
+        let p = knapsack();
+        let mut rng = rand::thread_rng();
         let payload = json!({ "base": { "variableValue": [1,1,1,1,0] } });
         let result = neighborhood(&p, &payload, &mut rng).unwrap();
         let neighbors = result["neighbors"].as_array().unwrap();
-        // One flip per position → 5 neighbors
         assert_eq!(neighbors.len(), 5);
     }
 
     #[test]
     fn permutation_neighborhood_has_n_choose_2_neighbors() {
-        let p = tsp(); // var_size = 4
-        let mut rng = StdRng::seed_from_u64(42);
+        let p = tsp();
+        let mut rng = rand::thread_rng();
         let payload = json!({ "base": { "variableValue": [1,2,3,4] } });
         let result = neighborhood(&p, &payload, &mut rng).unwrap();
         let neighbors = result["neighbors"].as_array().unwrap();
-        // C(4,2) = 6 swap neighbors
         assert_eq!(neighbors.len(), 6);
     }
 }

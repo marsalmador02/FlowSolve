@@ -1,3 +1,10 @@
+/**
+ * useFlowRunner
+ *
+ * React hook that connects the UI with the execution engine. It provides the
+ * actions and state required to start, monitor and control workflow execution.
+ */
+
 import { useCallback, useMemo, useRef } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../types/flow';
@@ -16,6 +23,11 @@ export interface UseFlowRunnerArgs {
   setNeighborhoodSize: (value: number) => void;
 }
 
+/**
+ * Manages workflow execution lifecycle and runtime state.
+ *
+ * Exposes actions for starting and monitoring graph execution from the UI.
+ */
 export function useFlowRunner({
   nodesRef,
   edgesRef,
@@ -93,9 +105,6 @@ export function useFlowRunner({
     return parseJson<any>(problem.data.json);
   }, [getNodeByType]);
 
-  // This object is passed straight into packetExecutor. It is memoized so
-  // runFlowUntilEnd/runFlowNextStep don't recreate on every render.
-  // nodesRef and edgesRef are excluded from deps: refs are stable by definition.
   const decisionDeps = useMemo(() => ({
     getNodeById,
     getNodes: () => nodesRef.current,

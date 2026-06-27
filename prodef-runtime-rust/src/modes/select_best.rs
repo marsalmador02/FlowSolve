@@ -1,20 +1,43 @@
-// modes/select_best.rs
-//
-// Mode: `select-best`
-//
-// Picks the best feasible candidate from a list.
-// If no candidate is feasible, returns the first parseable one as a fallback.
-//
-// Payload:  { "candidates": [ { "variableValue": [...] }, ... ] }
-// Response: { "winner": SolverResult, "selectedIndex": usize, "score": f64 }
+//! # Mode: `select-best`
+//!
+//! Picks the best feasible candidate from a list.
+//!
+//! If no candidate is feasible, falls back to the first parseable one so that the caller
+//! always receives something to work with.
+//!
+//! ## Request payload
+//!
+//! ```json
+//! {
+//!   "candidates": [
+//!     { "variableValue": [1, 0, 0, 0, 0] },
+//!     { "variableValue": [1, 1, 1, 1, 0] },
+//!     { "variableValue": [1, 1, 1, 1, 1] }
+//!   ]
+//! }
+//! ```
+//!
+//! ## Response
+//!
+//! ```json
+//! {
+//!   "winner":        { "isFeasible": true, "goalValues": […], "variableValue": […] },
+//!   "selectedIndex": 1,
+//!   "score":         42.0
+//! }
+//! ```
 
 use anyhow::{Context, Result};
 use rand::rngs::ThreadRng;
 use serde_json::{json, Value};
-
+ 
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
+/// Entry point called by the mode dispatcher in [`crate::api`].
+///
+/// Iterates over `candidates`, evaluates each feasible one and returns the one with
+/// the best objective score.
 pub fn select_best(
     problem: &Problem,
     payload: &Value,
@@ -73,29 +96,49 @@ pub fn select_best(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn picks_best_feasible_candidate() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let payload = json!({
             "candidates": [
                 { "variableValue": [1,0,0,0,0] },
                 { "variableValue": [1,1,1,1,0] },
-                { "variableValue": [1,1,1,1,1] }  // infeasible: over weight
+                { "variableValue": [1,1,1,1,1] }
             ]
         });
         let result = select_best(&p, &payload, &mut rng).unwrap();
         assert_eq!(result["selectedIndex"], 1);
         assert!(result["winner"].get("isFeasible").unwrap().as_bool().unwrap());
+    }
+
+    #[test]
+    fn all_infeasible_returns_fallback() {
+        let p = knapsack();
+        let mut rng = rand::thread_rng();
+        let payload = json!({
+            "candidates": [
+                { "variableValue": [1,1,1,1,1] },
+                { "variableValue": [1,1,1,1,1] }
+            ]
+        });
+        let result = select_best(&p, &payload, &mut rng).unwrap();
+        assert_eq!(result["selectedIndex"], 0);
+    }
+
+    #[test]
+    fn empty_candidates_returns_error() {
+        let p = knapsack();
+        let mut rng = rand::thread_rng();
+        let payload = json!({ "candidates": [] });
+        assert!(select_best(&p, &payload, &mut rng).is_err());
     }
 }

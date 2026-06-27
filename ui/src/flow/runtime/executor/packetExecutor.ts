@@ -1,3 +1,10 @@
+/**
+ * Packet Executor
+ *
+ * Core execution engine responsible for traversing the graph, delivering packets
+ * between nodes and coordinating component execution throughout the workflow lifecycle.
+ */
+
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../../../types/flow';
 import { parseJson } from '../../../utils/flowHelpers';
 import { createComponent } from '../components/registry';

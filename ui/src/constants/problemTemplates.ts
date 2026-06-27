@@ -1,7 +1,3 @@
-// JSON templates used to preload example optimization problems in the UI.
-
-// TODO: estilizar la vista del problem en el sidebar?
-
 export const KNAPSACK_TEMPLATE_JSON = `{
   "name": "BinaryKnapsack1",
   "description": "Larger instance with 15 items and broader value/weight ranges.",

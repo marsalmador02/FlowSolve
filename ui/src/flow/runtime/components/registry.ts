@@ -1,12 +1,10 @@
 /**
- * Runtime component registry.
+ * Runtime Component Registry
  *
- * Purpose:
- * - Map each executable `NodeKind` to a concrete `RuntimeComponent` factory.
- *
- * Limit:
- * - Unknown kinds are intentionally treated as non-executable.
+ * Maps flow node types to their executable runtime implementations. It is the
+ * central entry point used to create runtime components during workflow execution.
  */
+
 import type { NodeKind } from '../../../types/flow';
 import type { RuntimeComponent } from './base';
 import { SingleGeneratorComponent } from './nodes/singleGenerator';
@@ -40,7 +38,10 @@ const FACTORIES: Partial<Record<NodeKind, ComponentFactory>> = {
 };
 
 /**
- * Resolve a component instance for one node kind.
+ * Creates a runtime component instance for a given node type.
+ *
+ * @param kind Node type identifier.
+ * @returns Runtime component instance or null if unsupported.
  */
 export function createComponent(kind: NodeKind): RuntimeComponent | null {
   const factory = FACTORIES[kind];

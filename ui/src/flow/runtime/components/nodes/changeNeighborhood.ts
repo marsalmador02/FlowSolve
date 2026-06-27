@@ -1,15 +1,10 @@
-/*
- * File: changeNeighborhood.ts
+/**
+ * Change Neighborhood Component
  *
- * Contains:
- * - VNS component that adjusts neighborhood size `k` by comparing two packets
- *   with the same `idIteration`.
- *
- * Role in the flow (startup -> graph execution):
- * - Synchronizes baseline (from loop) and accepted (from acceptance or other path).
- * - Propagates the computed `k` value to perturbation nodes so neighbor size scales.
- * - Re-emits the accepted solution (the cycle winner) to the next component.
+ * Updates the neighborhood size parameter used by algorithms like VNS. The value
+ * is adjusted according to the improvement obtained during the current iteration.
  */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, formatCompact, solutionScore, solutionsEqualByVars, toPretty } from '../base';
 

@@ -1,10 +1,7 @@
-// main.rs
-//
-// CLI entry point. Reads a request JSON file, runs the solver, prints the
-// response JSON to stdout.
-//
-// Usage:
-//   cargo run -- --exec-request path/to/request.json
+//! # Metaheuristic Solver - CLI entry point
+//!
+//! Reads a JSON request file, dispatches it to the solver, and prints the JSON response to
+//! stdout.
 
 mod api;
 mod eval;
@@ -17,6 +14,7 @@ use anyhow::Result;
 use clap::Parser;
 use api::{run, ExecutionRequest};
 
+/// Command-line arguments accepted by the binary.
 #[derive(Parser)]
 struct Args {
     #[arg(long)]

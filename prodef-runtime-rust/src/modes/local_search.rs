@@ -1,13 +1,28 @@
-// modes/local_search.rs
-//
-// Mode: `local-search`
-//
-// Hill-climbing local search: evaluates every neighbor of the current
-// solution and moves to the best one. Stops after one step (best-improvement).
-//
-// Payload:  { "solution": { "variableValue": [...] } }
-// Response: { "result": SolverResult, "trace": [string] }
-//
+//! # Mode: `local-search`
+//!
+//! Local search using a best-improvement strategy: evaluates every neighbor of the
+//! current solution in one step and moves to the one with the best objective value.
+//!
+//! ## Request payload
+//!
+//! ```json
+//! { "solution": { "variableValue": [1, 0, 1, 0, 0] } }
+//! ```
+//!
+//! The starting solution must be feasible.
+//!
+//! ## Response
+//!
+//! ```json
+//! { "result": { "isFeasible": true, "goalValues": […], "variableValue": […] } }
+//! ```
+//!
+//! ## Algorithm
+//!
+//! 1. Enumerate every neighbor via a single move (swap for permutations, flip for
+//!    vectors).
+//! 2. Among feasible neighbors, select the one with the best score.
+//! 3. If it improves on the starting solution, move to it. Otherwise stay.
 
 use anyhow::{bail, Context, Result};
 use rand::rngs::ThreadRng;
@@ -16,6 +31,10 @@ use serde_json::{Value};
 use crate::problem::Problem;
 use crate::solution::{require_object, Solution, SolverResult};
 
+/// Entry point called by the mode dispatcher in [`crate::api`].
+///
+/// Parses the starting solution from `payload`, runs one best-improvement step and
+/// returns the result.
 pub fn local_search(problem: &Problem, payload: &Value, _rng: &mut ThreadRng) -> Result<SolverResult> {
     let obj = require_object(payload)?;
 
@@ -30,8 +49,8 @@ pub fn local_search(problem: &Problem, payload: &Value, _rng: &mut ThreadRng) ->
 
 /// Run one best-improvement local search step from `start`.
 ///
-/// Returns the best neighbor found (or `start` if no improvement exists)
-/// together with a human-readable trace of every move tried.
+/// Returns the best neighbor found (or `start` if no improvement exists) together with
+/// a human-readable trace of every move tried.
 fn run(problem: &Problem, start: Solution) -> Result<(Solution, Vec<String>)> {
     if !problem.is_feasible(&start)? {
         bail!("local-search requires a feasible starting solution");
@@ -68,7 +87,9 @@ fn run(problem: &Problem, start: Solution) -> Result<(Solution, Vec<String>)> {
     Ok((best, trace))
 }
 
-/// Evaluate every neighbor and return the best one.
+/// Enumerate every neighbor of `solution` and return the best feasible one.
+///
+/// Returns the best solution found, its move description and the full per-move trace.
 fn best_neighbor(
     problem: &Problem,
     solution: &Solution,
@@ -127,6 +148,8 @@ fn best_neighbor(
 }
 
 /// Evaluate one candidate move and update the running best if it improves.
+///
+/// Infeasible candidates are skipped.
 fn try_move(
     problem: &Problem,
     candidate: Solution,
@@ -156,6 +179,7 @@ fn try_move(
     Ok(())
 }
 
+/// Format a solution compactly for use in trace messages.
 fn fmt(solution: &Solution) -> String {
     match solution {
         Solution::Permutation(p) => {
@@ -179,18 +203,16 @@ fn fmt(solution: &Solution) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
     use serde_json::json;
 
     fn load(path: &str) -> Problem {
         let v: serde_json::Value = serde_json::from_str(path).unwrap();
-        Problem::try_from(v).unwrap()
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn knapsack_local_search() {
-        let p = load(include_str!("../../../examples/knapsack.json"));
+        let p = load(include_str!("../../examples/knapsack.json"));
         let init = Solution::Vector(vec![0.0; p.var_size()]);
         let (res, trace) = run(&p, init).unwrap();
         assert!(trace.iter().any(|s| s.contains("Start: solution=vec[0,0,0,0,0] score=0.000")));
@@ -201,7 +223,7 @@ mod tests {
 
     #[test]
     fn tsp_local_search() {
-        let p = load(include_str!("../../../examples/tsp.json"));
+        let p = load(include_str!("../../examples/tsp.json"));
         let init = Solution::Permutation((0..p.var_size()).collect());
         let (res, trace) = run(&p, init).unwrap();
         assert!(trace.iter().any(|s| s.contains("Start: solution=perm[1,2,3,4] score=75.000")));
@@ -212,11 +234,11 @@ mod tests {
 
     #[test]
     fn local_search_mode_via_payload() {
-        let p = load(include_str!("../../../examples/knapsack.json"));
-        let mut rng = StdRng::seed_from_u64(42);
+        let p = load(include_str!("../../examples/knapsack.json"));
+        let mut rng = rand::thread_rng();
         let payload = json!({ "solution": { "variableValue": [0,0,0,0,0] } });
         let result = local_search(&p, &payload, &mut rng).unwrap();
-        assert!(result["result"]["isFeasible"].as_bool().unwrap());
-        assert!(result["trace"].as_array().unwrap().len() > 0);
+        assert!(result.is_feasible);
+        assert!(!result.goal_values.is_empty());
     }
 }

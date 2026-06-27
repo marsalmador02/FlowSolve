@@ -1,3 +1,11 @@
+/**
+ * Flow Nodes
+ *
+ * Defines all custom React Flow node components used in the editor. Each node
+ * provides a visual representation of a metaheuristic operation and displays its
+ * current execution state and results.
+ */
+
 import { Handle, Position, type NodeTypes } from 'reactflow';
 import type { FlowNodeData } from '../types/flow';
 
@@ -81,12 +89,15 @@ function SolutionSetList({ data }: { data: FlowNodeData }) {
   const parsed = JSON.parse(data.solutionSet);
   if (parsed.length === 0) return null;
 
-  const lines = parsed.map((item: any, index: number) => {
-    const vars = JSON.stringify(item.variableValue);
-    const isInfeasible = item.isFeasible === false;
-    const score = isInfeasible ? 'infeasible' : item.goalValues[0];
-    return `${vars} -> ${score}`;
-  });
+  const lines = parsed
+    .filter((item: any) => item.isFeasible !== false)
+    .map((item: any) => {
+      const vars = JSON.stringify(item.variableValue);
+      const score = scoreFromSolution(item);
+      return `${vars} -> ${score}`;
+    });
+
+  if (lines.length === 0) return null;
 
   return (
     <div className="solution-summary">

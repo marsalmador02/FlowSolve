@@ -1,12 +1,9 @@
-/*
- * File: neighborhood.ts
+/**
+ * Neighborhood Component
  *
- * Contains:
- * - Component that generates feasible neighbors for a solution (delegates to Rust 'neighborhood').
- *
- * Role in the flow (startup -> graph execution):
- * - Converts a packet with a single solution into a packet with a solutionSet (feasible neighbors).
+ * Generates a set of neighboring solutions from a given candidate solution.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';

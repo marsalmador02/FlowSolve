@@ -1,20 +1,29 @@
-// modes/temperature_acceptance.rs
-//
-// Mode: `temperature-acceptance`
-//
-// Simulated annealing acceptance rule.
-// Always accepts improvements; accepts worse candidates with probability
-// exp(-delta / T) where delta > 0 means the candidate is worse.
-//
-// Payload:
-//   {
-//     "candidate":           [...] or { "variableValue": [...] }
-//     "stored":              [...] or { "variableValue": [...] }
-//     "temperatureCurrent":  float  (default 100.0)
-//   }
-//
-// Response:
-//   { "accepted": bool, "winner": SolverResult }
+//! # Mode: `temperature-acceptance`
+//!
+//! Implements the simulated annealing acceptance rule.
+//!
+//! - A better candidate is always accepted.
+//! - A worse candidate is accepted with probability `exp(-Δ / T)`, where `Δ > 0` is how
+//!   much worse it is and `T` is the current temperature.
+//!
+//! ## Request payload
+//!
+//! ```json
+//! {
+//!   "candidate":          [1, 1, 1, 1, 0],
+//!   "stored":             [0, 0, 0, 0, 0],
+//!   "temperatureCurrent": 50.0
+//! }
+//! ```
+//!
+//! ## Response
+//!
+//! ```json
+//! {
+//!   "accepted": true,
+//!   "winner":   { "isFeasible": true, "goalValues": […], "variableValue": […] }
+//! }
+//! ```
 
 use anyhow::{Context, Result};
 use rand::rngs::ThreadRng;
@@ -24,6 +33,10 @@ use serde_json::{json, Value};
 use crate::problem::{Problem, Sense};
 use crate::solution::{require_object, Solution, SolverResult};
 
+/// Entry point called by the mode dispatcher in [`crate::api`].
+///
+/// Computes the score delta between `candidate` and `stored`, then applies the
+/// Metropolis acceptance criterion.
 pub fn temperature_acceptance(
     problem: &Problem,
     payload: &Value,
@@ -50,14 +63,13 @@ pub fn temperature_acceptance(
     let candidate_score = problem.score(&candidate)?;
     let stored_score = problem.score(&stored)?;
 
-    // delta > 0 means the candidate is worse than what is stored.
     let delta = match problem.sense() {
         Sense::Maximize => stored_score - candidate_score,
         Sense::Minimize => candidate_score - stored_score,
     };
 
     let accepted = if delta <= 0.0 {
-        true // candidate is better or equal — always accept
+        true
     } else {
         let t = temperature.max(1e-12);
         rng.gen::<f64>() < (-delta / t).exp()
@@ -72,7 +84,7 @@ pub fn temperature_acceptance(
     }))
 }
 
-/// Accept a solution supplied either as a bare array or as a candidate object.
+/// Parse a solution from a value that is either a bare array or a candidate object.
 fn parse_solution(problem: &Problem, value: &Value, label: &str) -> Result<Solution> {
     if value.is_array() {
         return Solution::from_json(problem, value)
@@ -85,20 +97,18 @@ fn parse_solution(problem: &Problem, value: &Value, label: &str) -> Result<Solut
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::ThreadRng;
-    use rand::SeedableRng;
     use serde_json::json;
 
     fn knapsack() -> Problem {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("../../../examples/knapsack.json")).unwrap();
-        Problem::try_from(v).unwrap()
+            serde_json::from_str(include_str!("../../examples/knapsack.json")).unwrap();
+        Problem::from_json(v).unwrap()
     }
 
     #[test]
     fn accepts_better_candidate() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let payload = json!({
             "candidate": [1,1,1,1,0],
             "stored":    [0,0,0,0,0],
@@ -112,14 +122,42 @@ mod tests {
     #[test]
     fn always_accepts_equal_score() {
         let p = knapsack();
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = rand::thread_rng();
         let payload = json!({
             "candidate": [0,0,0,0,0],
             "stored":    [0,0,0,0,0],
             "temperatureCurrent": 0.001
         });
         let result = temperature_acceptance(&p, &payload, &mut rng).unwrap();
-        // delta == 0 → always accept
         assert!(result["accepted"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn rejects_worse_candidate_at_zero_temperature() {
+        let p = knapsack();
+        let mut rng = rand::thread_rng();
+        let payload = json!({
+            "candidate": [0,0,0,0,0],
+            "stored":    [0,0,0,1,0],
+            "temperatureCurrent": 0.0
+        });
+        let result = temperature_acceptance(&p, &payload, &mut rng).unwrap();
+        assert!(!result["accepted"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn rejected_candidate_returns_stored_as_winner() {
+        let p = knapsack();
+        let mut rng = rand::thread_rng();
+        let payload = json!({
+            "candidate": [0,0,0,0,0],
+            "stored":    [0,0,0,1,0],
+            "temperatureCurrent": 0.0
+        });
+        let result = temperature_acceptance(&p, &payload, &mut rng).unwrap();
+        if !result["accepted"].as_bool().unwrap() {
+            let vals = result["winner"]["variableValue"].as_array().unwrap();
+            assert_eq!(vals[3].as_f64().unwrap(), 1.0, "winner should be stored when candidate is rejected");
+        }
     }
 }

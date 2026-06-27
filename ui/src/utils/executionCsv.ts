@@ -1,5 +1,8 @@
 import type { FlowEdge, FlowNode } from '../types/flow';
 
+/**
+ * Represents one row in the exported execution CSV file.
+ */
 export interface ExecutionCsvRow {
   Algorithm: string;
   Instance: string;
@@ -241,6 +244,12 @@ function extractMaxIterations(nodes: FlowNode[]): number {
   return terminationNode?.data.maxIterations || 0;
 }
 
+/**
+ * Builds a CSV document from workflow execution histories.
+ *
+ * @param params Graph structure and execution data.
+ * @returns CSV content as a string.
+ */
 export function buildExecutionCsvFromGraph(params: {
   nodes: FlowNode[];
   edges: FlowEdge[];
@@ -285,6 +294,9 @@ export function buildExecutionCsvFromGraph(params: {
   ].join('\n');
 }
 
+/**
+ * Downloads generated CSV content as a local file.
+ */
 export function downloadCsv(filename: string, csvText: string): void {
   const blob = new Blob(['\ufeff', csvText], { type: 'text/csv;charset=utf-8;' });
   const url = window.URL.createObjectURL(blob);

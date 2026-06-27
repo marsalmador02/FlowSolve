@@ -1,3 +1,11 @@
+/**
+ * Execution Panel
+ *
+ * Renders the right-side panel used during execution. It allows users to edit
+ * problem definitions, configure start/end nodes, inspect execution traces and
+ * export execution results.
+ */
+
 import type { FlowNodeData, FlowNode } from '../types/flow';
 import {
   ASSIGNMENT_TEMPLATE_JSON,
@@ -17,6 +25,10 @@ interface ExecutionPanelProps {
   onExportCsv: () => void;
 }
 
+/**
+ * Displays execution controls, problem settings,
+ * and runtime traces.
+ */
 export function ExecutionPanel({
   selectedNode,
   selectedData,

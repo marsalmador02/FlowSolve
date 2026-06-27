@@ -1,3 +1,11 @@
+/**
+ * Flow Sidebar
+ *
+ * Provides the components for building workflows. It contains predefined algorithm
+ * templates, custom templates and draggable components that can be added to the
+ * canvas.
+ */
+
 interface SidebarPaletteItem {
   kind: string;
   label: string;
@@ -40,6 +48,11 @@ function draggableItem(item: SidebarPaletteItem) {
   );
 }
 
+/**
+ * Main sidebar used to build workflow graphs.
+ *
+ * Provides templates and draggable runtime components.
+ */
 export function FlowSidebar({
   onLoadGraspTemplate,
   onLoadIlsTemplate,

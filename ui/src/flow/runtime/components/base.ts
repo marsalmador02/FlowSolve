@@ -1,14 +1,18 @@
 /**
- * Base abstractions for runtime components.
+ * Runtime Component Base
  *
- * Purpose:
- * - Provide common execute contracts for single-input and join components.
- * - Centralize formatting and score helpers used in traces.
+ * Provides the base classes and shared utility functions used by all executable
+ * workflow components in the runtime engine.
  */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../engine/packet';
 
+/**
+ * Base class for all executable workflow components.
+ *
+ * Defines the execution contract shared by runtime nodes.
+ */
 export abstract class RuntimeComponent {
-  // Number of incoming packets required per iteration. Defaults to 1.
   readonly arity: number = 1;
 
   // Execute one step when a packet reaches this component.

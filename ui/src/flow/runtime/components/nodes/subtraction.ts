@@ -1,3 +1,10 @@
+/**
+ * Subtraction Component
+ *
+ * Removes solutions contained in one set from another set. It is commonly used in
+ * Tabu Search to exclude solutions already present in the tabu list.
+ */
+
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, toPretty } from '../base';
 

@@ -1,9 +1,9 @@
-// Contract types for executing runtime operations through the Rust engine.
-//
-// The backend contract is intentionally tiny: each request targets one
-// component (mode) and returns at most one of `result`, `population`,
-// `payload` or `catalog`. The rest of the fields the UI used to receive
-// (state, trace, warnings...) are handled locally in JS.
+/**
+ * Runtime Contract
+ *
+ * Defines the request and response structures exchanged between the UI runtime
+ * engine and the backend execution service.
+ */
 
 export type RuntimeExecutionMode =
   | 'generate'
@@ -25,6 +25,9 @@ export interface RuntimeComponentDescriptor {
   stateful: boolean;
 }
 
+/**
+ * Request sent from the UI to the runtime backend.
+ */
 export interface RuntimeExecutionRequest {
   problem?: unknown;
   execution: {
@@ -51,6 +54,9 @@ export interface RuntimeExecutionPayload {
   maxNeighborsExpression?: string;
 }
 
+/**
+ * Represents a solution returned by the backend solver.
+ */
 export interface RuntimeSolverResult {
   problemName: string;
   isFeasible: boolean;
@@ -58,6 +64,9 @@ export interface RuntimeSolverResult {
   variableValue: unknown;
 }
 
+/**
+ * Response returned by the runtime backend.
+ */
 export interface RuntimeExecutionResponse {
   result?: RuntimeSolverResult | null;
   population?: RuntimeSolverResult[] | null;

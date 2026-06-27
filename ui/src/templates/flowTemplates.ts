@@ -1,3 +1,11 @@
+/**
+ * Flow Templates
+ *
+ * Defines the predefined graph structures used to quickly create supported
+ * metaheuristic algorithms such as GRASP, ILS, VNS, Tabu Search and Simulated 
+ * Annealing.
+ */
+
 import { MarkerType } from 'reactflow';
 import { COMPONENT_LABELS } from '../constants/flowCatalog';
 import { KNAPSACK_TEMPLATE_JSON, TSP_TEMPLATE_JSON } from '../constants/problemTemplates';
@@ -82,7 +90,6 @@ export function buildGraspTemplate(updateNodeData: UpdateNodeData) {
       data: {
         label: COMPONENT_LABELS.AcceptanceComponent,
         trace: '',
-        policy: 'bestOnly',
         threshold: 0,
         onUpdate: mkUpdater('acceptance-template', updateNodeData),
       },
@@ -167,7 +174,6 @@ export function buildIlsTemplate(updateNodeData: UpdateNodeData) {
       data: {
         label: COMPONENT_LABELS.AcceptanceComponent,
         trace: '',
-        policy: 'bestOnly',
         threshold: 0,
         onUpdate: mkUpdater('acceptance-template', updateNodeData),
       },
@@ -252,7 +258,6 @@ export function buildVnsTemplate(updateNodeData: UpdateNodeData) {
       data: {
         label: COMPONENT_LABELS.AcceptanceComponent,
         trace: '',
-        policy: 'bestOnly',
         threshold: 0,
         onUpdate: mkUpdater('acceptance-template', updateNodeData),
       },

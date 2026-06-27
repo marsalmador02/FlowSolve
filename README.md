@@ -2,76 +2,114 @@
 
 Othimi FlowSolve is a visual tool for building, visualizing, and executing metaheuristics using node-based graphs. It makes it possible to design optimization algorithms without writing code, through a visual interface connected to a Rust execution engine.
 
-## General architecture
+# Architecture
 
-The system is divided into three main layers:
+The system is divided into three layers.
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ UI (React + React Flow)                                 │
-│ - Visual graph design                                   │
-│ - Node and parameter configuration                      │
-│ - Step-by-step or full execution                        │
-│ - Trace and result visualization                        │
-└────────────────────┬────────────────────────────────────┘
-                     │ HTTP
-┌────────────────────▼────────────────────────────────────┐
-│ Intermediate backend (Node.js)                          │
-│ - REST API                                              │
-│ - Communication between UI and Rust engine              │
-│ - Request/response management                           │
-└────────────────────┬────────────────────────────────────┘
-                     │ Process execution
-┌────────────────────▼────────────────────────────────────┐
-│ Optimization engine (Rust)                              │
-│ - Solution generation and evaluation                    │
-│ - Metaheuristic operators                               │
-│ - Local search and perturbation                         │
-│ - JSON-based responses                                  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ UI (React + React Flow)                                      │
+│ • Visual editor                                              │
+│ • Component configuration                                    │
+│ • Algorithm templates                                        │
+│ • Trace and metric export                                    │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ HTTP
+┌──────────────────────────────▼───────────────────────────────┐
+│ Node.js Backend                                               │
+│ • REST API                                                    │
+│ • Request validation                                          │
+│ • Communication with the Rust runtime                         │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ Process execution
+┌──────────────────────────────▼───────────────────────────────┐
+│ Rust Engine                                                  │
+│ • Problem loading                                             │
+│ • Expression evaluation                                       │
+│ • Feasibility checking                                        │
+│ • Metaheuristic operators                                     │
+│ • JSON responses                                              │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+# Included Metaheuristics
+
+The editor provides predefined templates for:
+
+- GRASP
+- Iterated Local Search (ILS)
+- Variable Neighborhood Search (VNS)
+- Tabu Search
+- Simulated Annealing
+
+These templates can be modified or extended visually.
+
+# Optimization Problems
+
+Problems are described as JSON files and loaded dynamically.
+
+Currently supported problem families include:
+
+- Knapsack Problem
+- Traveling Salesman Problem (TSP)
+- Assignment Problem
+
+# Runtime Operations
+
+The Rust runtime currently implements the following execution modes:
+
+| Mode | Description |
+|------|-------------|
+| `generate` | Generate one random feasible solution |
+| `local-search` | Perform one best-improvement local search step |
+| `perturbation` | Apply random perturbations to a solution |
+| `neighborhood` | Generate the neighborhood of a solution |
+| `select-best` | Select the best feasible candidate |
+| `temperature-acceptance` | Simulated annealing acceptance criterion |
+
+# Installation
 
 ## Requirements
 
 - Node.js
 - npm
 - Rust
-- cargo
+- Cargo
 - Git
 
-## Installation
-
-### Install dependencies
+Install all dependencies:
 
 ```bash
 npm install
-
 npm --prefix ui install
 ```
 
-### Run the application
+# Running the application
+
+Start the application:
 
 ```bash
 npm start
 ```
 
-Then open:
+The UI is available at:
 
-```text
-http://localhost:5173
+```
+http://localhost:5174
 ```
 
-## Project structure
+# Project Structure
 
 ```text
 FlowSolve/
+│
 ├── README.md
 ├── package.json
-├── prodef-runtime-rust/          # Execution engine
-├── ui/                           # React interface
+├── ui/                     # React visual editor
+└── prodef-runtime-rust/    # Rust optimization runtime
 ```
 
-## Execution flow
+# Execution
 
 1. The user builds a graph in the visual interface.
 2. The UI serializes the flow and sends it to the backend.
@@ -79,57 +117,40 @@ FlowSolve/
 4. The engine processes the selected mode and returns a JSON result.
 5. The UI updates nodes and traces on screen.
 
-## Main components
+# Documentation
 
-The tool includes nodes for common metaheuristic operations such as:
+Each subsystem includes its own documentation.
 
-- Solution generation
-- Population generation
-- Mutation
-- Crossover
-- Perturbation
-- Local search
-- Selection
-- Best-solution selection
-- Neighborhood generation
-- Temperature-based acceptance
-- Iteration control
-- Solution storage
+| Directory | Description |
+|-----------|-------------|
+| `ui/README.md` | Visual editor architecture and execution engine |
+| `prodef-runtime-rust/README.md` | Rust runtime architecture and execution modes |
 
-## Runtime modes supported
+The project also generates API documentation automatically.
 
-| Mode | Description |
-|---|---|
-| `generate` | Generates a random solution |
-| `generate-population` | Generates an initial population |
-| `mutation` | Applies mutation |
-| `crossover` | Applies crossover |
-| `perturbation` | Perturbs a solution |
-| `neighborhood` | Generates neighbors |
-| `selection` | Selects solutions |
-| `select-best` | Returns the best solution |
-| `local-search` | Runs local search |
-| `temperature-acceptance` | Temperature-based acceptance |
-
-## Documentation
-
-The project includes both manual documentation and automatically generated documentation:
-
-- General documentation in the various `README.md` files
-- Rust runtime documentation generated with `rustdoc`
-- UI documentation generated with `TypeDoc`
-
-### Generate documentation
+## Generate documentation
 
 ```bash
-npm run docs:rust
 npm run docs:ui
+npm run docs:rust
 ```
 
-### Generated HTML documentation
+Generated documentation:
 
-- UI (`TypeDoc`):
-  - `ui/docs/ui/index.html`
+- **TypeDoc**
 
-- Rust runtime (`rustdoc`):
-  - `prodef-runtime-rust/target/doc/prodef_runtime_rust/index.html`
+```
+ui/docs/ui/index.html
+```
+
+- **Rustdoc**
+
+```
+prodef-runtime-rust/target/doc/prodef_runtime_rust/index.html
+```
+
+## Testing
+
+```bash
+npm test
+```

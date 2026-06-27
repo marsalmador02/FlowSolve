@@ -1,17 +1,11 @@
 /**
- * HTTP client for the UI <-> backend bridge contract.
+ * Prodef API Client
  *
- * Purpose:
- * - Resolve the active backend base URL.
- * - Execute runtime requests via `/execute`.
- * - Normalize backend errors into readable UI messages.
- *
- * Inputs:
- * - `RuntimeExecutionRequest` objects from runtime components.
- *
- * Outputs:
- * - `RuntimeExecutionResponse` objects aligned with UI contract types.
+ * Provides communication between the UI and the backend. It resolves available API
+ * endpoints, executes runtime requests and converts backend errors into
+ * UI-friendly messages.
  */
+
 import type { RuntimeComponentDescriptor, RuntimeExecutionRequest, RuntimeExecutionResponse } from '../types/runtimeContract';
 
 const configuredBase = (import.meta as any)?.env?.VITE_PRODEF_API_BASE as string | undefined;
@@ -65,7 +59,6 @@ async function fetchFromApi(path: string, init?: RequestInit): Promise<Response>
 // Extract a readable error payload from failed backend responses.
 async function readErrorMessage(resp: Response): Promise<string> {
   try {
-    // Read body once and then parse opportunistically to avoid stream re-read errors.
     const raw = await resp.text();
     if (!raw) {
       return `HTTP ${resp.status} ${resp.statusText}`.trim();
@@ -78,7 +71,6 @@ async function readErrorMessage(resp: Response): Promise<string> {
         return fromError;
       }
     } catch {
-      // Non-JSON body: fall through and return raw text.
     }
 
     return raw;
@@ -88,15 +80,10 @@ async function readErrorMessage(resp: Response): Promise<string> {
 }
 
 /**
- * Call backend `/execute` with the runtime contract payload.
+ * Executes a runtime operation through the backend service.
  *
- * Network contract:
- * - Method: `POST`
- * - Request body: `RuntimeExecutionRequest`
- * - Response body: `RuntimeExecutionResponse`
- *
- * Error handling:
- * - Throws normalized backend message for non-2xx responses.
+ * @param request Runtime execution request payload.
+ * @returns Backend execution result.
  */
 export async function callRuntimeExecute(request: RuntimeExecutionRequest): Promise<RuntimeExecutionResponse> {
   const resp = await fetchFromApi('/execute', {

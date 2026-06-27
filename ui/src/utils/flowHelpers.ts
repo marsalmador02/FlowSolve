@@ -1,6 +1,6 @@
-// Utility helpers shared by flow execution, rendering, and diagnostics.
-
-// Parse a JSON string safely and return null on malformed input.
+/**
+ * Safely parses a JSON string and returns null if invalid.
+ */
 export function parseJson<T>(txt?: string): T | null {
   if (!txt) {
     return null;

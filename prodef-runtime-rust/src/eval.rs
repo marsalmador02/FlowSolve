@@ -1,26 +1,19 @@
-// eval.rs — expression evaluator for goals and constraints.
-//
-// Expression language supported:
-//   sum x[i]*item[i].value over i=(1:N)   — weighted sum over a range
-//   item[i].weight                         — class attribute access (1-based)
-//   cost[i, assignment[i]]                 — matrix access (1-based row, col)
-//   x[i]                                  — variable access (1-based)
-//   N, MaxWeight                           — problem parameters
-//   +  -  *                               — arithmetic
-//   <=  >=  =  (and chained <=)           — comparisons
+//! # Expression evaluator for goals and constraints
+//!
+//! This module provides a small expression evaluator that is used in the problem
+//! definition to evaluate goal values and check constraints.
 
 use anyhow::{anyhow, bail, Result};
 
 use crate::problem::Problem;
 use crate::solution::Solution;
 
-// The loop index context: when evaluating inside `sum ... over i=(1:N)`,
-// this carries ("i", current_value) so sub-expressions can resolve `i`.
+// The loop index context: when evaluating inside `sum ... over i=(1:N)`, this
+// carries ("i", current_value) so sub-expressions can resolve `i`.
 type IdxCtx<'a> = Option<(&'a str, usize)>;
 
 /// Evaluate a boolean constraint expression.
 pub fn eval_constraint(expr: &str, p: &Problem, s: &Solution) -> Result<bool> {
-    // Try each operator. split() gives 2 parts for "a <= b", 3 for "a <= b <= c".
     for op in ["<=", ">="] {
         let parts: Vec<&str> = expr.split(op).collect();
         match parts.len() {
@@ -55,20 +48,14 @@ pub fn eval_numeric(expr: &str, p: &Problem, s: &Solution) -> Result<f64> {
 
 // Core recursive evaluator.
 //
-// `idx_ctx` holds the current loop variable binding when called from inside a
-// `sum` body — e.g. Some(("i", 3)) means the symbol "i" resolves to 3.
-// It is passed through unchanged to all recursive calls.
-//
-// Two string forms are used:
-//   `expr` — original string with spaces, used for `sum` detection (spaces matter for " over ")
-//   `e`    — spaces removed, used for everything else (operators, literals, access expressions)
+//   `expr`: original string with spaces, used for `sum` detection
 fn eval_expr(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<f64> {
-    // `sum` must be detected before removing spaces because it uses " over " as a delimiter.
+    let expr = expr.trim(); // strip spaces from sub-expressions produced by split_at
     if let Some(result) = eval_sum(expr, p, s)? {
         return Ok(result);
     }
 
-    // Arithmetic — evaluate left to right by splitting at top-level operators.
+    // Arithmetic: evaluate left to right by splitting at top-level operators.
     if let Some(parts) = split_at(expr, '+', false) {
         return parts.iter().map(|part| eval_expr(part, p, s, idx_ctx)).sum();
     }
@@ -94,7 +81,7 @@ fn eval_expr(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<f
         return Ok(v);
     }
 
-    // Problem parameter (e.g. N, MaxWeight).
+    // Problem parameter (N, MaxWeight, etc.).
     if let Some(&v) = p.params.get(expr) {
         return Ok(v);
     }
@@ -132,9 +119,7 @@ fn eval_expr(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<f
     bail!("Cannot evaluate expression fragment: '{}'", expr)
 }
 
-// Evaluate a `sum <term> over <var>=(<lo>:<hi>)` expression.
-// Returns None if the expression does not start with "sum" (not an error).
-// Returns Some(total) on success.
+// Evaluate a `sum [term] over [i=(lo:hi)]` expression.
 fn eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
     let Some(rest) = expr.strip_prefix("sum") else {
         return Ok(None);
@@ -167,7 +152,6 @@ fn eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
         total += eval_expr(term.trim(), p, s, Some((var, i as usize)))?;
     }
 
-    // Optional continuation after the closing paren: "+ distance[city[N], city[1]]"
     let tail = tail.trim();
     if tail.is_empty() {
         return Ok(Some(total));
@@ -182,14 +166,7 @@ fn eval_sum(expr: &str, p: &Problem, s: &Solution) -> Result<Option<f64>> {
     bail!("Unexpected continuation after sum: '{}'", tail)
 }
 
-// Evaluate an index expression (always resolves to a 1-based usize).
-//
-// Handles:
-//   3          — integer literal
-//   i          — loop variable
-//   i+1, i-1  — loop variable ± offset
-//   N          — problem parameter
-//   x[k]       — variable value used as index (e.g. assignment[i] in TSP/assignment)
+// Evaluate an index expression.
 fn eval_index(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<usize> {
     let e = expr.trim().replace(' ', "");
 
@@ -202,7 +179,6 @@ fn eval_index(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<
         if e == sym {
             return Ok(i);
         }
-        // sym+offset or sym-offset
         for (split_char, sign) in [('+', 1i64), ('-', -1i64)] {
             if let Some((a, b)) = e.split_once(split_char) {
                 if a == sym {
@@ -221,7 +197,6 @@ fn eval_index(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<
         return Ok(v as usize);
     }
 
-    // Variable value used as an index — e.g. assignment[i] in cost[i, assignment[i]]
     let var_prefix = format!("{}[", p.var_name);
     if e.starts_with(var_prefix.as_str()) && e.ends_with(']') {
         let inside = e.trim_start_matches(var_prefix.as_str()).trim_end_matches(']');
@@ -232,9 +207,7 @@ fn eval_index(expr: &str, p: &Problem, s: &Solution, idx_ctx: IdxCtx) -> Result<
     bail!("Cannot resolve index expression: '{}'", expr)
 }
 
-// Split `expr` at every top-level occurrence of `op` (not inside brackets).
-// If `skip_leading` is true, a `-` at position 0 is left alone (unary minus).
-// Returns None if `op` does not appear at the top level.
+// Split `expr` at every top-level occurrence of `op`.
 fn split_at<'a>(expr: &'a str, op: char, skip_leading: bool) -> Option<Vec<&'a str>> {
     let mut depth = 0i32;
     let mut parts = Vec::new();
@@ -268,24 +241,24 @@ mod tests {
 
     fn load(json: &str) -> Problem {
         let v: serde_json::Value = serde_json::from_str(json).unwrap();
-        Problem::try_from(v).unwrap()
+        Problem::from_json(v).unwrap()
     }
-
+ 
     #[test]
     fn knapsack_goal_and_constraint() {
-        let p = load(include_str!("../../examples/knapsack.json"));
+        let p = load(include_str!("../examples/knapsack.json"));
         let selected = Solution::Vector(vec![1.0, 1.0, 1.0, 1.0, 0.0]);
         let goals = p.eval_goals(&selected).unwrap();
         assert!(goals[0] > 0.0);
         assert!(p.is_feasible(&selected).unwrap());
 
-        let all = Solution::Vector(vec![1.0; p.var_size()]);
-        assert!(!p.is_feasible(&all).unwrap());
+        let empty = Solution::Vector(vec![0.0; p.var_size()]);
+        assert_eq!(p.eval_goals(&empty).unwrap()[0], 0.0);
     }
 
     #[test]
     fn tsp_goal_evaluates() {
-        let p = load(include_str!("../../examples/tsp.json"));
+        let p = load(include_str!("../examples/tsp.json"));
         let sol = Solution::Permutation(vec![0, 1, 2, 3]);
         let goals = p.eval_goals(&sol).unwrap();
         assert!((goals[0] - 75.0).abs() < 1e-6, "expected 75, got {}", goals[0]);
@@ -293,11 +266,9 @@ mod tests {
 
     #[test]
     fn chained_comparison() {
-        let p = load(include_str!("../../examples/knapsack.json"));
+        let p = load(include_str!("../examples/knapsack.json"));
         let sol = Solution::Vector(vec![0.0; p.var_size()]);
-        // "0 <= 0 <= 1" should pass
         assert!(eval_constraint("0 <= 0 <= 1", &p, &sol).unwrap());
-        // "0 <= 2 <= 1" should fail
         assert!(!eval_constraint("0 <= 2 <= 1", &p, &sol).unwrap());
     }
 }

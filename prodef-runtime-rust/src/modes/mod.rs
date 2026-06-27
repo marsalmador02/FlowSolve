@@ -1,7 +1,6 @@
-// modes/mod.rs
-//
-// The dispatcher lives in api.rs as a plain match expression.
-// This file just declares the submodules.
+//! # Execution mode handlers
+//!
+//! Each submodule implements one `execution.mode` value.
 
 pub mod generate;
 pub mod local_search;

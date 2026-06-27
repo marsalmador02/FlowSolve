@@ -1,13 +1,11 @@
-/*
- * File: perturbation.ts
+/**
+ * Perturbation Component
  *
- * Contains:
- * - Component that applies random bit-flip/swap perturbations and retries until
- *   a feasible solution is found (delegates to Rust 'perturbation').
- *
- * Role in the flow (startup -> graph execution):
- * - Converts an incoming solution into a feasible neighbor with configurable maxAttempts.
+ * Produces a modified version of an existing solution by applying controlled 
+ * random changes. It is typically used in diversification phases of metaheuristic
+ * algorithms.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, solutionScore, toPretty } from '../base';

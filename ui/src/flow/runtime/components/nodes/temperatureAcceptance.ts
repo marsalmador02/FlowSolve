@@ -1,13 +1,10 @@
-/*
- * File: temperatureAcceptance.ts
+/**
+ * Temperature Acceptance Component
  *
- * Contains:
- * - Two-input SA acceptance component: accepts the better solution or a worse one
- *   with probability exp(-delta/T) (delegates to Rust 'temperature-acceptance').
- *
- * Role in the flow (startup -> graph execution):
- * - Synchronizes two paths and emits the solution accepted by the SA policy.
+ * Implements the acceptance rule used by Simulated Annealing. It may accept worse
+ * solutions with a probability that depends on the current temperature value.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { JoinRuntimeComponent, formatCompact, formatScore, solutionScore, toPretty } from '../base';

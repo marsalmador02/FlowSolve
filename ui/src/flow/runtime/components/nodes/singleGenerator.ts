@@ -1,12 +1,10 @@
-/*
- * File: singleGenerator.ts
+/**
+ * Single Solution Generator
  *
- * Contains:
- * - Component that generates a single random feasible solution via Rust (mode 'generate').
- *
- * Role in the flow (startup -> graph execution):
- * - Used as a start node: on startup it produces the initial seed that travels into the loop.
+ * Generates an initial feasible solution that can be used asthe starting point of
+ * a metaheuristic workflow.
  */
+
 import { callRuntimeExecute } from '../../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../engine/packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
