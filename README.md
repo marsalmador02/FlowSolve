@@ -95,7 +95,7 @@ npm start
 The UI is available at:
 
 ```
-http://localhost:5174
+http://localhost:5173
 ```
 
 # Project Structure
