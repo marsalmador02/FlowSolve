@@ -1,0 +1,44 @@
+{
+  "name": "AssignmentComplex",
+  "parameters": [
+    { "symbol": "N", "value": 9 }
+  ],
+  "variables": [
+    {
+      "symbol": "assignment",
+      "within": "integers",
+      "shape": {
+        "type": "vector",
+        "isPermutation": true,
+        "size": { "fixed": false, "value": 9 }
+      }
+    }
+  ],
+  "goals": [
+    {
+      "sense": "minimize",
+      "expression": "sum cost[i, assignment[i]] over i=(1:N)"
+    }
+  ],
+  "classes": [
+    {
+      "symbol": "cost",
+      "attributes": [
+        { "symbol": "task_1" }, { "symbol": "task_2" }, { "symbol": "task_3" },
+        { "symbol": "task_4" }, { "symbol": "task_5" }, { "symbol": "task_6" },
+        { "symbol": "task_7" }, { "symbol": "task_8" }, { "symbol": "task_9" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 14 }, { "attribute": "task_2", "value": 6 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 4 }, { "attribute": "task_2", "value": 20 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 20 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 18 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 17 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 16 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 15 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 14 }, { "attribute": "task_9", "value": 40 } ] },
+    { "class": "cost", "attributes": [ { "attribute": "task_1", "value": 40 }, { "attribute": "task_2", "value": 40 }, { "attribute": "task_3", "value": 40 }, { "attribute": "task_4", "value": 40 }, { "attribute": "task_5", "value": 40 }, { "attribute": "task_6", "value": 40 }, { "attribute": "task_7", "value": 40 }, { "attribute": "task_8", "value": 40 }, { "attribute": "task_9", "value": 23 } ] }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/flow/runtime/executor/packetExecutor.ts",
+    "src/flow/runtime/engine/packet.ts",
+    "src/flow/runtime/engine/graphValidation.ts",
+    "src/flow/runtime/components/base.ts",
+    "src/flow/runtime/components/registry.ts",
+    "src/services/prodefApi.ts",
+    "src/hooks/useFlowRunner.ts",
+    "src/templates/flowTemplates.ts",
+    "src/types/flow.ts",
+    "src/types/runtimeContract.ts"
+  ],
+  "entryPointStrategy": "resolve",
+  "out": "docs/ui",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "tsconfig": "tsconfig.json",
+  "sort": [
+    "source-order"
+  ],
+  "categorizeByGroup": false,
+  "gitRevision": "main",
+  "readme": "README.md",
+  "plugin": []
+}

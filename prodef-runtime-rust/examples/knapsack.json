@@ -1,0 +1,46 @@
+{
+  "name": "Knapsack1",
+  "parameters": [
+    { "symbol": "N", "value": 5 },
+    { "symbol": "MaxWeight", "value": 25 }
+  ],
+  "variables": [
+    {
+      "symbol": "x",
+      "within": "binary",
+      "shape": {
+        "type": "vector",
+        "isPermutation": false,
+        "size": { "fixed": false, "value": "N" }
+      },
+      "range": { "lowerBound": 0, "upperBound": 1 }
+    }
+  ],
+  "goals": [
+    {
+      "sense": "maximize",
+      "expression": "sum x[i]*item[i].value over i=(1:N)"
+    }
+  ],
+  "constraints": [
+    {
+      "expression": "x[1] + x[4] <= 1 + x[2] + x[3]"
+    }
+  ],
+  "classes": [
+    {
+      "symbol": "item",
+      "attributes": [
+        { "symbol": "value" },
+        { "symbol": "weight" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 20 }, { "attribute": "weight", "value": 4 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 13 }, { "attribute": "weight", "value": 4 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 24 }, { "attribute": "weight", "value": 5 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 37 }, { "attribute": "weight", "value": 6 } ] },
+    { "class": "item", "attributes": [ { "attribute": "value", "value": 0 }, { "attribute": "weight", "value": 3 } ] }
+  ]
+}

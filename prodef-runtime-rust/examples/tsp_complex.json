@@ -1,0 +1,46 @@
+{
+  "name": "TSPComplex",
+  "parameters": [
+    { "symbol": "N", "value": 7 }
+  ],
+  "variables": [
+    {
+      "symbol": "city",
+      "within": "integers",
+      "shape": {
+        "type": "vector",
+        "isPermutation": true,
+        "size": { "fixed": false, "value": 7 }
+      }
+    }
+  ],
+  "goals": [
+    {
+      "sense": "minimize",
+      "expression": "sum distance[city[i], city[i+1]] over i=(1:N-1) + distance[city[N], city[1]]"
+    }
+  ],
+  "classes": [
+    {
+      "symbol": "distance",
+      "attributes": [
+        { "symbol": "c1" },
+        { "symbol": "c2" },
+        { "symbol": "c3" },
+        { "symbol": "c4" },
+        { "symbol": "c5" },
+        { "symbol": "c6" },
+        { "symbol": "c7" }
+      ]
+    }
+  ],
+  "objects": [
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 0 }, { "attribute": "c2", "value": 15 }, { "attribute": "c3", "value": 50 }, { "attribute": "c4", "value": 50 }, { "attribute": "c5", "value": 8 }, { "attribute": "c6", "value": 50 }, { "attribute": "c7", "value": 27 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 15 }, { "attribute": "c2", "value": 0 }, { "attribute": "c3", "value": 14 }, { "attribute": "c4", "value": 50 }, { "attribute": "c5", "value": 50 }, { "attribute": "c6", "value": 50 }, { "attribute": "c7", "value": 50 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 9 }, { "attribute": "c2", "value": 50 }, { "attribute": "c3", "value": 0 }, { "attribute": "c4", "value": 13 }, { "attribute": "c5", "value": 50 }, { "attribute": "c6", "value": 50 }, { "attribute": "c7", "value": 50 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 50 }, { "attribute": "c2", "value": 10 }, { "attribute": "c3", "value": 50 }, { "attribute": "c4", "value": 0 }, { "attribute": "c5", "value": 12 }, { "attribute": "c6", "value": 50 }, { "attribute": "c7", "value": 12 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 50 }, { "attribute": "c2", "value": 50 }, { "attribute": "c3", "value": 50 }, { "attribute": "c4", "value": 50 }, { "attribute": "c5", "value": 0 }, { "attribute": "c6", "value": 11 }, { "attribute": "c7", "value": 50 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 50 }, { "attribute": "c2", "value": 50 }, { "attribute": "c3", "value": 50 }, { "attribute": "c4", "value": 50 }, { "attribute": "c5", "value": 11 }, { "attribute": "c6", "value": 0 }, { "attribute": "c7", "value": 10 } ] },
+    { "class": "distance", "attributes": [ { "attribute": "c1", "value": 27 }, { "attribute": "c2", "value": 50 }, { "attribute": "c3", "value": 50 }, { "attribute": "c4", "value": 12 }, { "attribute": "c5", "value": 50 }, { "attribute": "c6", "value": 10 }, { "attribute": "c7", "value": 0 } ] }
+  ]
+}
