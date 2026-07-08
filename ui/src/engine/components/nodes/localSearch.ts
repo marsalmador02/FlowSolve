@@ -1,8 +1,9 @@
 /**
- * Local Search Component
- *
- * Applies a local search procedure to an incoming solution. The resulting solution
- * is expected to be equal to or better than the original candidate.
+ * localSearch.ts
+ * 
+ * This module defines the LocalSearchComponent, which is responsible for executing a local search
+ * procedure on a candidate solution. It interacts with the runtime API to perform the local search
+ * and updates the node data with the improved solution.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
@@ -10,10 +11,8 @@ import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../.
 import { RuntimeComponent, formatCompact, solutionScore, toPretty } from '../base';
 
 /**
- * Runtime implementation of the Local Search node.
- *
- * Receives a candidate solution, executes a local search procedure and forwards
- * the improved solution.
+ * LocalSearchComponent is a component that performs a local search on an incoming solution. It uses
+ * the runtime API to find an improved solution and updates the node data accordingly.
  */
 export class LocalSearchComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {

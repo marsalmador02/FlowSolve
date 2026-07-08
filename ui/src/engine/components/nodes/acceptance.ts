@@ -1,15 +1,19 @@
 /**
- * Acceptance Component
- *
- * Synchronizes two incoming solutions and selects the best one. This component is
- * commonly used to compare alternative search paths and continue execution with
- * the best solution.
+ * acceptance.ts
+ * 
+ * This module defines the AcceptanceComponent, which is responsible for selecting the best solution
+ * from multiple candidates in a workflow graph. It interacts with the runtime API to perform the
+ * selection and updates the node data accordingly.
  */
 
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { callRuntimeExecute } from '../../../services/prodefApi';
-import { JoinRuntimeComponent, formatCompact, formatScore, toPretty } from '../base';
+import { JoinRuntimeComponent, formatCompact, toPretty } from '../base';
 
+/**
+ * AcceptanceComponent is a component that selects the best solution from incoming packets. It uses
+ * the runtime API to determine the winner among candidate solutions and updates the node data.
+ */
 export class AcceptanceComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {

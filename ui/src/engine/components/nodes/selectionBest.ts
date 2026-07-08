@@ -1,14 +1,19 @@
 /**
- * Selection Best Component
- *
- * Receives a set of candidate solutions and selects the best one according to the
- * objective value defined by the problem.
+ * selectionBest.ts
+ * 
+ * This module defines the SelectionBestComponent, which is responsible for selecting the best solution
+ * from a set of candidate solutions. It interacts with the runtime API to perform the selection and
+ * updates the node data accordingly.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
 
+/**
+ * SelectionBestComponent is a component that selects the best solution from incoming packets. It uses
+ * the runtime API to determine the winner among candidate solutions and updates the node data.
+ */
 export class SelectionBestComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const candidates = Array.isArray(incoming.solutionSet)

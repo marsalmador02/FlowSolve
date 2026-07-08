@@ -1,15 +1,19 @@
 /**
- * Perturbation Component
- *
- * Produces a modified version of an existing solution by applying controlled 
- * random changes. It is typically used in diversification phases of metaheuristic
- * algorithms.
+ * perturbation.ts
+ * 
+ * This module defines the PerturbationComponent, which is responsible for applying a perturbation
+ * procedure to an incoming solution. It interacts with the runtime API to perform the perturbation
+ * and updates the node data with the resulting solution.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { RuntimeComponent, formatCompact, solutionScore, toPretty } from '../base';
 
+/**
+ * PerturbationComponent is a component that applies a perturbation procedure to an incoming solution.
+ * It uses the runtime API to find a perturbed solution and updates the node data accordingly.
+ */
 export class PerturbationComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const base = incoming.solution;

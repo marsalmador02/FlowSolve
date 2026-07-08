@@ -1,8 +1,9 @@
 /**
- * Reduce Temperature Component
- *
- * Updates the temperature value used by Simulated Annealing. The temperature is
- * progressively reduced according to the configured cooling schedule.
+ * reduceTemperature.ts
+ * 
+ * This module defines the ReduceTemperatureComponent, which is responsible for reducing the
+ * temperature parameter in a simulated annealing process. It calculates the next temperature
+ * based on the current iteration and updates the node data accordingly.
  */
 
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
@@ -11,6 +12,11 @@ import { RuntimeComponent, formatCompact, toPretty } from '../base';
 const TEMPERATURE_MAX = 100;
 const MIN_TEMPERATURE = 0.1;
 
+/**
+ * ReduceTemperatureComponent is a component that reduces the temperature parameter in a simulated
+ * annealing process. It calculates the next temperature based on the current iteration and updates
+ * the node data accordingly.
+ */
 export class ReduceTemperatureComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const accepted = incoming.solution;
@@ -21,11 +27,7 @@ export class ReduceTemperatureComponent extends RuntimeComponent {
     const temperatureCurrent = ctx.nodeData.temperatureCurrent ?? TEMPERATURE_MAX;
     const maxIterations = Math.max(1, incoming.maxIterations ?? ctx.nodeData.maxIterations ?? 10);
 
-    // Determine step index (0-based). Use idIteration-1 so the first step starts at T0.
     const stepIndex = Math.max(0, (incoming.idIteration ?? 1) - 1);
-    // Normalized fraction over (maxIterations - 1) so that:
-    // - fraction = 0 -> T0
-    // - fraction = 1 -> Tf
     const denom = Math.max(1, maxIterations - 1);
     const fraction = Math.min(1, stepIndex / denom);
 

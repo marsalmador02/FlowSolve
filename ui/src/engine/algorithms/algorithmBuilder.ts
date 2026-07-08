@@ -1,17 +1,16 @@
 /**
- * Algorithm Builder
- *
- * Creates predefined workflow templates for supported metaheuristic algorithms. It
- * acts as a factory that selects and builds the appropriate graph structure.
+ * algorithmBuilder.ts
+ * 
+ * This module provides functionality to build predefined algorithm templates for the workflow graph.
  */
 
 import type { FlowNodeData } from '../../types/flow';
 import {
-  buildGraspTemplate,
-  buildIlsTemplate,
-  buildSimulatedAnnealingTemplate,
+  buildGRASPTemplate,
+  buildILSTemplate,
+  buildSATemplate,
   buildTabuTemplate,
-  buildVnsTemplate,
+  buildVNSTemplate,
 } from '../../templates/flowTemplates';
 
 export type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
@@ -27,10 +26,10 @@ export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulated
  */
 export function buildAlgorithmTemplate(kind: AlgorithmTemplateKey, updateNodeData: UpdateNodeData) {
   switch (kind) {
-    case 'grasp': return buildGraspTemplate(updateNodeData);
-    case 'ils': return buildIlsTemplate(updateNodeData);
-    case 'vns': return buildVnsTemplate(updateNodeData);
+    case 'grasp': return buildGRASPTemplate(updateNodeData);
+    case 'ils': return buildILSTemplate(updateNodeData);
+    case 'vns': return buildVNSTemplate(updateNodeData);
     case 'tabu': return buildTabuTemplate(updateNodeData);
-    case 'simulatedAnnealing': return buildSimulatedAnnealingTemplate(updateNodeData);
+    case 'simulatedAnnealing': return buildSATemplate(updateNodeData);
   }
 }

@@ -7,18 +7,18 @@
 
 import type { NodeKind } from '../../types/flow';
 import type { RuntimeComponent } from './base';
-import { SingleGeneratorComponent } from './nodes/singleGenerator';
-import { LoopComponent } from './nodes/loop';
-import { StorageComponent } from './nodes/storage';
-import { SelectionBestComponent } from './nodes/selectionBest';
-import { LocalSearchComponent } from './nodes/localSearch';
-import { NeighborhoodComponent } from './nodes/neighborhood';
-import { PerturbationComponent } from './nodes/perturbation';
-import { AcceptanceComponent } from './nodes/acceptance';
-import { SubtractionComponent } from './nodes/subtraction';
-import { TemperatureAcceptanceComponent } from './nodes/temperatureAcceptance';
-import { ReduceTemperatureComponent } from './nodes/reduceTemperature';
-import { ChangeNeighbourhoodComponent } from './nodes/changeNeighborhood';
+import { SingleGeneratorComponent } from './nodes/SingleGenerator';
+import { LoopComponent } from './nodes/Loop';
+import { StorageComponent } from './nodes/Storage';
+import { SelectionBestComponent } from './nodes/SelectionBest';
+import { LocalSearchComponent } from './nodes/LocalSearch';
+import { NeighborhoodComponent } from './nodes/Neighborhood';
+import { PerturbationComponent } from './nodes/Perturbation';
+import { AcceptanceComponent } from './nodes/Acceptance';
+import { SubtractionComponent } from './nodes/Subtraction';
+import { TemperatureAcceptanceComponent } from './nodes/TemperatureAcceptance';
+import { ReduceTemperatureComponent } from './nodes/ReduceTemperature';
+import { ChangeNeighbourhoodComponent } from './nodes/ChangeNeighborhood';
 
 export type ComponentFactory = () => RuntimeComponent;
 

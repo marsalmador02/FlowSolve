@@ -1,8 +1,8 @@
 /**
- * Packet Executor
- *
- * Core execution engine responsible for traversing the graph, delivering packets
- * between nodes and coordinating component execution throughout the workflow lifecycle.
+ * packetExecutor.ts
+ * 
+ * This module provides functionality to execute packets through the workflow graph.
+ * It manages the execution context, handles component execution and maintains the global trace.
  */
 
 import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../../types/flow';
@@ -37,6 +37,13 @@ interface QueuedPacket {
 const MAX_PACKETS_PER_RUN = 10000;
 const COMPONENT_EXECUTION_DELAY_MS = 250;
 
+/**
+ * Resolves the incoming sources for a given node by examining the edges in the graph.
+ * 
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param nodeId The ID of the node for which to resolve incoming sources.
+ * @returns An array of IncomingSource objects representing the sources.
+ */
 function resolveIncomingSources(deps: PacketExecutorDeps, nodeId: string): IncomingSource[] {
   return deps.getEdges()
     .filter((e) => e.target === nodeId)
@@ -46,6 +53,13 @@ function resolveIncomingSources(deps: PacketExecutorDeps, nodeId: string): Incom
     });
 }
 
+/**
+ * Resolves the outgoing targets for a given node by examining the edges in the graph.
+ * 
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param nodeId The ID of the node for which to resolve outgoing targets.
+ * @returns An array of IncomingSource objects representing the targets.
+ */
 function resolveOutgoingTargets(deps: PacketExecutorDeps, nodeId: string): IncomingSource[] {
   return deps.getEdges()
     .filter((e) => e.source === nodeId)
@@ -55,12 +69,28 @@ function resolveOutgoingTargets(deps: PacketExecutorDeps, nodeId: string): Incom
     });
 }
 
+/**
+ * Resolves nodes of a specific kind in the graph.
+ *
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param kind The kind of nodes to resolve.
+ * @returns An array of IncomingSource objects representing the nodes.
+ */
 function resolveByKind(deps: PacketExecutorDeps, kind: NodeKind): IncomingSource[] {
   return deps.getNodes()
     .filter((n) => n.type === kind)
     .map((n) => ({ id: n.id, type: n.type as NodeKind }));
 }
 
+/**
+ * Builds the execution context for a given node, providing access to node data, problem data and
+ * utility functions.
+ *
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param node The node for which to build the context.
+ * @param problem The problem data.
+ * @returns The component context.
+ */
 function buildContext(deps: PacketExecutorDeps, node: FlowNode, problem: unknown): ComponentContext {
   return {
     nodeId: node.id,
@@ -76,23 +106,12 @@ function buildContext(deps: PacketExecutorDeps, node: FlowNode, problem: unknown
   };
 }
 
-function isMaximizeProblem(problem: unknown): boolean {
-  const raw = (problem as any).raw;
-  const sense: string = raw.goals[0].sense;
-  return sense.toLowerCase().includes('maximiz');
-}
-
-function bestFromSet(set: SolutionLike[] | null | undefined, problem: unknown): SolutionLike | null {
-  if (!set || set.length === 0) return null;
-  const maximize = isMaximizeProblem(problem);
-  return set.reduce((best, candidate) => {
-    const better = maximize
-      ? solutionScore(candidate) > solutionScore(best)
-      : solutionScore(candidate) < solutionScore(best);
-    return better ? candidate : best;
-  }, set[0]);
-}
-
+/**
+ * Reads the stored solution set from a node's data, handling both stringified and array formats.
+ *
+ * @param nodeData The data of the node from which to read the solution set.
+ * @returns An array of solutions.
+ */
 function readStoredSet(nodeData: FlowNodeData | undefined): SolutionLike[] {
   if (!nodeData) return [];
   if (Array.isArray(nodeData.solutionSet)) return nodeData.solutionSet as SolutionLike[];
@@ -103,12 +122,18 @@ function readStoredSet(nodeData: FlowNodeData | undefined): SolutionLike[] {
   return [];
 }
 
+/**
+ * Stores the final result of the execution in the global trace.
+ *
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param finalNode The final node in the execution path.
+ * @param lastPacket The last packet processed.
+ */
 function storeFinalResult(deps: PacketExecutorDeps, finalNode: FlowNode | null, lastPacket: Packet | null) {
   const endStorageNode = deps.getNodes().find((n) => n.type === 'storage' && n.data.end === true) ?? null;
   const node = endStorageNode ?? finalNode;
   const storedSet = readStoredSet(node?.data);
   const storedSolution = node ? parseJson<SolutionLike>(node.data.solution) : null;
-  const problem = deps.getProblemParsed();
 
   let payloadText: string;
   if (node?.type === 'storage' && storedSet.length > 0) {
@@ -124,6 +149,14 @@ function storeFinalResult(deps: PacketExecutorDeps, finalNode: FlowNode | null, 
   deps.appendGlobalTrace(`🏁 FINAL: ${payloadText}`);
 }
 
+/**
+ * Executes packets through the workflow graph, managing the execution context and handling component
+ * execution.
+ *
+ * @param deps PacketExecutorDeps providing access to nodes and edges.
+ * @param options Execution options specifying the mode ('full' or 'iteration').
+ * @returns A promise resolving when the execution is complete.
+ */
 export async function runPacketExecutor(deps: PacketExecutorDeps, options: { mode: 'full' | 'iteration' }): Promise<void> {
   const separator = options.mode === 'iteration' ? '=== FLOW RUN (NEXT STEP) ===' : '=== FLOW RUN ===';
   deps.appendGlobalSeparator(separator);

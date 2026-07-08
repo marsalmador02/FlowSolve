@@ -1,7 +1,9 @@
 /**
- * Neighborhood Component
- *
- * Generates a set of neighboring solutions from a given candidate solution.
+ * neighborhood.ts
+ * 
+ * This module defines the NeighborhoodComponent, which is responsible for generating neighboring
+ * solutions based on a given solution. It interacts with the runtime API to perform the neighborhood
+ * generation and updates the node data with the generated neighbors.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
@@ -9,6 +11,10 @@ import type { ComponentContext, ExecuteResult, Packet } from '../../packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
 import type { SolutionLike } from '../../packet';
 
+/**
+ * NeighborhoodComponent is a component that generates neighboring solutions based on an incoming
+ * solution. It uses the runtime API to find neighbors and updates the node data accordingly.
+ */
 export class NeighborhoodComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const base = incoming.solution as SolutionLike;

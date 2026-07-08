@@ -1,14 +1,22 @@
 /**
- * Change Neighborhood Component
- *
- * Updates the neighborhood size parameter used by algorithms like VNS. The value
- * is adjusted according to the improvement obtained during the current iteration.
+ * changeNeighborhood.ts
+ * 
+ * This module defines the ChangeNeighbourhoodComponent, which is responsible for adjusting the
+ * neighborhood size in a Variable Neighborhood Search (VNS) algorithm based on the comparison of
+ * accepted and baseline solutions. It updates the node data and propagates the new neighborhood
+ * size to connected perturbation nodes.
  */
 
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { JoinRuntimeComponent, formatCompact, solutionScore, solutionsEqualByVars, toPretty } from '../base';
 
-// Helper to select accepted and baseline packets from the incoming ones, based on the context of the loop.
+/**
+ * Selects the accepted and baseline packets from the incoming ones, based on the context of the loop.
+ * 
+ * @param ctx Component context.
+ * @param packets Incoming packets.
+ * @returns Object containing the accepted and baseline packets.
+ */
 function selectAcceptedAndBaseline(
   ctx: ComponentContext,
   packets: Packet[],
@@ -41,6 +49,11 @@ function selectAcceptedAndBaseline(
   return { accepted: sorted[0], baseline: sorted[1] };
 }
 
+/**
+ * ChangeNeighbourhoodComponent is a component that adjusts the neighborhood size in a VNS algorithm
+ * based on the comparison of accepted and baseline solutions. It updates the node data and propagates
+ * the new neighborhood size to connected perturbation nodes.
+ */
 export class ChangeNeighbourhoodComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {

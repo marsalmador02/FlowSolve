@@ -1,18 +1,10 @@
 /*
- * File: App.tsx
+ * App.tsx
  *
- * Contains:
- * - Main container for the metaheuristics visual editor.
- * - Reactive canvas state: nodes, edges, selection, traces and panels.
- * - Integration with React Flow (render, drag-and-drop, connections, minimap).
- * - Loads component catalog from backend and handles templates.
- * - Bridge to useFlowRunner for executing Run Flow and Run Next Step.
- *
- * Role in the flow (startup -> graph execution):
- * - Receives control from main.tsx and builds the editing experience.
- * - Hydrates the component palette via API and displays the editable canvas.
- * - Triggers graph execution delegating to the execution runtime via useFlowRunner.
+ * This file contains the main React component for the workflow editor application.
+ * It sets up the React Flow canvas, manages state for nodes and edges, and handles user interactions.
  */
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactFlow, {
   addEdge,
@@ -48,6 +40,13 @@ interface StoredTemplate {
 
 const CUSTOM_TEMPLATES_STORAGE_KEY = 'prodef.ui.customTemplates';
 
+/**
+ * downloadFile creates a downloadable file with the specified content and triggers a download in the browser.
+ * 
+ * @param fileName The name of the file to be downloaded.
+ * @param content The content of the file.
+ * @param mime The MIME type of the file (default is 'text/plain').
+ */
 function downloadFile(fileName: string, content: string, mime = 'text/plain') {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -62,6 +61,12 @@ function downloadFile(fileName: string, content: string, mime = 'text/plain') {
   }, 200);
 }
 
+/**
+ * loadTemplatesFromStorage retrieves the custom templates stored in the browser's local storage.
+ * If no templates are found, it returns an empty array.
+ * 
+ * @returns An array of StoredTemplate objects.
+ */
 function loadTemplatesFromStorage(): StoredTemplate[] {
     let existingTemplates = JSON.parse(localStorage.getItem(CUSTOM_TEMPLATES_STORAGE_KEY) as string);
 
@@ -72,6 +77,10 @@ function loadTemplatesFromStorage(): StoredTemplate[] {
     return existingTemplates;
 }
 
+/**
+ * App is the main React component for the workflow editor application.
+ * It sets up the React Flow canvas, manages state for nodes and edges, and handles user interactions.
+ */
 export default function App() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -129,7 +138,7 @@ export default function App() {
     },
     setNeighborhoodSize: (size) => {
       neighborhoodSizeRef.current = size;
-},
+    },
   });
 
   const createDefaultProblemNode = useCallback((): FlowNode => ({

@@ -1,14 +1,18 @@
 /**
- * Single Solution Generator
- *
- * Generates an initial feasible solution that can be used asthe starting point of
- * a metaheuristic workflow.
+ * singleGenerator.ts
+ * 
+ * This module defines the SingleGeneratorComponent, which is responsible for generating a single
+ * solution using the runtime API. It updates the node data with the generated solution.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { RuntimeComponent, formatCompact, toPretty } from '../base';
 
+/**
+ * SingleGeneratorComponent is a component that generates a single solution using the runtime API. It
+ * updates the node data with the generated solution and appends a trace message.
+ */
 export class SingleGeneratorComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const response = await callRuntimeExecute({

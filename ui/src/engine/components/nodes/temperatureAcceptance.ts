@@ -8,7 +8,13 @@
 import { callRuntimeExecute } from '../../../services/prodefApi';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { JoinRuntimeComponent, formatCompact, formatScore, solutionScore, toPretty } from '../base';
-
+  
+/**
+ * Determines if the problem is a maximization problem.
+ *
+ * @param problem The problem to check.
+ * @returns True if the problem is a maximization problem, false otherwise.
+ */
 function isMaximizeProblem(problem: unknown): boolean {
   try {
     const rawProblem = (problem as any)?.raw || problem;
@@ -21,6 +27,16 @@ function isMaximizeProblem(problem: unknown): boolean {
   return false;
 }
 
+/**
+ * Calculates the acceptance probability for a candidate solution compared to a stored solution
+ * based on the current temperature and the problem's optimization sense (maximize or minimize).
+ *
+ * @param problem The problem for which to calculate acceptance probability.
+ * @param candidate The candidate solution.
+ * @param stored The stored solution.
+ * @param temperatureCurrent The current temperature.
+ * @returns The acceptance probability.
+ */
 function acceptanceProbability(problem: unknown, candidate: SolutionLike, stored: SolutionLike, temperatureCurrent: number): number {
   const candidateScore = solutionScore(candidate);
   const storedScore = solutionScore(stored);
@@ -37,6 +53,10 @@ function acceptanceProbability(problem: unknown, candidate: SolutionLike, stored
   return Math.exp(-delta / temp);
 }
 
+/**
+ * TemperatureAcceptanceComponent class implements the acceptance rule for Simulated Annealing.
+ * It extends JoinRuntimeComponent and processes packets from perturbation and storage sources.
+ */
 export class TemperatureAcceptanceComponent extends JoinRuntimeComponent {
   async executeJoin(ctx: ComponentContext, packets: Packet[]): Promise<ExecuteResult> {
     if (packets.length < 2) {

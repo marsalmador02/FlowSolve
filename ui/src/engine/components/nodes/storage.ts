@@ -1,8 +1,9 @@
 /**
- * Storage Component
- *
- * Stores solutions generated during execution and makes them available to other
- * components. It can be used as memory and final result storage.
+ * storage.ts
+ * 
+ * This module defines the StorageComponent, which is responsible for storing and managing solutions
+ * in the workflow. It can accumulate solutions, select the best solution and update the node data
+ * accordingly.
  */
 
 import { callRuntimeExecute } from '../../../services/prodefApi';
@@ -10,6 +11,12 @@ import { parseJson } from '../../../utils/flowHelpers';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { RuntimeComponent, formatCompact, solutionScore, solutionsEqualByVars, toPretty } from '../base';
 
+/**
+ * Reads the accumulated solutions from the node data. It handles both array and string representations.
+ * 
+ * @param ctx Component context.
+ * @returns Array of accumulated solutions.
+ */
 function readAccumulated(ctx: ComponentContext): SolutionLike[] {
   const solutionSet = ctx.nodeData.solutionSet;
   if (Array.isArray(solutionSet)) return [...solutionSet as SolutionLike[]];
@@ -20,6 +27,12 @@ function readAccumulated(ctx: ComponentContext): SolutionLike[] {
   return [];
 }
 
+/**
+ * Extracts all solutions from a packet, whether it carries a set or a single item.
+ * 
+ * @param incoming Incoming packet.
+ * @returns Array of solutions contained in the packet.
+ */
 function packetSolutions(incoming: Packet): SolutionLike[] {
   if (incoming.solutionSet && incoming.solutionSet.length > 0) {
     return incoming.solutionSet;
@@ -27,7 +40,11 @@ function packetSolutions(incoming: Packet): SolutionLike[] {
   if (incoming.solution) return [incoming.solution];
   return [];
 }
-
+  
+/**
+ * StorageComponent is a component that manages the storage of solutions in the workflow. It can
+ * accumulate solutions, select the best solution and update the node data accordingly.
+ */
 export class StorageComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {
     const feedsSubtraction = ctx.getOutgoingTargets().some((o) => o.type === 'subtraction');

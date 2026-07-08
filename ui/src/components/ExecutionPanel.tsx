@@ -1,9 +1,10 @@
 /**
- * Execution Panel
- *
- * Renders the right-side panel used during execution. It allows users to edit
- * problem definitions, configure start/end nodes, inspect execution traces and
- * export execution results.
+ * ExecutionPanel.tsx
+ * 
+ * This component renders the execution panel in the UI, which includes:
+ * - A JSON editor for problem definitions.
+ * - Options to set the selected node as a start or end node.
+ * - A viewer for the global execution trace, with options to export the trace as a text file or CSV.
  */
 
 import type { FlowNodeData, FlowNode } from '../types/flow';
@@ -26,8 +27,10 @@ export interface ExecutionPanelProps {
 }
 
 /**
- * Displays execution controls, problem settings,
- * and runtime traces.
+ * Renders the execution panel with problem JSON editor, start/end node configuration and execution trace viewer.
+ *
+ * @param props ExecutionPanelProps containing selected node, data, trace and callbacks.
+ * @returns JSX.Element representing the execution panel.
  */
 export function ExecutionPanel({
   selectedNode,

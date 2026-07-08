@@ -1,8 +1,9 @@
 /**
- * useFlowRunner
- *
- * React hook that connects the UI with the execution engine. It provides the
- * actions and state required to start, monitor and control workflow execution.
+ * useFlowRunner.ts
+ * 
+ * This module provides a React hook for managing the execution of a workflow graph. It handles the
+ * lifecycle of the execution, including starting, monitoring, and updating the state of nodes and
+ * edges during execution.
  */
 
 import { useCallback, useMemo, useRef } from 'react';
@@ -11,6 +12,9 @@ import type { FlowEdge, FlowNode, FlowNodeData, NodeKind } from '../types/flow';
 import { parseJson } from '../utils/flowHelpers';
 import { runPacketExecutor } from '../engine/executor/packetExecutor';
 
+/**
+ * Arguments for the useFlowRunner hook.
+ */
 export interface UseFlowRunnerArgs {
   nodesRef: MutableRefObject<FlowNode[]>;
   edgesRef: MutableRefObject<FlowEdge[]>;
@@ -24,9 +28,10 @@ export interface UseFlowRunnerArgs {
 }
 
 /**
- * Manages workflow execution lifecycle and runtime state.
- *
- * Exposes actions for starting and monitoring graph execution from the UI.
+ * React hook for managing the execution of a workflow graph.
+ * 
+ * @param args The arguments required for managing the flow runner.
+ * @returns An object containing methods to interact with the flow runner.
  */
 export function useFlowRunner({
   nodesRef,

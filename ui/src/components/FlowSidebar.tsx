@@ -1,9 +1,10 @@
 /**
- * Flow Sidebar
- *
- * Provides the components for building workflows. It contains predefined algorithm
- * templates, custom templates and draggable components that can be added to the
- * canvas.
+ * FlowSidebar.tsx
+ * 
+ * This component renders the sidebar in the UI, which includes:
+ * - Buttons to load predefined algorithm templates (GRASP, ILS, VNS, Tabu Search, Simulated Annealing).
+ * - A section for personalized templates, allowing users to save, load, import, export and delete their own templates.
+ * - A palette of draggable metaheuristic components, categorized into generation, modification and other components.
  */
 
 export interface SidebarPaletteItem {
@@ -33,6 +34,12 @@ export interface FlowSidebarProps {
   otherPaletteItems: SidebarPaletteItem[];
 }
 
+/**
+ * Renders a draggable item in the sidebar palette.
+ * 
+ * @param item SidebarPaletteItem containing kind and label.
+ * @returns JSX.Element representing the draggable item.
+ */
 function draggableItem(item: SidebarPaletteItem) {
   return (
     <div
@@ -50,9 +57,10 @@ function draggableItem(item: SidebarPaletteItem) {
 }
 
 /**
- * Main sidebar used to build workflow graphs.
- *
- * Provides templates and draggable runtime components.
+ * Renders the flow sidebar with algorithm templates, personalized templates and metaheuristic component palette.
+ * 
+ * @param props FlowSidebarProps containing callbacks and palette items.
+ * @returns JSX.Element representing the flow sidebar.
  */
 export function FlowSidebar({
   onLoadGraspTemplate,

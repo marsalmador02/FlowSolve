@@ -1,9 +1,8 @@
 /**
- * Flow Nodes
- *
- * Defines all custom React Flow node components used in the editor. Each node
- * provides a visual representation of a metaheuristic operation and displays its
- * current execution state and results.
+ * flowNodes.tsx
+ * 
+ * This file defines the custom node types used in the flow diagram. Each node type corresponds to a
+ * specific component that renders the node and handles its data.
  */
 
 import { Handle, Position, type NodeTypes } from 'reactflow';
@@ -33,6 +32,13 @@ function scoreFromSolution(value: any): number | null {
   return goals ? goals.reduce((acc: number, item: number) => acc + item, 0) : null;
 }
 
+/**
+ * Renders a summary of the solution contained in the node's data. Displays the objective value and
+ * variable values if available.
+ *
+ * @param data FlowNodeData containing the solution information.
+ * @returns JSX.Element representing the solution summary or null if no solution is available.
+ */
 function SolutionSummary({ data }: { data: FlowNodeData }) {
   if (!data.solution) return null;
   const parsed = JSON.parse(data.solution);
@@ -50,9 +56,15 @@ function SolutionSummary({ data }: { data: FlowNodeData }) {
       </div>
     </div>
   );
-  return <div className="solution-text">Solution unavailable</div>;
 }
 
+/**
+ * Renders a summary of the stored solutions in the node's data. Displays the number of solutions and
+ * their objective values if available.
+ *
+ * @param data FlowNodeData containing the stored solutions.
+ * @returns JSX.Element representing the stored solutions summary or null if no solutions are available.
+ */
 function StoredSolutions({ data }: { data: FlowNodeData }) {
   const scores: number[] = [];
 
@@ -84,6 +96,13 @@ function StoredSolutions({ data }: { data: FlowNodeData }) {
   );
 }
 
+/**
+ * Renders a list of feasible solutions from the node's data. Each solution is displayed with its
+ * variable values and objective score.
+ *
+ * @param data FlowNodeData containing the solution set.
+ * @returns JSX.Element representing the list of feasible solutions or null if no feasible solutionsare available.
+ */
 function SolutionSetList({ data }: { data: FlowNodeData }) {
   if (!data.solutionSet) return null;
   const parsed = JSON.parse(data.solutionSet);
@@ -106,6 +125,18 @@ function SolutionSetList({ data }: { data: FlowNodeData }) {
   );
 }
 
+/**
+ * Renders a stepper component that allows the user to increment or decrement a numeric value. The
+ * stepper includes buttons for increasing and decreasing the value, as well as an input field for
+ * direct entry.
+ *
+ * @param label The label for the stepper.
+ * @param value The current numeric value of the stepper.
+ * @param min The minimum value allowed for the stepper (default is 0).
+ * @param step The increment/decrement step size (default is 1).
+ * @param onChange Callback function that is called when the value changes, receiving the new value as an argument.
+ * @returns JSX.Element representing the stepper component.
+ */
 function Stepper({label, value, min = 0, step = 1, onChange}: {
   label: string;
   value: number;

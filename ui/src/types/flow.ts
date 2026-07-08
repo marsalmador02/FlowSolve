@@ -1,13 +1,11 @@
 /**
- * Flow Types
+ * flow.ts
  *
- * Contains the shared type definitions used by React Flow, including node types,
- * edge types, execution metadata and algorithm-specific configuration data.
+ * This file contains type definitions for the flow graph used in the workflow editor.
  */
 
 import type { Edge, Node } from 'reactflow';
 
-// Node kinds available in the flow graph.
 export type NodeKind =
   | 'problem'
   | 'singleSolution'
@@ -28,10 +26,9 @@ export type NodeKind =
   | 'selectionBest';
 
 /**
- * Runtime data associated with a React Flow node.
- *
- * Stores both execution state and algorithm-specific configuration used by the
- * workflow editor.
+ * FlowNodeData defines the structure of the data associated with each node in the flow graph.
+ * It includes properties for algorithm parameters, current state, and callbacks for updating the node's
+ * data.
  */
 export interface FlowNodeData {
   label: string;
@@ -80,6 +77,5 @@ export interface FlowNodeData {
   onUpdate?: (patch: Partial<FlowNodeData>) => void;
 }
 
-// The React Flow node and edge types used in the flow graph.
 export type FlowNode = Node<FlowNodeData>;
 export type FlowEdge = Edge;

@@ -1,9 +1,9 @@
 /**
- * Flow Templates
- *
- * Defines the predefined graph structures used to quickly create supported
- * metaheuristic algorithms such as GRASP, ILS, VNS, Tabu Search and Simulated 
- * Annealing.
+ * flowTemplates.ts
+ * 
+ * This file defines the templates for various algorithms, including GRASP, ILS, VNS, Tabu Search 
+ * and Simulated Annealing. Each template consists of a set of nodes and edges that represent the
+ * workflow of the algorithm.
  */
 
 import { MarkerType } from 'reactflow';
@@ -13,15 +13,36 @@ import type { FlowEdge, FlowNode, FlowNodeData } from '../types/flow';
 
 export type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
+/**
+ * Creates a new flow edge with the specified properties.
+ * 
+ * @param id The unique identifier for the edge.
+ * @param source The ID of the source node.
+ * @param target The ID of the target node.
+ * @returns A new flow edge.
+ */
 function mkEdge(id: string, source: string, target: string): FlowEdge {
   return { id, source, target, markerEnd: { type: MarkerType.ArrowClosed } };
 }
 
+/**
+ * Creates an updater function for a specific node that applies a patch to its data.
+ * 
+ * @param nodeId The ID of the node to update.
+ * @param updateNodeData The function to call to update the node's data.
+ * @returns A function that takes a patch and applies it to the node's data.
+ */
 function mkUpdater(nodeId: string, updateNodeData: UpdateNodeData) {
   return (patch: Partial<FlowNodeData>) => updateNodeData(nodeId, patch);
 }
 
-export function buildGraspTemplate(updateNodeData: UpdateNodeData) {
+/**
+ * Builds the GRASP algorithm template with its nodes and edges.
+ * 
+ * @param updateNodeData The function to update node data.
+ * @returns An object containing the nodes and edges of the GRASP template.
+ */
+export function buildGRASPTemplate(updateNodeData: UpdateNodeData) {
   const nodes: FlowNode[] = [
     {
       id: 'problem',
@@ -108,7 +129,13 @@ export function buildGraspTemplate(updateNodeData: UpdateNodeData) {
   return { nodes, edges };
 }
 
-export function buildIlsTemplate(updateNodeData: UpdateNodeData) {
+/**
+ * Builds the ILS algorithm template with its nodes and edges.
+ * 
+ * @param updateNodeData The function to update node data.
+ * @returns An object containing the nodes and edges of the ILS template.
+ */
+export function buildILSTemplate(updateNodeData: UpdateNodeData) {
   const nodes: FlowNode[] = [
     {
       id: 'problem',
@@ -192,7 +219,13 @@ export function buildIlsTemplate(updateNodeData: UpdateNodeData) {
   return { nodes, edges };
 }
 
-export function buildVnsTemplate(updateNodeData: UpdateNodeData) {
+/**
+ * Builds the VNS algorithm template with its nodes and edges.
+ *
+ * @param updateNodeData The function to update node data.
+ * @returns An object containing the nodes and edges of the VNS template.
+ */
+export function buildVNSTemplate(updateNodeData: UpdateNodeData) {
   const nodes: FlowNode[] = [
     {
       id: 'problem',
@@ -290,6 +323,12 @@ export function buildVnsTemplate(updateNodeData: UpdateNodeData) {
   return { nodes, edges };
 }
 
+/**
+ * Builds the Tabu Search algorithm template with its nodes and edges.
+ *
+ * @param updateNodeData The function to update node data.
+ * @returns An object containing the nodes and edges of the Tabu Search template.
+ */
 export function buildTabuTemplate(updateNodeData: UpdateNodeData) {
   const nodes: FlowNode[] = [
     {
@@ -393,7 +432,13 @@ export function buildTabuTemplate(updateNodeData: UpdateNodeData) {
   return { nodes, edges };
 }
 
-export function buildSimulatedAnnealingTemplate(updateNodeData: UpdateNodeData) {
+/**
+ * Builds the Simulated Annealing algorithm template with its nodes and edges.
+ *
+ * @param updateNodeData The function to update node data.
+ * @returns An object containing the nodes and edges of the Simulated Annealing template.
+ */
+export function buildSATemplate(updateNodeData: UpdateNodeData) {
   const nodes: FlowNode[] = [
     {
       id: 'problem',

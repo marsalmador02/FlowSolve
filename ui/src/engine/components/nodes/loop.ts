@@ -1,19 +1,18 @@
 /**
- * Loop Component
- *
- * Acts as the execution controller of the workflow. It manages iteration counters
- * and the stopping condition.
+ * loop.ts
+ * 
+ * This module defines the LoopComponent, which is responsible for controlling the iteration count
+ * and determining when workflow execution should terminate. It updates the node data with the current
+ * iteration and history of solution scores.
  */
 
-import { parseJson } from '../../../utils/flowHelpers';
-import type { NodeKind } from '../../../types/flow';
 import type { ComponentContext, ExecuteResult, Packet, SolutionLike } from '../../packet';
 import { RuntimeComponent, JoinRuntimeComponent, formatCompact, toPretty, solutionScore } from '../base';
 
 /**
- * Runtime implementation of the Loop node.
- *
- * Controls iteration count and determines when workflow execution should terminate.
+ * LoopComponent is a component that controls the iteration count and determines when workflow
+ * execution should terminate. It updates the node data with the current iteration and history of
+ * solution scores.
  */
 export class LoopComponent extends RuntimeComponent {
   async execute(ctx: ComponentContext, incoming: Packet): Promise<ExecuteResult> {

@@ -1,8 +1,7 @@
 /**
- * Graph Validation
- *
- * Validates the workflow structure before execution. It ensures that required
- * nodes, connections and execution constraints are correctly defined.
+ * graphValidation.ts
+ * 
+ * This module provides functionality to validate the workflow graph structure and constraints.
  */
 
 import type { FlowEdge, FlowNode, NodeKind } from '../types/flow';
@@ -12,7 +11,11 @@ function collectIncoming(edges: FlowEdge[], nodeId: string): FlowEdge[] {
 }
 
 /**
- * Validate graph constraints required by the packet executor.
+ * Validates the workflow graph structure and constraints.
+ * 
+ * @param nodes The array of flow nodes in the graph.
+ * @param edges The array of flow edges in the graph.
+ * @returns An object indicating whether the graph is valid and any errors found.
  */
 export function validateGraph(nodes: FlowNode[], edges: FlowEdge[]) {
   const errors: string[] = [];
