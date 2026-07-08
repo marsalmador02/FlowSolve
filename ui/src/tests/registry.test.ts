@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { createComponent, isExecutableKind } from "../src/engine/components/registry.ts";
+import { createComponent, isExecutableKind } from "../engine/components/registry.js";
 
 it("creates a Local Search component", () => {
     const component = createComponent("localSearch");

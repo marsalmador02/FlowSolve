@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { parseJson } from "../src/utils/flowHelpers";
+import { parseJson } from "../utils/flowHelpers";
 
 it("parses valid JSON", () => {
     expect(parseJson('{"a":1}')).toEqual({a:1});

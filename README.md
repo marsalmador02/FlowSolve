@@ -1,10 +1,10 @@
 ﻿# Othimi FlowSolve
 
-Othimi FlowSolve is a visual tool for building, visualizing, and executing metaheuristics using node-based graphs. It makes it possible to design optimization algorithms without writing code, through a visual interface connected to a Rust execution engine.
+Othimi FlowSolve is a visual tool for building, visualizing and executing metaheuristics using node-based graphs. It makes it possible to design optimization algorithms without writing code, through a visual interface connected to a Rust execution engine.
 
 # Architecture
 
-The system is divided into three layers.
+The system is divided into three layers:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
@@ -36,13 +36,11 @@ The system is divided into three layers.
 
 The editor provides predefined templates for:
 
-- GRASP
+- Greedy Randomized Adaptive Search Procedure (GRASP)
 - Iterated Local Search (ILS)
 - Variable Neighborhood Search (VNS)
-- Tabu Search
-- Simulated Annealing
-
-These templates can be modified or extended visually.
+- Tabu Search (TS)
+- Simulated Annealing (SA)
 
 # Optimization Problems
 
@@ -52,7 +50,7 @@ Currently supported problem families include:
 
 - Knapsack Problem
 - Traveling Salesman Problem (TSP)
-- Assignment Problem
+- Assignment Problem 
 
 # Runtime Operations
 
@@ -106,7 +104,21 @@ FlowSolve/
 ├── README.md
 ├── package.json
 ├── ui/                     # React visual editor
-└── prodef-runtime-rust/    # Rust optimization runtime
+|    └── src/
+|         ├── engine/       # Metaheuristic execution engine
+|         ├── components/   # Sidebars and node visualization
+|         ├── services/     # Communication with the bridge
+|         ├── tests/
+|         ├── hooks/        # Hook that connects UI and execution engine
+|         ├── utils/
+|         ├── types/
+|         ├── constants/    # Predefined problems and labels
+|         └── templates/    # Predefined algorithm templates
+|     
+├── prodef-runtime-rust/    # Rust optimization runtime
+     ├── examples/               # Example problems and algorithms
+     ├── src/             # Rust source code
+
 ```
 
 # Execution

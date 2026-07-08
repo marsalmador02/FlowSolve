@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { buildAlgorithmTemplate } from "../src/engine/algorithms/algorithmBuilder.ts";
+import { buildAlgorithmTemplate } from "../engine/algorithms/algorithmBuilder.js";
 
 it("builds the GRASP template", () => {
     const update = vi.fn();

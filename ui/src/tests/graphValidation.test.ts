@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { validateGraph } from "../src/engine/graphValidation";
-import type { FlowEdge, FlowNode } from "../src/types/flow";
+import { validateGraph } from "../engine/graphValidation";
+import type { FlowEdge, FlowNode } from "../types/flow";
 
 const nodes: FlowNode[] = [
   {

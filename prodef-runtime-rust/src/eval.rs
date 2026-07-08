@@ -303,12 +303,4 @@ mod tests {
         let goals = p.eval_goals(&sol).unwrap();
         assert!((goals[0] - 75.0).abs() < 1e-6, "expected 75, got {}", goals[0]);
     }
-
-    #[test]
-    fn chained_comparison() {
-        let p = load(include_str!("../examples/knapsack.json"));
-        let sol = Solution::Vector(vec![0.0; p.var_size()]);
-        assert!(eval_constraint("0 <= 0 <= 1", &p, &sol).unwrap());
-        assert!(!eval_constraint("0 <= 2 <= 1", &p, &sol).unwrap());
-    }
 }

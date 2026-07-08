@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildExecutionCsvFromGraph, getProblemInstanceName } from "../src/utils/executionCsv";
+import { buildExecutionCsvFromGraph, getProblemInstanceName } from "../utils/executionCsv";
 
-import type { FlowNode, FlowEdge } from "../src/types/flow";
+import type { FlowNode, FlowEdge } from "../types/flow";
 
 describe("executionCsv", () => {
   it("extracts the instance name", () => {

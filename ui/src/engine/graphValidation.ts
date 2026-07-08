@@ -5,7 +5,7 @@
  * nodes, connections and execution constraints are correctly defined.
  */
 
-import type { FlowEdge, FlowNode, NodeKind } from '../../../types/flow';
+import type { FlowEdge, FlowNode, NodeKind } from '../types/flow';
 
 function collectIncoming(edges: FlowEdge[], nodeId: string): FlowEdge[] {
   return edges.filter((edge) => edge.target === nodeId);
