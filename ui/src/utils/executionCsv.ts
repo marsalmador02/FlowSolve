@@ -293,20 +293,3 @@ export function buildExecutionCsvFromGraph(params: {
     ...rows.map((row) => header.map((key) => csvEscape(row[key])).join(',')),
   ].join('\n');
 }
-
-/**
- * Downloads generated CSV content as a local file.
- */
-export function downloadCsv(filename: string, csvText: string): void {
-  const blob = new Blob(['\ufeff', csvText], { type: 'text/csv;charset=utf-8;' });
-  const url = window.URL.createObjectURL(blob);
-
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-
-  window.URL.revokeObjectURL(url);
-}

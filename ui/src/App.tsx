@@ -29,7 +29,7 @@ import { ExecutionPanel } from './components/ExecutionPanel';
 import { buildAlgorithmTemplate, type AlgorithmTemplateKey } from './engine/algorithms/algorithmBuilder';
 import type { FlowNode, FlowNodeData, NodeKind } from './types/flow';
 import { useFlowRunner } from './hooks/useFlowRunner';
-import { buildExecutionCsvFromGraph, downloadCsv, getProblemInstanceName } from './utils/executionCsv';
+import { buildExecutionCsvFromGraph, getProblemInstanceName } from './utils/executionCsv';
 
 interface StoredTemplate {
   id: string;
@@ -105,10 +105,12 @@ export default function App() {
 
   const generationKinds = ['SingleSolutionGenerationComponent'];
   const modificationKinds = [
-    'LocalSearchComponent', 'PerturbationComponent', 'TemperatureAcceptanceComponent', 'ReduceTemperatureComponent',
-    'ChangeNeighbourhoodComponent', 'NeighbourhoodComponent', 'SubtractionComponent', 'SelectionOfBestComponent',
+    'LocalSearchComponent', 'PerturbationComponent', 'NeighbourhoodComponent'
   ];
-  const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent'];
+  const otherKinds = ['StorageComponent', 'LoopComponent', 'AcceptanceComponent', 'TemperatureAcceptanceComponent',
+    'SelectionOfBestComponent', 'ReduceTemperatureComponent', 'ChangeNeighbourhoodComponent',
+    'SubtractionComponent'
+  ];
 
   const makePaletteItems = (kinds: string[]) =>
     kinds.map((k) => ({ kind: k, label: COMPONENT_LABELS[k as keyof typeof COMPONENT_LABELS] }));
