@@ -14,7 +14,7 @@ import {
   buildVnsTemplate,
 } from '../../templates/flowTemplates';
 
-type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
+export type UpdateNodeData = (id: string, patch: Partial<FlowNodeData>) => void;
 
 export type AlgorithmTemplateKey = 'grasp' | 'ils' | 'vns' | 'tabu' | 'simulatedAnnealing';
 

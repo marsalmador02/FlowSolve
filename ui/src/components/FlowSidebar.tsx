@@ -6,17 +6,17 @@
  * canvas.
  */
 
-interface SidebarPaletteItem {
+export interface SidebarPaletteItem {
   kind: string;
   label: string;
 }
 
-interface CustomTemplateItem {
+export interface CustomTemplateItem {
   id: string;
   name: string;
 }
 
-interface FlowSidebarProps {
+export interface FlowSidebarProps {
   onLoadGraspTemplate: () => void;
   onLoadIlsTemplate: () => void;
   onLoadVnsTemplate: () => void;

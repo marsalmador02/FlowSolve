@@ -13,7 +13,7 @@ import {
   TSP_TEMPLATE_JSON,
 } from '../constants/problemTemplates';
 
-interface ExecutionPanelProps {
+export interface ExecutionPanelProps {
   selectedNode: FlowNode | null;
   selectedData?: FlowNodeData;
   globalTrace: string[];
