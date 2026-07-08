@@ -1,6 +1,7 @@
-//! # API layer - request / response types and mode dispatcher
+//! # API layer
 //!
-//! This module defines the top-level JSON contract and routes each execution mode to its handler.
+//! This module defines the JSON request and response shapes for the API, and dispatches to the correct
+//! mode based on the `execution.mode` field.
 //!
 //! ## Request shape
 //!
@@ -13,6 +14,15 @@
 //!   }
 //! }
 //! ```
+//!
+//! ## Response shape
+//!
+//!```json
+//! {
+//!   "result":  { … },
+//!   "payload": { … }
+//! }
+//!```
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};

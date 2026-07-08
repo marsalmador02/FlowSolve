@@ -1,18 +1,7 @@
-//! # Solution types, JSON conversion, and evaluated result
+//! # Solution representation and evaluation
 //!
-//! This module defines how solutions are represented in memory, how they are
-//! serialised to JSON (sent back to the caller), and how they are deserialised
-//! from JSON (received in request payloads).
-//!
-//! ## Solution variants
-//!
-//! | Variant | Used for |
-//! |---------|----------|
-//! | [`Solution::Vector`] | Binary, integer, or continuous variables |
-//! | [`Solution::Permutation`] | Ordering / routing problems (TSP, …) |
-//!
-//! Permutations are stored **0-based** in memory but the JSON API always
-//! sends and receives **1-based** indices.
+//! Defines runtime solution types, JSON conversion, problem evaluation
+//! and the API response model for optimisation results.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};

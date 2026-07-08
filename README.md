@@ -104,21 +104,35 @@ FlowSolve/
 ├── README.md
 ├── package.json
 ├── ui/                     # React visual editor
+|    ├── server.cjs         # Node.js bridge
+|    ├── README.md
 |    └── src/
 |         ├── engine/       # Metaheuristic execution engine
 |         ├── components/   # Sidebars and node visualization
 |         ├── services/     # Communication with the bridge
-|         ├── tests/
-|         ├── hooks/        # Hook that connects UI and execution engine
-|         ├── utils/
-|         ├── types/
-|         ├── constants/    # Predefined problems and labels
-|         └── templates/    # Predefined algorithm templates
+|         ├── tests/        # Unit tests
+|         ├── hooks/        # Managing the execution of the graph
+|         ├── templates/    # Predefined algorithm templates
+|         ├── utils/        # CSV export
+|         ├── constants/    # Problem definitions and component labels
+|         └── types/
 |     
-├── prodef-runtime-rust/    # Rust optimization runtime
-     ├── examples/               # Example problems and algorithms
-     ├── src/             # Rust source code
-
+└── prodef-runtime-rust/
+     ├── README.md
+     ├── src/
+     |   └── modes/         # Execution modes
+     |        ├── generate.rs
+     |        ├── local_search.rs
+     |        ├── perturbation.rs
+     |        ├── neighborhood.rs
+     |        ├── select_best.rs
+     |        ├── temperature_acceptance.rs
+     |        └── mod.rs
+     ├── api.rs             # JSON request/response shapes and mode dispatcher
+     ├── eval.rs            # Expression evaluation and feasibility checking
+     ├── main.rs            # Entry point
+     ├── problem.rs         # Problem loading and representation
+     └── solution.rs        # Solution representation and manipulation
 ```
 
 # Execution
@@ -145,20 +159,6 @@ The project also generates API documentation automatically.
 ```bash
 npm run docs:ui
 npm run docs:rust
-```
-
-Generated documentation:
-
-- **TypeDoc**
-
-```
-ui/docs/ui/index.html
-```
-
-- **Rustdoc**
-
-```
-prodef-runtime-rust/target/doc/prodef_runtime_rust/index.html
 ```
 
 ## Testing

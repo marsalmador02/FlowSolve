@@ -1,7 +1,7 @@
-//! # Metaheuristic Solver - CLI entry point
+//! # Main entry point
 //!
-//! Reads a JSON request file, dispatches it to the solver, and prints the JSON response to
-//! stdout.
+//! This module contains the main function that reads an execution request from a JSON file, dispatches
+//! to the appropriate mode handler and prints the response as JSON.
 
 mod api;
 mod eval;

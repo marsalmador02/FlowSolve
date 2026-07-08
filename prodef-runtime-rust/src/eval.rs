@@ -1,7 +1,7 @@
-//! Expression evaluation for the three supported problem families.
+//! # Evaluation of expressions and constraints
 //!
-//! This module evaluates goal and constraint expressions for knapsack,
-//! assignment, and TSP problems only.
+//! This module provides functions to evaluate numeric expressions and constraints in the context of a
+//! given problem and solution.
 
 use anyhow::{anyhow, bail, Result};
 

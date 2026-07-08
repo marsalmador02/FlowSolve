@@ -1,12 +1,6 @@
-// problem.rs — optimization problem loaded from JSON.
-//
-// Owns deserialization, validation, data loading, random generation,
-// feasibility checking, and objective evaluation.
-//
-// Supports three problem families:
-//   - Knapsack: binary vector, class attributes (item[i].weight), weight constraint
-//   - Assignment: permutation, square cost matrix (cost[i, assignment[i]])
-//   - TSP: permutation, distance matrix with wrap-around tour
+//! # Problem definition and evaluation
+//! This module defines the `Problem` struct, which represents a combinatorial optimization problem
+//! and provides methods
 
 use std::collections::HashMap;
 

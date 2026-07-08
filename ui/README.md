@@ -2,7 +2,7 @@
 
 ## Overview
 
-This part of the UI provides a visual environment for building, configurin and executing metaheuristic algorithms. Users can create workflows by connecting components in a graph-based editor and observe how solutions evolve during execution.
+This part of the UI provides a visual environment for building, configuring and executing metaheuristic algorithms. Users can create workflows by connecting components in a graph-based editor and observe how solutions evolve during execution.
 
 The system is built around **React Flow**, where each node represents a metaheuristic operation and edges define the execution flow between them.
 
@@ -90,10 +90,8 @@ Responsible for workflow construction and visualization.
 | File                 | Responsibility                              |
 | -------------------- | ------------------------------------------- |
 | `FlowSidebar.tsx`    | Component toolbox and algorithm templates   |
-| `flowNodes.tsx`      | Custom React Flow node definitions          |
+| `flowNodes.tsx`      | Rendering logic for different node types    |
 | `ExecutionPanel.tsx` | Problem configuration and execution traces  |
-| `flow.ts`            | Shared flow types and node data definitions |
-| `flowHelpers.ts`     | Shared utility functions                    |
 
 ## Templates
 
@@ -142,7 +140,7 @@ Examples include:
 
 ## API Bridge Integration
 
-The UI communicates with a thin Node.js bridge that forwards requests to the Rust execution runtime.
+The UI communicates with a Node.js bridge that forwards requests to the Rust execution runtime.
 
 ### Main Files
 

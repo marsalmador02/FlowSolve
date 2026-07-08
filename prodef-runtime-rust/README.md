@@ -2,7 +2,7 @@
 
 ## Overview
 
-This part of the system is the execution backend for metaheuristic algorithms. It receives a JSON request describing an optimization problem and an operation to perform, runs that operation, and returns a JSON response.
+This part of the system is the execution backend for metaheuristic algorithms. It receives a JSON request describing an optimization problem and an operation to perform, runs that operation and returns a JSON response.
 
 ## Main Features
 
@@ -23,7 +23,7 @@ Supported syntax includes:
 * Variable access: `x[i]`
 * Problem parameters: `N`, `MaxWeight`
 * Arithmetic operators: `+`, `-`, `*`
-* Comparisons, including chained: `0 <= sum x[i]*item[i].weight over i=(1:N) <= MaxWeight`
+* Comparisons: `sum x[i]*item[i].weight over i=(1:N) <= MaxWeight`
 
 ### Execution Modes
 
@@ -40,43 +40,43 @@ Each request specifies a mode that determines what operation to run. Available m
 
 The backend is organized into four main areas:
 
-## Entry Point
+### Entry Point
 
 Reads the request file, parses it, calls the dispatcher and prints the response.
 
-### Main Files
+#### Main Files
 
 | File      | Responsibility                            |
 | --------- | ----------------------------------------- |
 | `main.rs` | CLI argument parsing and request dispatch |
 | `api.rs`  | Request/response types and mode router    |
 
-## Problem and Evaluation
+### Problem and Evaluation
 
 Responsible for loading the problem definition and evaluating goals and constraints.
 
-### Main Files
+#### Main Files
 
 | File         | Responsibility                                          |
 | ------------ | ------------------------------------------------------- |
 | `problem.rs` | Problem struct, JSON loading, feasibility, scoring      |
 | `eval.rs`    | Expression evaluator for goal and constraint expressions |
 
-## Solution
+### Solution
 
 Responsible for representing and serializing solutions.
 
-### Main Files
+#### Main Files
 
 | File          | Responsibility                                              |
 | ------------- | ----------------------------------------------------------- |
 | `solution.rs` | `Solution` enum, JSON conversion, `SolverResult` builder   |
 
-## Execution Modes
+### Execution Modes
 
 Each mode is its own submodule under `src/modes/`. All modes share the same signature: they receive the problem, a JSON payload, and a random number generator, and return either a `SolverResult` or a JSON value.
 
-### Main Files
+#### Main Files
 
 | File                      | Mode                    | Returns        |
 | ------------------------- | ----------------------- | -------------- |
