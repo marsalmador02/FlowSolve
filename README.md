@@ -163,6 +163,30 @@ npm run docs:rust
 
 ## Testing
 
+The project has test coverage on both layers of the stack.
+
+### Rust engine (`prodef-runtime-rust`)
+
+Each execution mode has its own unit tests, colocated with its implementation under `src/modes/`. Tests cover both supported solution types (binary vectors and permutations) and validate the core logic of each mode.
+
+Run them with:
+```bash
+npm run test:rust
+```
+
+### UI engine (`ui/src`)
+
+The front-end's algorithmic core (independent of React rendering) is covered with [Vitest](https://vitest.dev/).
+
+Run them with:
+```bash
+npm run test:ui
+```
+
+### Run everything
+
 ```bash
 npm test
 ```
+
+This runs the Rust and UI test suites concurrently.
