@@ -32,7 +32,7 @@ The system is divided into three layers:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-# Included Metaheuristics
+# Included metaheuristics
 
 The editor provides predefined templates for:
 
@@ -42,17 +42,17 @@ The editor provides predefined templates for:
 - Tabu Search (TS)
 - Simulated Annealing (SA)
 
-# Optimization Problems
+# Optimization problems
 
 Problems are described as JSON files and loaded dynamically.
 
 Currently supported problem families include:
 
-- Knapsack Problem
-- Traveling Salesman Problem (TSP)
-- Assignment Problem 
+- Knapsack problem
+- Traveling salesman problem (TSP)
+- Assignment problem 
 
-# Runtime Operations
+# Runtime operations
 
 The Rust runtime currently implements the following execution modes:
 
@@ -65,7 +65,7 @@ The Rust runtime currently implements the following execution modes:
 | `select-best` | Select the best feasible candidate |
 | `temperature-acceptance` | Simulated annealing acceptance criterion |
 
-# Use Cases
+# Use cases
 
 Learn how to use Othimi FlowSolve with practical examples in our use case playlist:
 
@@ -102,7 +102,7 @@ The UI is available at:
 http://localhost:5173
 ```
 
-# Project Structure
+# Project structure
 
 ```text
 FlowSolve/
