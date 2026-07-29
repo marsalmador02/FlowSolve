@@ -65,6 +65,12 @@ The Rust runtime currently implements the following execution modes:
 | `select-best` | Select the best feasible candidate |
 | `temperature-acceptance` | Simulated annealing acceptance criterion |
 
+# Use Cases
+
+Learn how to use Othimi FlowSolve with practical examples in our use case playlist:
+
+[View playlist on YouTube](https://youtube.com/playlist?list=PLQqka3iubPCeNBV9qckLNSNZJjERpv0kg&si=CSMhQH3jwgSKCufz)
+
 # Installation
 
 ## Requirements
